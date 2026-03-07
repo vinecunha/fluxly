@@ -1,6 +1,7 @@
 {
   "short_name": "Fluxly",
   "name": "Fluxly - Finanças em Fluxo",
+  "description": "Seu dinheiro em movimento, sob seu controle.",
   "icons": [
     {
       "src": "/Fluxly.png",
@@ -15,8 +16,9 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#4f46e5",
   "background_color": "#ffffff"
 }
