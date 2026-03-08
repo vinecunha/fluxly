@@ -21,9 +21,14 @@ export const AuthScreen = () => {
   return (
     <div className="h-screen flex items-center justify-center p-6 bg-indigo-50">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-black text-indigo-600 mb-2 italic tracking-tighter">Fluxly.</h1>
-          <p className="text-gray-500 text-sm">Acesse sua conta para gerenciar seu fluxo.</p>
+        <div className="text-start mb-10 flex flex-col items-start">
+          <span className="text-[8px] font-bold tracking-[0.25em] text-indigo-400 uppercase mb-1">
+            Simples. Inteligente.
+          </span>
+          <h1 className="text-5xl font-black text-indigo-600 -mt-2 tracking-tighter">
+            Fluxly
+          </h1>
+          <p className="text-gray-500 text-sm mt-4">Acesse sua conta para gerenciar seu fluxo.</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
