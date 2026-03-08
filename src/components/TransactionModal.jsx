@@ -1,19 +1,48 @@
 import React, { useState, useEffect } from 'react'
-import { X, Calendar as CalendarIcon, Repeat } from 'lucide-react'
+import { X, Calendar as CalendarIcon, Repeat, Tag, Layers, PiggyBank, Building2 } from 'lucide-react'
+import { ActionConfirmationModal } from './BillsList'
 
 export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transactions = [] }) => {
-  const today = new Date().toISOString().split('T')[0]
-  
+  const getToday = () => {
+    const now = new Date()
+    return new Array(
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0')
+    ).join('-')
+  }
+
   const [form, setForm] = useState({ 
     descricao: '', 
     valor: '', 
     tipo: 'renda',
-    data: today,
-    repetir: 'nao', // nao, semanal, mensal
-    recorrencia_limite: '' // data final ou vazio para indefinido
+    categoria: 'Renda',
+    subcategoria: '',
+    destino_reserva: '',
+    data: getToday(),
+    repetir: 'nao',
+    recorrencia_limite: ''
   })
 
+  const [confirmTarget, setConfirmTarget] = useState(null)
   const sugestoes = [...new Set(transactions.map(t => t.descricao))].sort()
+  
+  const tiposFluxo = [
+    { id: 'renda', label: 'Renda', icon: '💰' },
+    { id: 'gasto_diario', label: 'Gasto', icon: '💸' },
+    { id: 'reserva', label: 'Reserva', icon: '🏦' },
+    { id: 'fixa', label: 'Fixa', icon: '🏠' },
+    { id: 'esporadica', label: 'Extra', icon: '⚡' }
+  ]
+
+  const categorias = [
+    "Aplicativos", "Assinaturas", "Carro", "Casa", "Combustível", 
+    "Educação", "Empréstimos", "Lazer", "Mercado", "Outros", "Renda", "Saúde"
+  ]
+
+  const subcategoriasRenda = ["Salário", "Freelance", "Aplicativos", "Vendas", "Particular", "Gorjeta"]
+  const subcategoriasApp = ["Uber", "99", "iFood", "Outros"]
+  const bancosReserva = ["Nubank", "Inter", "CDB", "Poupança", "Outros"]
 
   useEffect(() => {
     if (isOpen) {
@@ -22,129 +51,260 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
           descricao: initialData.descricao || '',
           valor: initialData.valor || '',
           tipo: initialData.tipo || 'renda',
-          data: initialData.data || today,
+          categoria: initialData.categoria || (initialData.tipo === 'renda' ? 'Renda' : 'Outros'),
+          subcategoria: initialData.subcategoria || '',
+          destino_reserva: initialData.destino_reserva || '',
+          data: initialData.data || getToday(),
           repetir: initialData.repetir || 'nao',
           recorrencia_limite: initialData.recorrencia_limite || ''
         })
       } else {
-        setForm({ descricao: '', valor: '', tipo: 'renda', data: today, repetir: 'nao', recorrencia_limite: '' })
+        setForm({ 
+          descricao: '', valor: '', tipo: 'renda', 
+          categoria: 'Renda', subcategoria: '', destino_reserva: '',
+          data: getToday(),
+          repetir: 'nao', 
+          recorrencia_limite: '' 
+        })
       }
     }
-  }, [isOpen, initialData, today])
+  }, [isOpen, initialData])
 
   if (!isOpen) return null
 
-  const dateLabel = (form.tipo === 'fixa' || form.tipo === 'esporadica') 
-    ? "Data de Vencimento" 
-    : "Data do Lançamento"
+  const dateLabel = (form.tipo === 'fixa' || form.tipo === 'esporadica') ? "Vencimento" : "Data"
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSave(form)
+    if (initialData?.recorrencia_id) {
+      setConfirmTarget({ bill: initialData, type: 'edit' })
+    } else {
+      onSave(form, false)
+    }
+  }
+
+  const handleFinalConfirm = (allSeries) => {
+    onSave(form, allSeries)
+    setConfirmTarget(null)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-black text-gray-800 tracking-tight">
-            {initialData ? 'Editar Registro' : 'Novo Registro'}
-          </h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X size={20} className="text-gray-400" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Categoria */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Categoria</label>
-            <select 
-              className="w-full p-4 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 appearance-none font-bold text-gray-700"
-              value={form.tipo}
-              onChange={e => setForm({...form, tipo: e.target.value})}
-            >
-              <option value="renda">💰 Renda Diária</option>
-              <option value="gasto_diario">💸 Gasto Diário</option>
-              <option value="fixa">🏠 Conta Fixa (Mensal)</option>
-              <option value="esporadica">⚡ Conta Esporádica</option>
-            </select>
+    <>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto no-scrollbar">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black text-gray-800 tracking-tight">
+              {initialData ? 'Editar Registro' : 'Novo Registro'}
+            </h3>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <X size={20} className="text-gray-400" />
+            </button>
           </div>
 
-          {/* Descrição com Autocomplete */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Descrição</label>
-            <input 
-              type="text" list="descricoes-comuns" placeholder="Ex: Mercado, Uber, Aluguel..." required
-              className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.descricao}
-              onChange={e => setForm({...form, descricao: e.target.value})}
-            />
-            <datalist id="descricoes-comuns">
-              {sugestoes.map((s, i) => <option key={i} value={s} />)}
-            </datalist>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Valor</label>
-              <input 
-                type="number" step="0.01" placeholder="0,00" required
-                className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-bold focus:ring-2 focus:ring-indigo-500"
-                value={form.valor}
-                onChange={e => setForm({...form, valor: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">{dateLabel}</label>
-              <input 
-                type="date" required
-                className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-bold focus:ring-2 focus:ring-indigo-500"
-                value={form.data}
-                onChange={e => setForm({...form, data: e.target.value})}
-              />
-            </div>
-          </div>
-
-          {/* Seção de Recorrência */}
-          <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Repeat size={14} className="text-indigo-600" />
-              <span className="text-[10px] font-black uppercase text-indigo-600">Recorrência</span>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
             
-            <div className="grid grid-cols-2 gap-4">
-              <select 
-                className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
-                value={form.repetir}
-                onChange={e => setForm({...form, repetir: e.target.value})}
-              >
-                <option value="nao">Não repetir</option>
-                <option value="semanal">Semanalmente</option>
-                <option value="mensal">Mensalmente</option>
-              </select>
-
-              {form.repetir !== 'nao' && (
-                <div className="animate-in fade-in zoom-in duration-200">
-                  <input 
-                    type="date"
-                    className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
-                    value={form.recorrencia_limite}
-                    title="Repetir até qual data?"
-                    onChange={e => setForm({...form, recorrencia_limite: e.target.value})}
-                  />
-                  <p className="text-[8px] text-indigo-400 mt-1 ml-1 font-bold italic">* Deixe vazio para repetir para sempre</p>
-                </div>
-              )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Tipo de Fluxo</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {tiposFluxo.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setForm({
+                      ...form, 
+                      tipo: t.id, 
+                      categoria: t.id === 'renda' ? 'Renda' : t.id === 'reserva' ? 'Reserva' : 'Outros',
+                      subcategoria: '',
+                      destino_reserva: ''
+                    })}
+                    className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all border ${
+                      form.tipo === t.id 
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' 
+                      : 'bg-gray-50 border-transparent text-gray-400'
+                    }`}
+                  >
+                    <span className="text-sm">{t.icon}</span>
+                    <span className="text-[8px] font-black uppercase">{t.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <button className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all mt-4">
-            {initialData ? 'Salvar Alterações' : 'Confirmar Lançamento'}
-          </button>
-        </form>
+            {form.tipo === 'renda' && (
+              <div className="space-y-2 animate-in fade-in duration-300">
+                <label className="text-[10px] font-black uppercase text-emerald-600 ml-1 flex items-center gap-1">
+                  <Layers size={10} /> Origem da Renda
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {subcategoriasRenda.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setForm({...form, subcategoria: sub})}
+                      className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
+                        form.subcategoria === sub 
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm ring-1 ring-emerald-500' 
+                        : 'bg-gray-50 border-transparent text-gray-500'
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.tipo !== 'renda' && form.tipo !== 'reserva' && (
+              <div className="space-y-2 animate-in fade-in duration-300">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Categoria</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {categorias.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setForm({...form, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : ''})}
+                      className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
+                        form.categoria === cat 
+                        ? 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-1 ring-indigo-500' 
+                        : 'bg-gray-50 border-transparent text-gray-500'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.categoria === 'Aplicativos' && form.tipo !== 'reserva' && (
+              <div className="space-y-2 animate-in zoom-in-95 duration-200">
+                <label className="text-[10px] font-black uppercase text-indigo-500 ml-1 flex items-center gap-1">
+                  <Layers size={10} /> Qual aplicativo?
+                </label>
+                <div className="flex gap-2">
+                  {subcategoriasApp.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setForm({...form, subcategoria: sub})}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                        form.subcategoria === sub 
+                        ? 'bg-indigo-100 border-indigo-300 text-indigo-700' 
+                        : 'bg-white border-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.tipo === 'reserva' && (
+              <div className="space-y-2 animate-in zoom-in-95 duration-200">
+                <label className="text-[10px] font-black uppercase text-purple-600 ml-1 flex items-center gap-1">
+                  <PiggyBank size={12} /> Onde está guardado? (Destino)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {bancosReserva.map(banco => (
+                    <button
+                      key={banco}
+                      type="button"
+                      onClick={() => setForm({...form, destino_reserva: banco})}
+                      className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                        form.destino_reserva === banco 
+                        ? 'bg-purple-600 border-purple-600 text-white shadow-md' 
+                        : 'bg-purple-50 border-transparent text-purple-400'
+                      }`}
+                    >
+                      {banco}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">
+                {form.tipo === 'reserva' ? 'Nome da Caixinha (Objetivo)' : 'Descrição'}
+              </label>
+              <input 
+                type="text" list="descricoes-comuns" 
+                placeholder={form.tipo === 'reserva' ? "Ex: Viagem, Emergência..." : "Ex: Mercado mensal..."} 
+                required
+                className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                value={form.descricao}
+                onChange={e => setForm({...form, descricao: e.target.value})}
+              />
+              <datalist id="descricoes-comuns">
+                {sugestoes.map((s, i) => <option key={i} value={s} />)}
+              </datalist>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Valor</label>
+                <input 
+                  type="number" step="0.01" inputMode="decimal" placeholder="0,00" required
+                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-indigo-500"
+                  value={form.valor}
+                  onChange={e => setForm({...form, valor: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">{dateLabel}</label>
+                <input 
+                  type="date" required
+                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-bold focus:ring-2 focus:ring-indigo-500"
+                  value={form.data}
+                  onChange={e => setForm({...form, data: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Repeat size={14} className="text-gray-400" />
+                <span className="text-[10px] font-black uppercase text-gray-400">Recorrência</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <select 
+                  className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
+                  value={form.repetir}
+                  onChange={e => setForm({...form, repetir: e.target.value})}
+                >
+                  <option value="nao">Não repetir</option>
+                  <option value="semanal">Semanalmente</option>
+                  <option value="mensal">Mensalmente</option>
+                </select>
+                {form.repetir !== 'nao' && (
+                  <div className="animate-in fade-in zoom-in duration-200">
+                    <input 
+                      type="date"
+                      className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
+                      value={form.recorrencia_limite}
+                      onChange={e => setForm({...form, recorrencia_limite: e.target.value})}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button type="submit" className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-lg shadow-lg active:scale-[0.98] transition-all mt-4">
+              {initialData ? 'Salvar Alterações' : 'Confirmar Lançamento'}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+
+      {confirmTarget && (
+        <ActionConfirmationModal 
+          target={confirmTarget}
+          onClose={() => setConfirmTarget(null)}
+          onConfirm={handleFinalConfirm}
+        />
+      )}
+    </>
   )
 }

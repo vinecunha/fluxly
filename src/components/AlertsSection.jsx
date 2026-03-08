@@ -1,116 +1,168 @@
 import React, { useState } from 'react'
-import { AlertCircle, Clock, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react'
+import { AlertCircle, Clock, CheckCircle2, ChevronRight, ChevronLeft, X } from 'lucide-react'
 
-export const AlertsSection = ({ transactions, onQuickPay }) => {
+const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const [isPayPromptOpen, setIsPayPromptOpen] = useState(false)
+  const [paidValue, setPaidValue] = useState('')
 
-  const allPending = (transactions || []).filter(t => {
-    if (t.tipo === 'renda' || t.tipo === 'gasto_diario' || t.pago) return false
-    if (t.tipo !== 'fixa' && t.tipo !== 'esporadica') return false
+  if (list.length === 0) return null
 
-    const dueDate = new Date(t.data + 'T12:00:00')
-    dueDate.setHours(0, 0, 0, 0)
-    
-    const diffTime = dueDate - today
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    return dueDate < today || (diffDays <= 3 && diffDays >= 0)
-  }).sort((a, b) => new Date(a.data) - new Date(b.data))
+  const currentBill = list[currentIndex]
 
-  // Separação por categorias com limite de 3 cada
-  const expiredBills = allPending.filter(t => new Date(t.data + 'T12:00:00') < today).slice(0, 3)
-  const upcomingBills = allPending.filter(t => new Date(t.data + 'T12:00:00') >= today).slice(0, 3)
-  
-  // Lista final consolidada para a paginação
-  const displayList = [...expiredBills, ...upcomingBills]
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % list.length)
+    setIsPayPromptOpen(false)
+  }
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + list.length) % list.length)
+    setIsPayPromptOpen(false)
+  }
 
-  if (displayList.length === 0) return null
+  const handleInitialPayClick = () => {
+    if (isExpired) {
+      setPaidValue(currentBill.valor.toString())
+      setIsPayPromptOpen(true)
+    } else {
+      onQuickPay(currentBill.id)
+    }
+  }
 
-  const currentBill = displayList[currentIndex]
-  const isExpired = new Date(currentBill.data + 'T12:00:00') < today
-
-  const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % displayList.length)
-  const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + displayList.length) % displayList.length)
+  const confirmPayment = () => {
+    onQuickPay(currentBill.id, false, null, Number(paidValue))
+    setIsPayPromptOpen(false)
+    setPaidValue('')
+    if (list.length > 1) nextSlide()
+  }
 
   return (
-    <div className="mb-8 space-y-3 animate-in fade-in zoom-in-95 duration-500">
+    <div className="space-y-3 animate-in fade-in zoom-in-95 duration-500">
       <div className="flex justify-between items-center px-2">
-        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-          Atenção Necessária ({currentIndex + 1}/{displayList.length})
+        <p className={`text-[9px] font-black uppercase tracking-widest ${isExpired ? 'text-rose-500' : 'text-gray-400'}`}>
+          {title} ({currentIndex + 1}/{list.length})
         </p>
-        {displayList.length > 1 && (
+        {list.length > 1 && (
           <div className="flex gap-1">
-            <button onClick={prevSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors">
-              <ChevronLeft size={14} strokeWidth={3} />
+            <button onClick={prevSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 active:scale-90 transition-all">
+              <ChevronLeft size={12} strokeWidth={3} />
             </button>
-            <button onClick={nextSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors">
-              <ChevronRight size={14} strokeWidth={3} />
+            <button onClick={nextSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 active:scale-90 transition-all">
+              <ChevronRight size={12} strokeWidth={3} />
             </button>
           </div>
         )}
       </div>
 
-      <div className={`rounded-[2.5rem] p-4 flex items-center justify-between shadow-sm border transition-all duration-500 ${
+      <div className={`relative overflow-hidden rounded-[2.5rem] p-4 shadow-sm border transition-all duration-500 ${
         isExpired ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'
       }`}>
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-2xl text-white shadow-lg ${
-            isExpired ? 'bg-rose-500 shadow-rose-200' : 'bg-amber-500 shadow-amber-200'
-          }`}>
-            {isExpired ? <AlertCircle size={20} /> : <Clock size={20} />}
-          </div>
-          
-          <div>
-            <div className="flex items-center gap-2">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${
-                isExpired ? 'text-rose-400' : 'text-amber-500'
-              }`}>
-                {isExpired ? 'Urgente: Atrasada' : 'Vence em breve'}
-              </p>
-              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/50 text-gray-500 font-black uppercase border border-black/5">
-                {currentBill.tipo}
-              </span>
+        <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${isPayPromptOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className={`p-2.5 rounded-2xl text-white shadow-lg flex-shrink-0 ${
+              isExpired ? 'bg-rose-500 shadow-rose-200' : 'bg-amber-500 shadow-amber-200'
+            }`}>
+              {isExpired ? <AlertCircle size={18} /> : <Clock size={18} />}
             </div>
-            <h3 className="text-sm font-bold text-gray-800 leading-none mt-1">
-              {currentBill.descricao}
-            </h3>
-            <p className="text-[10px] font-bold text-gray-500 mt-1">
-              R$ {Number(currentBill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • {new Date(currentBill.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-            </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className={`text-[8px] font-black uppercase tracking-wider ${isExpired ? 'text-rose-400' : 'text-amber-500'}`}>
+                  {isExpired ? 'Atrasada' : 'Vence em breve'}
+                </p>
+                <span className="text-[7px] px-1 py-0.5 rounded-full bg-white/50 text-gray-500 font-black uppercase border border-black/5">
+                  {currentBill.tipo}
+                </span>
+              </div>
+              <h3 className="text-[13px] font-bold text-gray-800 leading-tight mt-0.5 truncate">{currentBill.descricao}</h3>
+              <p className="text-[9px] font-bold text-gray-500 mt-0.5">
+                R$ {Number(currentBill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • {new Date(currentBill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </p>
+            </div>
           </div>
+          <button 
+            onClick={handleInitialPayClick}
+            className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl font-black text-[9px] uppercase transition-all active:scale-95 shadow-md flex-shrink-0 ${
+              isExpired ? 'bg-rose-500 text-white shadow-rose-200' : 'bg-amber-500 text-white shadow-amber-200'
+            }`}
+          >
+            <CheckCircle2 size={14} strokeWidth={3} /> Paguei
+          </button>
         </div>
 
-        <button 
-          onClick={() => onQuickPay(currentBill.id)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-black text-[10px] uppercase transition-all active:scale-90 shadow-md ${
-            isExpired 
-            ? 'bg-rose-500 text-white shadow-rose-200' 
-            : 'bg-amber-500 text-white shadow-amber-200'
-          }`}
-        >
-          <CheckCircle2 size={16} strokeWidth={3} />
-          Paguei
-        </button>
+        {isPayPromptOpen && (
+          <div className="absolute inset-0 flex items-center p-4 bg-rose-50/95 backdrop-blur-sm animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex-1 space-y-2">
+              <p className="text-[9px] font-black text-rose-500 uppercase">Valor final pago (com juros?)</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-rose-400">R$</span>
+                  <input 
+                    type="number" 
+                    value={paidValue}
+                    onChange={(e) => setPaidValue(e.target.value)}
+                    autoFocus
+                    className="w-full bg-white border border-rose-200 rounded-xl py-2 pl-8 pr-3 text-[13px] font-bold text-rose-600 outline-none focus:ring-2 ring-rose-300"
+                  />
+                </div>
+                <button onClick={confirmPayment} className="bg-rose-500 text-white px-4 rounded-xl font-black text-[9px] uppercase shadow-lg active:scale-95">
+                  Confirmar
+                </button>
+                <button onClick={() => setIsPayPromptOpen(false)} className="p-2 text-rose-400"><X size={18} /></button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Indicadores Visuais de Paginação */}
-      {displayList.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-2">
-          {displayList.map((_, idx) => (
-            <div 
-              key={idx}
-              className={`h-1 rounded-full transition-all duration-300 ${
-                idx === currentIndex 
-                ? (isExpired ? 'w-4 bg-rose-400' : 'w-4 bg-amber-400') 
-                : 'w-1 bg-gray-200'
-              }`}
-            />
+      {list.length > 1 && (
+        <div className="flex justify-center gap-1 mt-1">
+          {list.map((_, idx) => (
+            <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${
+              idx === currentIndex ? `w-4 ${isExpired ? 'bg-rose-400' : 'bg-amber-400'}` : 'w-1 bg-gray-200'
+            }`} />
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+export const AlertsSection = ({ transactions, onQuickPay }) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const allPending = (transactions || []).filter(t => {
+    if (t.tipo === 'renda' || t.tipo === 'reserva' || t.tipo === 'gasto_diario' || t.pago) return false
+    const dueDate = new Date(t.data + 'T12:00:00')
+    dueDate.setHours(0, 0, 0, 0)
+    const diffTime = dueDate - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return dueDate < today || (diffDays <= 3 && diffDays >= 0)
+  })
+
+  const expiredBills = allPending
+    .filter(t => new Date(t.data + 'T12:00:00') < today)
+    .sort((a, b) => new Date(a.data) - new Date(b.data))
+
+  const upcomingBills = allPending
+    .filter(t => new Date(t.data + 'T12:00:00') >= today)
+    .sort((a, b) => new Date(a.data) - new Date(b.data))
+
+  if (expiredBills.length === 0 && upcomingBills.length === 0) return null
+
+  return (
+    <div className="mb-8 space-y-6">
+      <AlertSlider 
+        title="🚨 Contas Vencidas" 
+        list={expiredBills} 
+        isExpired={true} 
+        onQuickPay={onQuickPay} 
+      />
+      <AlertSlider 
+        title="⏳ Próximos Vencimentos (Em até 3 dias)" 
+        list={upcomingBills} 
+        isExpired={false} 
+        onQuickPay={onQuickPay} 
+      />
     </div>
   )
 }

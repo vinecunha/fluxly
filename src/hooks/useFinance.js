@@ -6,17 +6,38 @@ export function useFinance(userId) {
   const [loading, setLoading] = useState(true)
 
   async function refresh() {
-    if (!userId) return
+    // Se não houver userId (usuário deslogado ou carregando auth), 
+    // não fazemos a requisição e limpamos os dados.
+    if (!userId) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
-    const { data: transacoes } = await supabase
-      .from('transacoes')
-      .select('*')
-      .order('data', { ascending: false })
-    setData(transacoes || [])
-    setLoading(false)
+    try {
+      const { data: transacoes, error } = await supabase
+        .from('transacoes')
+        .select('*')
+        .eq('user_id', userId) // FILTRO CRUCIAL: Garante que buscamos apenas os dados deste user
+        .order('data', { ascending: false })
+
+      if (error) throw error
+      
+      setData(transacoes || [])
+    } catch (error) {
+      console.error('Erro ao buscar finanças:', error.message)
+      setData([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { refresh() }, [userId])
+  // O useEffect observa o userId. Se o usuário deslogar ou trocar, 
+  // o hook recarrega os dados automaticamente.
+  useEffect(() => { 
+    refresh() 
+  }, [userId])
 
   return { data, loading, refresh }
 }

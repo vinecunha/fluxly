@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Eye, EyeOff } from 'lucide-react'
 
 export const AuthScreen = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -11,9 +13,7 @@ export const AuthScreen = () => {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-
     if (error) setError("Credenciais inválidas ou erro de conexão.")
     setLoading(false)
   }
@@ -32,7 +32,7 @@ export const AuthScreen = () => {
               {error}
             </div>
           )}
-          
+
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Email</label>
             <input 
@@ -46,13 +46,23 @@ export const AuthScreen = () => {
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Senha</label>
-            <input 
-              type="password" required
-              className="w-full p-4 bg-white border-2 border-gray-100 rounded-2xl outline-none focus:border-indigo-500 transition-all shadow-sm"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                required
+                className="w-full p-4 bg-white border-2 border-gray-100 rounded-2xl outline-none focus:border-indigo-500 transition-all shadow-sm pr-12"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-indigo-500 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button 

@@ -1,13 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fluxly</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <title>Fluxly</title>
+
+    <link rel="icon" type="image/png" href="/Fluxly.jpg" media="(prefers-color-scheme: light)" />
+
+    <link rel="apple-touch-icon" href="/Fluxly.png">
+    
+    <meta name="theme-color" content="#4F39F6" id="theme-color">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Fluxly">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="manifest" href="/manifest.json">
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      const metaThemeColor = document.querySelector("meta[name='theme-color']");
+      const matcher = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function updateTheme() {
+        if (matcher.matches) {
+          metaThemeColor.setAttribute("content", "#000000");
+        } else {
+          metaThemeColor.setAttribute("content", "#4F39F6");
+        }
+      }
+
+      if (metaThemeColor) {
+        matcher.addListener(updateTheme);
+        updateTheme();
+      }
+    </script>
   </body>
 </html>
