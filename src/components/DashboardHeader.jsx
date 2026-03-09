@@ -1,5 +1,9 @@
 import React from 'react'
-import { ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target, CalendarDays, AlertCircle, TrendingUp, TrendingDown, PiggyBank, ArrowUpRight } from 'lucide-react'
+import { 
+  ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target, 
+  CalendarDays, AlertCircle, TrendingUp, TrendingDown, 
+  PiggyBank, ArrowUpRight, Zap 
+} from 'lucide-react'
 
 export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTotal, currentDate, onMonthChange, onLogout, isLoading, userEmail }) => {
   const progresso = totalDespesas > 0 ? Math.min((renda / totalDespesas) * 100, 100) : 0
@@ -18,9 +22,9 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
   const estaNoRitmo = renda >= valorIdealAteHoje
 
   const getBarColor = () => {
-    if (isCoberto) return 'bg-emerald-500'
-    if (estaNoRitmo) return 'bg-indigo-500'
-    return 'bg-rose-500'
+    if (isCoberto) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+    if (estaNoRitmo) return 'bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.4)]'
+    return 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
   }
 
   const formatMonth = () => {
@@ -30,231 +34,158 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
   const getDailyTarget = () => {
     const faltaGanhar = totalDespesas - renda
     if (faltaGanhar <= 0) return 0
-    const isPastMonth = currentDate < new Date(now.getFullYear(), now.getMonth(), 1)
-    if (isPastMonth) return 0
-    const ultimoDiaMes = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
     const diaReferencia = isToday ? now.getDate() : 1
-    const diasRestantes = (ultimoDiaMes - diaReferencia) + 1
+    const diasRestantes = (daysInMonth - diaReferencia) + 1
     return faltaGanhar / diasRestantes
   }
 
   const rendaDiariaNecessaria = getDailyTarget()
 
-  const getResponsiveFontSize = (value) => {
-    const str = value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }).length
-    if (str > 12) return 'text-[11px]'
-    return 'text-sm'
-  }
-
-  const handleDirectMonthChange = (e) => {
-    const [year, month] = e.target.value.split('-')
-    const newDate = new Date(year, parseInt(month) - 1, 1)
-    const diff = (newDate.getFullYear() - currentDate.getFullYear()) * 12 + (newDate.getMonth() - currentDate.getMonth())
-    onMonthChange(diff)
-  }
-
-  const goToToday = () => {
-    const diff = (now.getFullYear() - currentDate.getFullYear()) * 12 + (now.getMonth() - currentDate.getMonth())
-    onMonthChange(diff)
-  }
-
   if (isLoading) {
     return (
-      <header className="bg-indigo-600 p-6 rounded-b-[2.5rem] shadow-xl lg:max-w-4xl lg:mx-auto animate-pulse">
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 w-24 bg-white/20 rounded-lg" />
-          <div className="h-8 w-8 bg-white/20 rounded-full" />
-        </div>
-        <div className="h-12 w-full bg-indigo-700/50 rounded-2xl mb-6" />
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-100">
-          <div className="h-32 bg-gray-50 rounded-2xl" />
-        </div>
+      <header className="bg-indigo-600 p-5 rounded-b-[2.5rem] shadow-2xl animate-pulse lg:max-w-4xl lg:mx-auto">
+        <div className="h-36 bg-white/10 rounded-3xl" />
       </header>
     )
   }
 
   return (
-    <header className="bg-indigo-600 p-6 rounded-b-[2.5rem] shadow-xl lg:max-w-4xl lg:mx-auto">
-      <div className="flex justify-between items-start text-white mb-4">
+    <header className="bg-indigo-600 p-4 sm:p-6 pb-8 rounded-b-[2.5rem] sm:rounded-b-[3.5rem] shadow-2xl lg:max-w-4xl lg:mx-auto relative overflow-hidden">
+      <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-indigo-500 rounded-full blur-[80px] opacity-50 pointer-events-none" />
+      
+      <div className="flex justify-between items-center text-white mb-5 sm:mb-8 relative z-10">
         <div className="flex flex-col min-w-0">
-          <span className="text-[9px] font-bold tracking-wider text-indigo-100/80 ">
+          <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-indigo-200/70 uppercase">
             Simples. Inteligente.
           </span>
-          <div className="flex items-baseline gap-3">
-            <span className="font-black text-4xl tracking-tight shrink-0">Fluxly</span>
-            <span className="text-[10px] font-medium text-indigo-200 truncate lowercase opacity-80">
-              {userEmail}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <h1 className="font-black text-2xl sm:text-4xl tracking-tighter">Fluxly</h1>
+            <div className="h-3 sm:h-5 w-[1px] bg-indigo-400/40" />
+            <span className="text-[8px] sm:text-[11px] font-bold text-indigo-200 opacity-60 lowercase truncate max-w-[70px] sm:max-w-none">
+              {userEmail.split('@')[0]}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 pt-2">
+        
+        <div className="flex items-center gap-2 sm:gap-3">
           {!isToday && (
             <button 
-              onClick={goToToday}
-              className="text-[10px] font-black uppercase bg-white/20 px-3 py-1.5 rounded-full hover:bg-white/30 transition-all flex items-center gap-1.5"
+              onClick={() => onMonthChange((now.getFullYear() - currentDate.getFullYear()) * 12 + (now.getMonth() - currentDate.getMonth()))}
+              className="bg-white/15 backdrop-blur-md p-2 sm:p-2.5 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/20"
             >
-              <CalendarDays size={12} />
-              Hoje
+              <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
-          <button onClick={onLogout} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
-            <LogOut size={18} />
+          <button onClick={onLogout} className="bg-indigo-900/20 backdrop-blur-md p-2 sm:p-2.5 rounded-xl border border-indigo-500/20 text-rose-100 active:scale-90 transition-all hover:bg-indigo-500/30">
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6 bg-indigo-700/50 rounded-2xl p-2 border border-indigo-400/20">
-        <button onClick={() => onMonthChange(-1)} className="p-2 text-indigo-100 hover:text-white transition-colors">
-          <ChevronLeft size={20} />
+      <div className="flex items-center justify-between mb-5 sm:mb-8 bg-black/10 backdrop-blur-lg rounded-2xl p-1 border border-white/5 relative z-10">
+        <button onClick={() => onMonthChange(-1)} className="p-1.5 sm:p-2 text-white/60 active:text-white hover:text-white transition-colors">
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
-        <div className="relative flex items-center justify-center group cursor-pointer">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+        <div className="relative px-3 py-1">
+          <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white">
             {formatMonth()}
-          </h3>
+          </span>
           <input 
             type="month" 
-            className="absolute inset-0 opacity-0 cursor-pointer w-full"
+            className="absolute inset-0 opacity-0 cursor-pointer"
             value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
-            onChange={handleDirectMonthChange}
+            onChange={(e) => {
+              const [y, m] = e.target.value.split('-')
+              onMonthChange((parseInt(y) - currentDate.getFullYear()) * 12 + (parseInt(m) - 1 - currentDate.getMonth()))
+            }}
           />
         </div>
-        <button onClick={() => onMonthChange(1)} className="p-2 text-indigo-100 hover:text-white transition-colors">
-          <ChevronRight size={20} />
+        <button onClick={() => onMonthChange(1)} className="p-1.5 sm:p-2 text-white/60 active:text-white hover:text-white transition-colors">
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-100 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50" />
-        
-        <div className="flex justify-between items-start mb-1">
-          <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Minhas Finanças</p>
-          <div className="flex flex-col items-end gap-1">
-            {isCoberto ? (
-              <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Mês Garantido</span>
-            ) : (
-              rendaInsuficiente && (
-                <span className="bg-rose-100 text-rose-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase animate-pulse">
-                  Ajuste Necessário
-                </span>
-              )
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-between items-end mb-4">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-5 sm:p-8 relative z-10 border border-indigo-50">
+        <div className="flex justify-between items-start mb-4 sm:mb-6">
           <div className="min-w-0">
-            <h2 className="text-2xl font-black text-gray-900 leading-none truncate">
-              R$ {renda.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h2>
-            <div className="flex items-center gap-1.5 mt-1">
-               <p className="text-[10px] text-gray-400 font-bold uppercase">Renda no Mês</p>
-               {isToday && (
-                estaNoRitmo ? (
-                  <TrendingUp size={12} className="text-emerald-500" />
-                ) : (
-                  <TrendingDown size={12} className="text-amber-500 animate-bounce" />
-                )
-               )}
+            <p className="text-[9px] sm:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Minhas Finanças</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight truncate">
+                R$ {renda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </h2>
+              {isToday && (estaNoRitmo ? <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 text-emerald-500 shrink-0" /> : <TrendingDown className="w-4 h-4 sm:w-6 sm:h-6 text-amber-500 animate-bounce shrink-0" />)}
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <span className={`text-xs font-black ${rendaInsuficiente ? 'text-rose-600' : 'text-indigo-600'}`}>
-              R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Alvo Acumulado</p>
-          </div>
+          <span className={`text-[8px] sm:text-[10px] font-black px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase shrink-0 mt-1 ${isCoberto ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+            {isCoberto ? 'Finalizado' : 'Em curso'}
+          </span>
         </div>
 
-        <div className="mb-6 group cursor-default">
-          <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100/50 rounded-2xl p-3 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 transform group-hover:scale-110 transition-transform">
-                <PiggyBank size={20} />
-              </div>
-              <div>
-                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">Patrimônio / Reserva</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-sm font-black text-indigo-950">
-                    R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                  <ArrowUpRight size={10} className="text-indigo-400" />
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end">
-                <div className="h-1.5 w-16 bg-indigo-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-600 rounded-full animate-pulse" style={{ width: '65%' }} />
-                </div>
-                <span className="text-[7px] font-black text-indigo-300 uppercase mt-1">Capital Protegido</span>
-            </div>
+        <div className="relative h-5 sm:h-7 flex items-center mb-8 sm:mb-10">
+          <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor()}`}
+              style={{ width: `${progresso}%` }}
+            />
           </div>
-        </div>
-
-        <div className="h-4 w-full bg-gray-100 rounded-full relative mb-6">
-          <div 
-            className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor()}`}
-            style={{ width: `${progresso}%` }}
-          />
-          
           {isToday && (
             <div 
-              className="absolute top-[-4px] bottom-[-4px] w-1 bg-slate-900 z-20 shadow-sm"
+              className="absolute h-5 sm:h-7 w-0.5 sm:w-1 bg-gray-900 rounded-full z-20"
               style={{ left: `${progressoIdealPercent}%` }}
             >
-              <div className="absolute bottom-[-14px] left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[7px] font-black px-1.5 py-0.5 rounded-sm whitespace-nowrap">
-                DIA {currentDay}
+              <div className="absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[6px] sm:text-[8px] font-black px-1 sm:px-1.5 py-0.5 rounded-sm">
+                HOJE
               </div>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 py-4 border-t border-gray-50">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600 shrink-0">
-              <CheckCircle2 size={14} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-gray-50/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+              <CheckCircle2 className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
+              <span className="text-[7px] sm:text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pagas</span>
             </div>
-            <div className="min-w-0">
-              <p className="text-[8px] font-black text-gray-400 uppercase leading-none mb-0.5">Já Pago</p>
-              <p className={`font-black text-gray-800 tracking-tight truncate ${getResponsiveFontSize(despesasPagas)}`}>
-                R$ {despesasPagas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
+            <p className="text-xs sm:text-lg font-black text-gray-800 truncate">
+              R$ {despesasPagas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </div>
-          <div className="flex items-center gap-2 border-l border-gray-100 pl-2 min-w-0">
-            {rendaInsuficiente && !isToday && currentDate < new Date(now.getFullYear(), now.getMonth(), 1) ? (
-              <>
-                <div className="p-1.5 bg-rose-50 rounded-lg text-rose-600 animate-pulse shrink-0">
-                  <AlertCircle size={14} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black text-rose-400 uppercase leading-none mb-0.5">Atenção</p>
-                  <p className="text-[11px] font-black text-rose-600 tracking-tight leading-none uppercase truncate">Renda Baixa</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 shrink-0">
-                  <Target size={14} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black text-gray-400 uppercase leading-none mb-0.5">Meta Diária</p>
-                  <p className={`font-black text-indigo-600 tracking-tight truncate ${getResponsiveFontSize(rendaDiariaNecessaria)}`}>
-                    {rendaDiariaNecessaria > 0 
-                      ? `R$ ${rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      : 'Batida! 🎉'}
-                  </p>
-                </div>
-              </>
-            )}
+          <div className="bg-gray-50/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 text-right">
+            <div className="flex items-center gap-1.5 sm:gap-2 justify-end mb-1">
+              <span className="text-[7px] sm:text-[10px] font-black text-gray-400 uppercase tracking-tighter">Meta/Dia</span>
+              <Target className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+            </div>
+            <p className="text-xs sm:text-lg font-black text-indigo-600 truncate">
+              {rendaDiariaNecessaria > 0 ? `R$ ${rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Ok! 🎉'}
+            </p>
           </div>
         </div>
 
-        <div className="flex justify-between mt-4 pt-4 border-t border-gray-50">
-          <span className="text-[9px] font-black text-gray-400 uppercase shrink-0">{progresso.toFixed(0)}% Coberto</span>
-          <span className={`text-[9px] font-black uppercase truncate ml-2 ${rendaInsuficiente ? 'text-rose-500 animate-pulse' : 'text-emerald-500'}`}>
-            {rendaInsuficiente 
-              ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
-              : 'Objetivo Concluído'}
+        <div className="bg-indigo-600 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 flex items-center justify-between group hover:bg-indigo-700 transition-colors">
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white/20 rounded-lg sm:rounded-xl flex items-center justify-center text-white shrink-0 shadow-inner">
+              <PiggyBank className="w-4 h-4 sm:w-6 sm:h-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-0.5">Patrimônio</p>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-sm sm:text-2xl font-black text-white leading-none">
+                  R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                <Zap className="w-2 h-2 sm:w-3 sm:h-3 text-amber-300 fill-amber-300 shrink-0" />
+              </div>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 sm:w-6 sm:h-6 text-white/40 group-hover:text-white/80 transition-all ml-2 shrink-0" />
+        </div>
+
+        <div className="flex justify-between items-center mt-5 sm:mt-8 px-0.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isCoberto ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+            <span className="text-[8px] sm:text-[11px] font-black text-gray-400 uppercase">{progresso.toFixed(0)}% Coberto</span>
+          </div>
+          <span className={`text-[8px] sm:text-[11px] font-black uppercase truncate ml-2 ${rendaInsuficiente ? 'text-rose-500' : 'text-emerald-500'}`}>
+            {rendaInsuficiente ? `Falta R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Objetivo Alcançado'}
           </span>
         </div>
       </div>

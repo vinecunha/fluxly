@@ -245,10 +245,16 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Valor</label>
                 <input 
-                  type="number" step="0.01" inputMode="decimal" placeholder="0,00" required
+                  type="text" 
+                  inputMode="decimal" 
+                  placeholder="0,00" 
+                  required
                   className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-indigo-500"
                   value={form.valor}
-                  onChange={e => setForm({...form, valor: e.target.value})}
+                  onChange={e => {
+                    const val = e.target.value.replace(/[^0-9.,-]/g, "");
+                    setForm({...form, valor: val});
+                  }}
                 />
               </div>
 
