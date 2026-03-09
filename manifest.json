@@ -19,6 +19,6 @@
   "start_url": "/fluxly",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "##503BF7",
+  "theme_color": "#503BF7",
   "background_color": "#ffffff"
 }
