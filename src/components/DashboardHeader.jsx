@@ -1,8 +1,8 @@
 import React from 'react'
 import { 
   ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target, 
-  CalendarDays, AlertCircle, TrendingUp, TrendingDown, 
-  PiggyBank, ArrowUpRight, Zap 
+  CalendarDays, TrendingUp, TrendingDown, 
+  PiggyBank, Zap 
 } from 'lucide-react'
 
 export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTotal, currentDate, onMonthChange, onLogout, isLoading, userEmail }) => {
@@ -115,6 +115,9 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
               </h2>
               {isToday && (estaNoRitmo ? <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 text-emerald-500 shrink-0" /> : <TrendingDown className="w-4 h-4 sm:w-6 sm:h-6 text-amber-500 animate-bounce shrink-0" />)}
             </div>
+            <p className="text-[9px] sm:text-[12px] font-bold text-gray-400 mt-0.5">
+              de R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </div>
           <span className={`text-[8px] sm:text-[10px] font-black px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase shrink-0 mt-1 ${isCoberto ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
             {isCoberto ? 'Finalizado' : 'Em curso'}
@@ -172,20 +175,19 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
                 <span className="text-sm sm:text-2xl font-black text-white leading-none">
                   R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <Zap className="w-2 h-2 sm:w-3 sm:h-3 text-amber-300 fill-amber-300 shrink-0" />
+                <Zap size={8} className="text-amber-300 fill-amber-300 shrink-0" />
               </div>
             </div>
           </div>
-          <ArrowUpRight className="w-4 h-4 sm:w-6 sm:h-6 text-white/40 group-hover:text-white/80 transition-all ml-2 shrink-0" />
         </div>
 
-        <div className="flex justify-between items-center mt-5 sm:mt-8 px-0.5">
+        <div className="flex justify-between items-center mt-5 sm:mt-8 px-0.5 border-t border-gray-50 pt-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isCoberto ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
             <span className="text-[8px] sm:text-[11px] font-black text-gray-400 uppercase">{progresso.toFixed(0)}% Coberto</span>
           </div>
           <span className={`text-[8px] sm:text-[11px] font-black uppercase truncate ml-2 ${rendaInsuficiente ? 'text-rose-500' : 'text-emerald-500'}`}>
-            {rendaInsuficiente ? `Falta R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Objetivo Alcançado'}
+            {rendaInsuficiente ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Objetivo Alcançado'}
           </span>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { BillsList } from './components/BillsList'
 import { RecentFlow } from './components/RecentFlow'
 import { FinancialAnalytics } from './components/FinancialAnalytics'
 import { AlertsSection } from './components/AlertsSection'
-import { Plus, LayoutDashboard, ReceiptText, BarChart3, TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
+import { Plus, LayoutDashboard, ReceiptText, BarChart3, TrendingUp, TrendingDown, Loader2, AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react'
 
 const DashboardSkeleton = () => (
   <div className="space-y-8 animate-pulse">
@@ -48,6 +48,7 @@ export default function App() {
   const [editingTransaction, setEditingTransaction] = useState(null)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [direction, setDirection] = useState('')
+  const [showAlerts, setShowAlerts] = useState(false)
   const { data, loading, refresh } = useFinance(user?.id)
 
   useEffect(() => {
@@ -216,7 +217,6 @@ export default function App() {
     }
   }
 
-  // Correção do Fuso Horário para Estatísticas (Brasil UTC-3)
   const getTodayString = () => {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   }
@@ -263,6 +263,9 @@ export default function App() {
     gastosPagos: 0, reservaTotal: 0 
   })
 
+  const overdueCount = (data || []).filter(t => t.tipo !== 'renda' && !t.pago && new Date(t.data + 'T23:59:59') < new Date()).length
+  const todayCount = (data || []).filter(t => t.tipo !== 'renda' && !t.pago && t.data === todayStr).length
+
   if (!user) return <AuthScreen />
 
   return (
@@ -283,6 +286,7 @@ export default function App() {
         ${direction === 'slide-left' ? 'translate-x-full opacity-0' : 
           direction === 'slide-right' ? '-translate-x-full opacity-0' : 
           'translate-x-0 opacity-100'}`}>
+        
         <div className="flex bg-gray-200/50 p-1.5 rounded-[2rem] mb-8 relative z-10 backdrop-blur-md gap-1">
           {[
             { id: 'dashboard', label: 'Início', icon: <LayoutDashboard size={14} /> },
@@ -303,12 +307,66 @@ export default function App() {
             </button>
           ))}
         </div>
+
         {activeTab === 'dashboard' && (
           loading && data.length === 0 ? (
             <DashboardSkeleton />
           ) : (
             <div className="space-y-8">
-              <AlertsSection transactions={data || []} onQuickPay={handleQuickPay} />
+              {showAlerts ? (
+                <div className="relative pt-3">
+                  <AlertsSection transactions={data || []} onQuickPay={handleQuickPay} />
+                  Ver Menos<button 
+                    onClick={() => setShowAlerts(false)}
+                    className="absolute -top-8 -right-1 bg-indigo-500 shadow-[0_4px_12px_rgba(0,0,0,0.12)] border border-indigo-50 p-2.5 rounded-full text-white hover:bg-indigo-600 hover:text-white transition-all z-30 active:scale-90"
+                  >
+                    <ChevronDown size={14} className="rotate-180" />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setShowAlerts(true)}
+                  className="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm flex items-center justify-between cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all group animate-in fade-in zoom-in-95 duration-300"
+                >
+                  <div className="flex items-center gap-6 ml-2">
+                    {overdueCount > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="bg-rose-100 p-1.5 rounded-lg">
+                          <AlertCircle size={16} className="text-rose-600" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-rose-600 uppercase tracking-tighter leading-none">{overdueCount} Atrasadas</span>
+                          <span className="text-[8px] text-gray-400 font-bold uppercase mt-0.5 tracking-widest">Pendentes</span>
+                        </div>
+                      </div>
+                    )}
+                    {todayCount > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="bg-amber-100 p-1.5 rounded-lg">
+                          <AlertTriangle size={16} className="text-amber-600" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter leading-none">{todayCount} Vencem Hoje</span>
+                          <span className="text-[8px] text-gray-400 font-bold uppercase mt-0.5 tracking-widest">Atenção</span>
+                        </div>
+                      </div>
+                    )}
+                    {overdueCount === 0 && todayCount === 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="bg-emerald-100 p-1.5 rounded-lg">
+                          <TrendingUp size={14} className="text-emerald-600" />
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Nenhum alerta para exibir</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-indigo-500 font-black text-[9px] uppercase tracking-[0.15em] mr-1 bg-indigo-50/50 py-2.5 px-4 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                    Detalhes
+                    <ChevronDown size={12} className="group-hover:translate-y-0.5 transition-transform" />
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <StatCard 
                   title="Ganhos" 
@@ -331,6 +389,7 @@ export default function App() {
                   isLoading={loading}
                 />
               </div>
+              
               <RecentFlow 
                 transactions={filteredData} 
                 onDelete={handleDelete} 
@@ -341,7 +400,9 @@ export default function App() {
             </div>
           )
         )}
+        
         {activeTab === 'analytics' && <FinancialAnalytics transactions={filteredData} />}
+        
         {activeTab === 'bills' && (
           <BillsList 
             transactions={filteredData} 
@@ -353,6 +414,7 @@ export default function App() {
           />
         )}
       </main>
+
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 p-4 pb-6 flex justify-around items-center z-40">
         <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}>
           <LayoutDashboard size={24} />
@@ -367,6 +429,7 @@ export default function App() {
           <ReceiptText size={24} />
         </button>
       </nav>
+
       <TransactionModal 
         isOpen={isModalOpen} 
         onClose={() => { setModalOpen(false); setEditingTransaction(null); }} 

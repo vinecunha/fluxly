@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { 
   Calendar, Trash2, Edit3, ChevronLeft, ChevronRight, Fuel,
   ShoppingCart, Home, Car, Palmtree, Pill, GraduationCap, CreditCard, Banknote, Hexagon,
-  TrendingUp, List, Clock, Repeat, AlertCircle, PiggyBank, Building2, ArrowDownCircle
+  TrendingUp, List, Clock, Repeat, AlertCircle, PiggyBank, Building2, ArrowDownCircle,
+  ArrowUpCircle
 } from 'lucide-react'
 import { ActionConfirmationModal } from './BillsList'
 
@@ -21,41 +22,43 @@ const categoryIcons = {
 
 export const RecentFlow = ({ transactions, onDelete, onEdit, isLoading, currentViewDate }) => {
   const [filter, setFilter] = useState('all')
+  const [timeFilter, setTimeFilter] = useState('all') // Novo estado separado para tempo
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [actionTarget, setActionTarget] = useState(null)
 
   const filteredData = (transactions || []).filter(t => {
-    // Para comparação de filtro, usamos a data da transação ou data do pagamento sem fuso
-    const transDateStr = t.data; // YYYY-MM-DD direto do banco
+    const transDateStr = t.data;
     const pDate = t.data_pagamento ? new Date(t.data_pagamento) : null;
-    
-    // Data efetiva para o filtro de Mês (Calendário do Header)
     const effectiveDate = pDate || new Date(t.data + 'T12:00:00');
-    const viewMonth = currentViewDate.getMonth();
-    const viewYear = currentViewDate.getFullYear();
     
-    if (effectiveDate.getMonth() !== viewMonth || effectiveDate.getFullYear() !== viewYear) return false
+    if (effectiveDate.getMonth() !== currentViewDate.getMonth() || 
+        effectiveDate.getFullYear() !== currentViewDate.getFullYear()) return false
 
     const isFlowItem = t.tipo === 'renda' || t.tipo === 'gasto_diario' || t.tipo === 'reserva' || t.tipo === 'retirada' || t.pago
     if (!isFlowItem) return false
 
-    // Correção do fuso horário para o "Hoje"
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    // 1. Filtro de Tipo (Entrada/Saída)
+    const isIncome = t.tipo === 'renda' || (t.tipo === 'reserva' && Number(t.valor) > 0)
+    const isExpense = t.tipo === 'gasto_diario' || t.pago || t.tipo === 'retirada' || (t.tipo === 'reserva' && Number(t.valor) < 0)
 
-    if (filter === 'today') return transDateStr === todayStr
+    if (filter === 'incomes' && !isIncome) return false
+    if (filter === 'expenses' && !isExpense) return false
+
+    // 2. Filtro de Tempo (Hoje/7 Dias)
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    if (timeFilter === 'today' && transDateStr !== todayStr) return false
     
-    if (filter === '7days') {
+    if (timeFilter === '7days') {
       const today = new Date(todayStr + 'T12:00:00');
       const weekAgo = new Date(today);
       weekAgo.setDate(today.getDate() - 7);
       const tDate = new Date(transDateStr + 'T12:00:00');
-      return tDate >= weekAgo && tDate <= today;
+      if (!(tDate >= weekAgo && tDate <= today)) return false
     }
     
     return true
   }).sort((a, b) => {
-    // Ordenação prioriza quem foi pago por último ou data de vencimento
     const dateA = a.data_pagamento ? new Date(a.data_pagamento) : new Date(a.data + 'T12:00:00')
     const dateB = b.data_pagamento ? new Date(b.data_pagamento) : new Date(b.data + 'T12:00:00')
     return dateB - dateA
@@ -81,18 +84,18 @@ export const RecentFlow = ({ transactions, onDelete, onEdit, isLoading, currentV
     <section className="space-y-5">
       <ActionConfirmationModal target={actionTarget} onClose={() => setActionTarget(null)} onConfirm={handleConfirmAction} />
 
-      <div className="flex flex-col gap-3 px-1">
+      <div className="flex flex-col gap-4 px-1">
         <div className="flex items-center justify-between">
           <h4 className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.2em]">Fluxo de Caixa</h4>
           <div className="flex items-center gap-2">
             <select 
               value={itemsPerPage}
               onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-              className="text-[9px] font-black bg-white text-gray-400 border border-gray-100 rounded-lg px-2 py-1 outline-none shadow-sm appearance-none"
+              className="text-[9px] font-black bg-white text-gray-400 border border-gray-100 rounded-lg px-2 py-1 outline-none shadow-sm appearance-none cursor-pointer"
               disabled={isLoading}
             >
-              <option value={10}>10 L</option>
-              <option value={20}>20 L</option>
+              <option value={10}>10 LINHAS</option>
+              <option value={20}>20 LINHAS</option>
             </select>
             <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">
               {isLoading ? '...' : filteredData.length} Movimentações
@@ -100,26 +103,51 @@ export const RecentFlow = ({ transactions, onDelete, onEdit, isLoading, currentV
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {[
-            { id: 'all', label: 'Tudo', icon: <List size={10} /> },
-            { id: 'today', label: 'Hoje', icon: <Clock size={10} /> },
-            { id: '7days', label: '7 Dias', icon: <Calendar size={10} /> }
-          ].map((btn) => (
-            <button 
-              key={btn.id} 
-              onClick={() => { setFilter(btn.id); setCurrentPage(1); }} 
-              disabled={isLoading}
-              className={`flex items-center gap-1.5 text-[8px] font-black uppercase px-3 py-2 rounded-xl transition-all border whitespace-nowrap ${
-                filter === btn.id 
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
-                : 'bg-white text-gray-400 border-gray-100 shadow-sm'
-              } ${isLoading ? 'opacity-50' : ''}`}
-            >
-              {btn.icon}
-              {btn.label}
-            </button>
-          ))}
+        {/* Filtros Separados */}
+        <div className="flex flex-wrap items-center justify-between gap-y-3">
+          {/* Lado Esquerdo: Tipo de Movimentação */}
+          <div className="flex items-center gap-1 bg-gray-50/50 p-1 rounded-xl border border-gray-100">
+            {[
+              { id: 'all', label: 'Tudo', icon: <List size={10} /> },
+              { id: 'incomes', label: 'Entradas', icon: <ArrowUpCircle size={10} /> },
+              { id: 'expenses', label: 'Saídas', icon: <ArrowDownCircle size={10} /> },
+            ].map((btn) => (
+              <button 
+                key={btn.id} 
+                onClick={() => { setFilter(btn.id); setCurrentPage(1); }} 
+                className={`flex items-center gap-1.5 text-[8px] font-black uppercase px-2.5 py-1.5 rounded-lg transition-all ${
+                  filter === btn.id 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {btn.icon}
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Lado Direito: Período */}
+          <div className="flex items-center gap-1 bg-gray-50/50 p-1 rounded-xl border border-gray-100">
+            {[
+              { id: 'all', label: 'Mês', icon: <Calendar size={10} /> },
+              { id: 'today', label: 'Hoje', icon: <Clock size={10} /> },
+              { id: '7days', label: '7D', icon: <Calendar size={10} /> }
+            ].map((btn) => (
+              <button 
+                key={btn.id} 
+                onClick={() => { setTimeFilter(btn.id); setCurrentPage(1); }} 
+                className={`flex items-center gap-1.5 text-[8px] font-black uppercase px-2.5 py-1.5 rounded-lg transition-all ${
+                  timeFilter === btn.id 
+                  ? 'bg-white text-indigo-600 shadow-sm border border-indigo-100' 
+                  : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {btn.icon}
+                {btn.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -139,7 +167,7 @@ export const RecentFlow = ({ transactions, onDelete, onEdit, isLoading, currentV
           ))
         ) : paginatedData.length === 0 ? (
           <div className="text-center py-10 bg-white rounded-[2rem] border-2 border-dashed border-gray-100 text-gray-400 text-[10px] italic">
-            Nenhuma movimentação neste período.
+            Nenhuma movimentação para o filtro selecionado.
           </div>
         ) : (
           paginatedData.map(item => {
