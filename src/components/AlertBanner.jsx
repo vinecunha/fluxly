@@ -2,11 +2,11 @@ import { TrendingUp, AlertCircle, AlertTriangle, ChevronDown } from 'lucide-reac
 import { AlertsSection } from './AlertsSection'
 import { UI_ACTIONS } from '../lib/constants'
 
-export function AlertBanner({ overdueCount, todayCount, showAlerts, dispatch, onQuickPay, transactions }) {
+export function AlertBanner({ overdueCount, todayCount, showAlerts, dispatch, onQuickPay, transactions, isSaving }) {
   if (showAlerts) {
     return (
       <div className="relative pt-3">
-        <AlertsSection transactions={transactions} onQuickPay={onQuickPay} />
+        <AlertsSection transactions={transactions} onQuickPay={onQuickPay} isSaving={isSaving}/>
         <button
           onClick={() => dispatch({ type: UI_ACTIONS.TOGGLE_ALERTS })}
           className="absolute mt-5 -top-12 -right-1 bg-indigo-500 shadow-lg border border-indigo-400 p-2 rounded-full text-white transition-all z-30 active:scale-90"

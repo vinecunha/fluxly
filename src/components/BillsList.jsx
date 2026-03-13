@@ -1,40 +1,38 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Calendar, CheckCircle2, Circle, Edit3, Trash2, Repeat, ArrowUp, ArrowDown,
-  Banknote, Hexagon, Undo2, Tag, AlertTriangle
+  Calendar, CheckCircle2, Circle, Edit3, Trash2, Repeat,
+  ArrowUp, ArrowDown, Banknote, Undo2, Tag, AlertTriangle, Filter
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
+
+// ─── ActionConfirmationModal ─────────────────────────────────────────────────
 
 export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   if (!target) return null
   const { bill, type } = target
 
   const getModalConfig = () => {
-    if (type === 'delete') {
-      return {
-        title: 'Excluir Conta',
-        desc: bill.recorrencia_id ? 'Excluir toda a série ou apenas esta?' : `Excluir "${bill.descricao}"?`,
-        icon: <Trash2 size={28} />,
-        iconClass: 'bg-rose-50 text-rose-500',
-        btnClass: 'bg-rose-600 shadow-rose-100',
-        primaryLabel: 'Apenas Esta',
-        secondaryLabel: 'Toda a Série',
-        seriesWarning: true,
-      }
+    if (type === 'delete') return {
+      title: 'Excluir Conta',
+      desc: bill.recorrencia_id ? 'Excluir toda a série ou apenas esta?' : `Excluir "${bill.descricao}"?`,
+      icon: <Trash2 size={28} />,
+      iconClass: 'bg-rose-50 text-rose-500',
+      btnClass: 'bg-rose-600 shadow-rose-100',
+      primaryLabel: 'Apenas Esta',
+      secondaryLabel: 'Toda a Série',
+      seriesWarning: true,
     }
     if (type === 'status') {
-      if (bill.pago) {
-        return {
-          title: 'Reabrir Conta',
-          desc: bill.recorrencia_id ? 'Reabrir toda a série ou apenas esta?' : `Reabrir "${bill.descricao}"?`,
-          icon: <Undo2 size={28} />,
-          iconClass: 'bg-amber-50 text-amber-500',
-          btnClass: 'bg-amber-600 shadow-amber-100',
-          primaryLabel: 'Apenas Esta',
-          secondaryLabel: 'Toda a Série',
-          seriesWarning: false,
-        }
+      if (bill.pago) return {
+        title: 'Reabrir Conta',
+        desc: bill.recorrencia_id ? 'Reabrir toda a série ou apenas esta?' : `Reabrir "${bill.descricao}"?`,
+        icon: <Undo2 size={28} />,
+        iconClass: 'bg-amber-50 text-amber-500',
+        btnClass: 'bg-amber-600 shadow-amber-100',
+        primaryLabel: 'Apenas Esta',
+        secondaryLabel: 'Toda a Série',
+        seriesWarning: false,
       }
       return {
         title: 'Concluir Conta',
@@ -98,7 +96,9 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
                 </button>
               </>
             )}
-            <button onClick={onClose} className="w-full py-2 text-gray-400 font-bold text-[9px] uppercase tracking-widest pt-1">Cancelar</button>
+            <button onClick={onClose} className="w-full py-2 text-gray-400 font-bold text-[9px] uppercase tracking-widest pt-1">
+              Cancelar
+            </button>
           </div>
         </div>
       </div>
@@ -107,43 +107,40 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   )
 }
 
-const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, onDelete, setActionTarget }) => {
+// ─── SwipeableBillItem ───────────────────────────────────────────────────────
+
+const FALLBACK_CATEGORY = { icon: <Tag size={14} />, color: 'bg-gray-100 text-gray-500' }
+
+const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, setActionTarget }) => {
   const startXRef = useRef(null)
   const [swipeX, setSwipeX] = useState(0)
   const [swiping, setSwiping] = useState(false)
-
   const THRESHOLD = 72
 
-  const onTouchStart = (e) => {
-    startXRef.current = e.touches[0].clientX
-    setSwiping(true)
-  }
-
+  const onTouchStart = (e) => { startXRef.current = e.touches[0].clientX; setSwiping(true) }
   const onTouchMove = (e) => {
     if (startXRef.current === null) return
-    const delta = e.touches[0].clientX - startXRef.current
-    setSwipeX(Math.max(-THRESHOLD * 1.2, Math.min(THRESHOLD * 1.2, delta)))
+    setSwipeX(Math.max(-THRESHOLD * 1.2, Math.min(THRESHOLD * 1.2, e.touches[0].clientX - startXRef.current)))
   }
-
   const onTouchEnd = () => {
     if (swipeX < -THRESHOLD) {
       setActionTarget({ bill, type: 'delete' })
     } else if (swipeX > THRESHOLD) {
-      bill.recorrencia_id
-        ? setActionTarget({ bill, type: 'status' })
-        : onTogglePaid(bill.id, false, null)
+      // Sempre abre modal — evita pagar/reabrir acidentalmente
+      setActionTarget({ bill, type: bill.recorrencia_id ? 'status' : 'status' })
     }
-    setSwipeX(0)
-    setSwiping(false)
-    startXRef.current = null
+    setSwipeX(0); setSwiping(false); startXRef.current = null
   }
+
+  const catInfo = categoryInfo || FALLBACK_CATEGORY
 
   return (
     <div className="relative overflow-hidden rounded-[2rem]">
+      {/* Hints de fundo */}
       <div className="absolute inset-0 flex items-center justify-between px-5 pointer-events-none">
         <div className={`flex items-center gap-1.5 transition-opacity ${swipeX > 20 ? 'opacity-100' : 'opacity-0'}`}>
           <CheckCircle2 size={18} className="text-emerald-500" />
-          <span className="text-[9px] font-black text-emerald-600 uppercase">Pagar</span>
+          <span className="text-[9px] font-black text-emerald-600 uppercase">{bill.pago ? 'Reabrir' : 'Pagar'}</span>
         </div>
         <div className={`flex items-center gap-1.5 transition-opacity ${swipeX < -20 ? 'opacity-100' : 'opacity-0'}`}>
           <span className="text-[9px] font-black text-rose-600 uppercase">Excluir</span>
@@ -160,28 +157,41 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, on
       >
         <div className="flex justify-between items-center gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
+            {/* Ícone + botão de status */}
             <div className="relative flex-shrink-0">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${bill.pago ? 'bg-gray-50 text-gray-300 opacity-50' : categoryInfo.color}`}>
-                {categoryInfo.icon}
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${bill.pago ? 'bg-gray-50 text-gray-300 opacity-50' : catInfo.color}`}>
+                {catInfo.icon}
               </div>
               <button
-                onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'status' }) : onTogglePaid(bill.id, false, null)}
-                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center transition-colors shadow-sm ${bill.pago ? 'bg-emerald-500 text-white' : 'bg-white text-gray-200'}`}
+                onClick={() => setActionTarget({ bill, type: 'status' })}
+                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center transition-colors shadow-sm ${
+                  bill.pago ? 'bg-emerald-500 text-white' : 'bg-white text-gray-200'
+                }`}
               >
-                {bill.pago ? <CheckCircle2 size={10} strokeWidth={4} /> : <Circle size={10} strokeWidth={4} />}
+                {bill.pago
+                  ? <CheckCircle2 size={10} strokeWidth={4} />
+                  : <Circle size={10} strokeWidth={4} />
+                }
               </button>
             </div>
+
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className={`font-bold text-[13px] leading-tight truncate ${bill.pago ? 'text-gray-300 line-through font-medium' : 'text-gray-800'}`}>
                   {bill.descricao}
                 </p>
-                {bill.recorrencia_id && <Repeat size={10} className={`${bill.pago ? 'text-gray-200' : 'text-orange-400'} flex-shrink-0`} />}
+                {bill.recorrencia_id && (
+                  <Repeat size={10} className={`${bill.pago ? 'text-gray-200' : 'text-orange-400'} flex-shrink-0`} />
+                )}
               </div>
               <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400 uppercase mt-1">
-                <span className="whitespace-nowrap">{new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                <span className="whitespace-nowrap">
+                  {new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                </span>
                 <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
-                <span className={`truncate ${bill.pago ? 'text-gray-300' : 'text-indigo-400'}`}>{bill.categoria || 'Geral'}</span>
+                <span className={`truncate ${bill.pago ? 'text-gray-300' : 'text-indigo-400'}`}>
+                  {bill.categoria || 'Geral'}
+                </span>
               </div>
             </div>
           </div>
@@ -207,10 +217,11 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, on
           </div>
         </div>
 
-        {stats && !bill.pago && (
+        {/* Barra de progresso — só quando série com mais de 1 parcela e pendente */}
+        {stats && stats.total > 1 && !bill.pago && (
           <div className="space-y-1.5 mt-0.5">
             <div className="flex justify-between items-end px-1">
-              <span className="text-[7px] text-gray-400 font-black uppercase tracking-widest">Progresso do pagamento</span>
+              <span className="text-[7px] text-gray-400 font-black uppercase tracking-widest">Progresso</span>
               <span className="text-[8px] text-indigo-500 font-black tracking-tighter">{stats.paid}/{stats.total} parcelas</span>
             </div>
             <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden border border-black/5">
@@ -219,9 +230,11 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, on
                 style={{ width: `${stats.percent}%` }}
               />
             </div>
-            <div className="bg-gray-50/50 rounded-xl py-1 px-3 text-[7px] text-gray-400 font-bold uppercase tracking-[0.15em] text-center border border-gray-100/50">
-              Dívida termina em: {stats.lastDate}
-            </div>
+            {stats.lastDate && (
+              <div className="bg-gray-50/50 rounded-xl py-1 px-3 text-[7px] text-gray-400 font-bold uppercase tracking-[0.15em] text-center border border-gray-100/50">
+                Termina em: {stats.lastDate}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -229,9 +242,12 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onTogglePaid, onEdit, on
   )
 }
 
+// ─── BillsList ───────────────────────────────────────────────────────────────
+
 export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit, onDelete, isLoading }) => {
   const [sortBy, setSortBy] = useState('vencimento')
   const [isReversed, setIsReversed] = useState(false)
+  const [showPaid, setShowPaid] = useState(false)
   const [actionTarget, setActionTarget] = useState(null)
 
   const rawBills = useMemo(() =>
@@ -254,19 +270,22 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   }, [allTransactions])
 
   const handleSort = (type) => {
-    if (sortBy === type) setIsReversed(!isReversed)
+    if (sortBy === type) setIsReversed(r => !r)
     else { setSortBy(type); setIsReversed(false) }
   }
 
-  const sortedBills = useMemo(() => {
+  const sorted = useMemo(() => {
     return [...rawBills].sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'vencimento') comparison = new Date(a.data + 'T12:00:00') - new Date(b.data + 'T12:00:00')
-      else if (sortBy === 'valor') comparison = Number(a.valor) - Number(b.valor)
-      else if (sortBy === 'az') comparison = a.descricao.localeCompare(b.descricao)
-      return isReversed ? comparison * -1 : comparison
+      let cmp = 0
+      if (sortBy === 'vencimento') cmp = new Date(a.data + 'T12:00:00') - new Date(b.data + 'T12:00:00')
+      else if (sortBy === 'valor') cmp = Number(a.valor) - Number(b.valor)
+      else if (sortBy === 'az') cmp = a.descricao.localeCompare(b.descricao)
+      return isReversed ? -cmp : cmp
     })
   }, [rawBills, sortBy, isReversed])
+
+  const pending = useMemo(() => sorted.filter(b => !b.pago), [sorted])
+  const paid    = useMemo(() => sorted.filter(b => b.pago),  [sorted])
 
   const handleConfirmAction = (allSeries) => {
     if (!actionTarget) return
@@ -277,24 +296,65 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
     setActionTarget(null)
   }
 
+  const renderBill = (bill) => {
+    const rawStats = bill.recorrencia_id ? recurrenceStatsMap[bill.recorrencia_id] : null
+    const stats = rawStats ? {
+      total: rawStats.total,
+      paid: rawStats.paid,
+      percent: Math.round((rawStats.paid / rawStats.total) * 100),
+      lastDate: rawStats.lastTs
+        ? new Date(rawStats.lastTs).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+        : null,
+    } : null
+    const categoryInfo = categoryIcons[bill.categoria] || FALLBACK_CATEGORY
+
+    return (
+      <SwipeableBillItem
+        key={bill.id}
+        bill={bill}
+        stats={stats}
+        categoryInfo={categoryInfo}
+        onTogglePaid={onTogglePaid}
+        onEdit={onEdit}
+        setActionTarget={setActionTarget}
+      />
+    )
+  }
+
   return (
     <div className="space-y-5">
       <ActionConfirmationModal target={actionTarget} onClose={() => setActionTarget(null)} onConfirm={handleConfirmAction} />
 
+      {/* Header */}
       <div className="flex flex-col gap-3 px-1">
         <div className="flex items-center justify-between">
           <h4 className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.2em]">Agenda</h4>
-          <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">
-            {isLoading ? '...' : rawBills.filter(b => !b.pago).length} Pendentes
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Toggle pagas */}
+            <button
+              onClick={() => setShowPaid(p => !p)}
+              className={`flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1.5 rounded-xl transition-all border ${
+                showPaid
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                  : 'bg-white text-gray-400 border-gray-100 shadow-sm'
+              }`}
+            >
+              <Filter size={10} />
+              {showPaid ? 'Todas' : 'Pendentes'}
+            </button>
+            <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">
+              {isLoading ? '...' : `${pending.length} pendentes`}
+            </span>
+          </div>
         </div>
 
+        {/* Ordenação */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {[
             { id: 'vencimento', label: 'Vencimento', icon: <Calendar size={10} /> },
-            { id: 'valor', label: 'Valor', icon: <Banknote size={10} /> },
-            { id: 'az', label: 'Término', icon: <Tag size={10} /> }
-          ].map((btn) => (
+            { id: 'valor',      label: 'Valor',      icon: <Banknote size={10} /> },
+            { id: 'az',         label: 'A–Z',        icon: <Tag size={10} /> },
+          ].map(btn => (
             <button
               key={btn.id}
               onClick={() => handleSort(btn.id)}
@@ -308,9 +368,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
               <span className={sortBy === btn.id ? 'text-white' : 'text-gray-300'}>{btn.icon}</span>
               {btn.label}
               {sortBy === btn.id && (
-                <span className="ml-0.5">
-                  {isReversed ? <ArrowUp size={8} strokeWidth={4} /> : <ArrowDown size={8} strokeWidth={4} />}
-                </span>
+                isReversed ? <ArrowUp size={8} strokeWidth={4} /> : <ArrowDown size={8} strokeWidth={4} />
               )}
             </button>
           ))}
@@ -319,48 +377,49 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
         <p className="text-[8px] text-gray-300 font-bold px-1">← Deslize para pagar ou excluir →</p>
       </div>
 
-      <div className="space-y-2.5">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white p-3.5 rounded-[2rem] border border-gray-50 shadow-sm animate-pulse flex justify-between items-center">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex-shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-3 bg-gray-100 rounded-full w-2/3" />
-                  <div className="h-2 bg-gray-50 rounded-full w-1/3" />
-                </div>
-              </div>
-              <div className="h-4 w-16 bg-gray-50 rounded-full" />
+      {/* Lista */}
+      {isLoading ? (
+        <div className="space-y-2.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white p-3.5 rounded-[2rem] border border-gray-50 shadow-sm animate-pulse h-[72px]" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Pendentes */}
+          {pending.length === 0 ? (
+            <div className="text-center py-10 bg-white rounded-[2rem] border-2 border-dashed border-gray-100 italic text-gray-400 text-[10px]">
+              Nenhuma conta pendente 🎉
             </div>
-          ))
-        ) : sortedBills.length === 0 ? (
-          <div className="text-center py-10 bg-white rounded-[2rem] border-2 border-dashed border-gray-100 italic text-gray-400 text-[10px]">Vazio.</div>
-        ) : (
-          sortedBills.map(bill => {
-            const rawStats = bill.recorrencia_id ? recurrenceStatsMap[bill.recorrencia_id] : null
-            const stats = rawStats ? {
-              total: rawStats.total,
-              paid: rawStats.paid,
-              percent: Math.round((rawStats.paid / rawStats.total) * 100),
-              lastDate: rawStats.lastTs ? new Date(rawStats.lastTs).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : null
-            } : null
-            const categoryInfo = categoryIcons[bill.categoria] || categoryIcons['Outros']
+          ) : (
+            <div className="space-y-2.5">{pending.map(renderBill)}</div>
+          )}
 
-            return (
-              <SwipeableBillItem
-                key={bill.id}
-                bill={bill}
-                stats={stats}
-                categoryInfo={categoryInfo}
-                onTogglePaid={onTogglePaid}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                setActionTarget={setActionTarget}
-              />
-            )
-          })
-        )}
-      </div>
+          {/* Pagas — expansível */}
+          {paid.length > 0 && (
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowPaid(p => !p)}
+                className="flex items-center justify-between w-full px-2"
+              >
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                  Pagas ({paid.length})
+                </span>
+                {showPaid
+                  ? <ArrowUp size={12} className="text-gray-400" />
+                  : <ArrowDown size={12} className="text-gray-400" />
+                }
+              </button>
+
+              {showPaid && (
+                <div className="space-y-2.5 animate-in slide-in-from-top-2 duration-200">
+                  {paid.map(renderBill)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

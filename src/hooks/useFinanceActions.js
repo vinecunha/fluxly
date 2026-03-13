@@ -3,15 +3,11 @@ import { supabase } from '../lib/supabase'
 import { AUTO_PAID_TYPES, UI_ACTIONS } from '../lib/constants'
 import { getTodayString } from '../lib/dateHelpers'
 
-export function useFinanceActions({ user, data, refresh, dispatch, editingTransaction, onSessionExpired }) {
-  const handleAuthError = useCallback((error) => {
-    if (error?.message?.includes('JWT') || error?.status === 401 || error?.status === 403) {
-      onSessionExpired?.()
-      return true
-    }
-    return false
-  }, [onSessionExpired])
+const UNDO_TIMEOUT = 5000 // ms antes de deletar de verdade
 
+export function useFinanceActions({ user, data, refresh, dispatch, editingTransaction, onSessionExpired }) {
+
+  // ─── Quick Pay ──────────────────────────────────────────────────────────────
   const handleQuickPay = useCallback(async (id, alterarTodaSerie = false, recorrencia_id = null, valorFinal = null) => {
     const transaction = data.find(t => t.id === id)
     if (!transaction) return
@@ -47,41 +43,81 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
         }])
       }
 
-      await refresh()
-      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: novoStatus ? 'Pagamento registrado!' : 'Conta reaberta.', type: 'success' } })
-    } catch (error) {
-      if (!handleAuthError(error)) {
-        dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao atualizar pagamento.', type: 'error' } })
+      // Notificação push ao marcar como pago
+      if (novoStatus) {
+        sendLocalNotification(
+          '✅ Pagamento confirmado',
+          `${transaction.descricao} — R$ ${valorEfetivo.toFixed(2)}`
+        )
       }
+
+      dispatch({
+        type: UI_ACTIONS.SHOW_TOAST,
+        payload: {
+          message: novoStatus ? `${transaction.descricao} marcado como pago` : 'Pagamento desmarcado',
+          type: 'success',
+        },
+      })
+
+      await refresh()
+    } catch (error) {
+      if (_isSessionError(error)) { onSessionExpired?.(); return }
+      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao atualizar pagamento.', type: 'error' } })
       refresh()
     } finally {
       dispatch({ type: UI_ACTIONS.STOP_SAVING })
     }
-  }, [data, user, refresh, dispatch, handleAuthError])
+  }, [data, user, refresh, dispatch, onSessionExpired])
 
+  // ─── Delete (com Desfazer) ───────────────────────────────────────────────────
   const handleDelete = useCallback(async (id, deleteSeries = false, recorrencia_id = null) => {
-    dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Removendo...' })
+    // Guarda snapshot para desfazer
+    const snapshot = deleteSeries && recorrencia_id
+      ? data.filter(t => t.recorrencia_id === recorrencia_id)
+      : data.filter(t => t.id === id)
 
-    try {
-      let query = supabase.from('transacoes').delete()
-      query = deleteSeries && recorrencia_id
-        ? query.eq('recorrencia_id', recorrencia_id)
-        : query.eq('id', id)
+    if (snapshot.length === 0) return
 
-      const { error } = await query
-      if (error) throw error
-
-      await refresh()
-      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Transação removida.', type: 'success' } })
-    } catch (error) {
-      if (!handleAuthError(error)) {
+    // Remove otimisticamente do estado (não do banco ainda)
+    // O timeout vai deletar de verdade. Cancelar = restaurar.
+    const timerId = setTimeout(async () => {
+      dispatch({ type: UI_ACTIONS.CLEAR_UNDO })
+      dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Removendo...' })
+      try {
+        let query = supabase.from('transacoes').delete()
+        query = deleteSeries && recorrencia_id
+          ? query.eq('recorrencia_id', recorrencia_id)
+          : query.eq('id', id)
+        const { error } = await query
+        if (error) throw error
+        await refresh()
+      } catch (error) {
+        if (_isSessionError(error)) { onSessionExpired?.(); return }
         dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao remover transação.', type: 'error' } })
+        refresh()
+      } finally {
+        dispatch({ type: UI_ACTIONS.STOP_SAVING })
       }
-    } finally {
-      dispatch({ type: UI_ACTIONS.STOP_SAVING })
-    }
-  }, [refresh, dispatch, handleAuthError])
+    }, UNDO_TIMEOUT)
 
+    dispatch({
+      type: UI_ACTIONS.SET_UNDO,
+      payload: {
+        label: snapshot.length > 1
+          ? `${snapshot.length} registros removidos`
+          : `"${snapshot[0].descricao}" removido`,
+        timerId,
+        restore: () => {
+          clearTimeout(timerId)
+          dispatch({ type: UI_ACTIONS.CLEAR_UNDO })
+          // Não precisamos reinserir — refresh() já vai buscar do banco (não deletamos ainda)
+          refresh()
+        },
+      },
+    })
+  }, [data, refresh, dispatch, onSessionExpired])
+
+  // ─── Save ────────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async (formData, alterarTodaSerie = false) => {
     const valorNumerico = parseFloat(String(formData.valor).replace(',', '.'))
     if (isNaN(valorNumerico)) return
@@ -92,6 +128,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     })
 
     const isAutoPaid = AUTO_PAID_TYPES.includes(formData.tipo)
+    const todayStr = getTodayString()
 
     const transactionPayload = {
       user_id: user.id,
@@ -115,22 +152,39 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       if (editingTransaction) {
         await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie)
       } else {
-        await _insertTransaction(transactionPayload, formData, isAutoPaid)
+        await _insertTransaction(transactionPayload, formData, isAutoPaid, user.id)
       }
 
+      dispatch({
+        type: UI_ACTIONS.SHOW_TOAST,
+        payload: {
+          message: editingTransaction ? 'Registro atualizado!' : 'Lançamento confirmado!',
+          type: 'success',
+        },
+      })
       await refresh()
       dispatch({ type: UI_ACTIONS.CLOSE_MODAL })
-      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: editingTransaction ? 'Alterações salvas!' : 'Lançamento confirmado!', type: 'success' } })
     } catch (error) {
-      if (!handleAuthError(error)) {
-        dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao salvar transação.', type: 'error' } })
-      }
+      if (_isSessionError(error)) { onSessionExpired?.(); return }
+      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao salvar transação.', type: 'error' } })
     } finally {
       dispatch({ type: UI_ACTIONS.STOP_SAVING })
     }
-  }, [editingTransaction, user, refresh, dispatch, handleAuthError])
+  }, [editingTransaction, user, refresh, dispatch, onSessionExpired])
 
   return { handleQuickPay, handleDelete, handleSave }
+}
+
+// ─── Helpers privados ────────────────────────────────────────────────────────
+
+function _isSessionError(error) {
+  return error?.message?.includes('JWT') || error?.status === 401
+}
+
+function sendLocalNotification(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/icon-192.png' })
+  }
 }
 
 async function _updateTransaction(payload, editingTransaction, alterarTodaSerie) {
@@ -166,8 +220,12 @@ async function _insertTransaction(payload, formData, isAutoPaid) {
         pago: isAutoPaid,
         data_pagamento: isAutoPaid ? dataAtual.toISOString() : null,
       })
-      if (formData.repetir === 'mensal') dataAtual.setMonth(dataAtual.getMonth() + 1)
-      else if (formData.repetir === 'semanal') dataAtual.setDate(dataAtual.getDate() + 7)
+
+      if (formData.repetir === 'mensal') {
+        dataAtual.setMonth(dataAtual.getMonth() + 1)
+      } else if (formData.repetir === 'semanal') {
+        dataAtual.setDate(dataAtual.getDate() + 7)
+      }
     }
 
     const { error } = await supabase.from('transacoes').insert(transactions)

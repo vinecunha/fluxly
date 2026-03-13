@@ -1,10 +1,11 @@
-export const AUTO_PAID_TYPES = ['gasto_diario', 'renda', 'reserva', 'retirada']
+export const AUTO_PAID_TYPES = ['renda', 'gasto_diario', 'reserva']
 
-export const TABS = [
-  { id: 'dashboard', label: 'Início' },
-  { id: 'analytics', label: 'Análise' },
-  { id: 'bills', label: 'Contas' },
-]
+export const TABS = {
+  DASHBOARD: 'dashboard',
+  BILLS: 'bills',
+  FLOW: 'flow',
+  ANALYTICS: 'analytics',
+}
 
 export const UI_ACTIONS = {
   OPEN_MODAL: 'OPEN_MODAL',
@@ -14,4 +15,7 @@ export const UI_ACTIONS = {
   SHOW_TOAST: 'SHOW_TOAST',
   CLEAR_TOAST: 'CLEAR_TOAST',
   TOGGLE_ALERTS: 'TOGGLE_ALERTS',
+  // Desfazer exclusão
+  SET_UNDO: 'SET_UNDO',
+  CLEAR_UNDO: 'CLEAR_UNDO',
 }

@@ -44,7 +44,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
   }
 
   return (
-    <header className="bg-indigo-600 p-4 sm:p-6 pb-8 rounded-b-[2.5rem] sm:rounded-b-[3.5rem] shadow-2xl lg:max-w-4xl lg:mx-auto relative overflow-hidden">
+    <header className="bg-indigo-600 p-4 sm:p-6 pb-8 rounded-b-[2.5rem] sm:rounded-b-[3.5rem] shadow-2xl relative overflow-hidden">
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-indigo-500 rounded-full blur-[80px] opacity-50 pointer-events-none" />
 
       <div className="flex justify-between items-center text-white mb-5 sm:mb-8 relative z-10">
@@ -56,7 +56,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
             <h1 className="font-black text-2xl sm:text-4xl tracking-tighter">Fluxly</h1>
             <div className="h-3 sm:h-5 w-[1px] bg-indigo-400/40" />
             <span className="text-[8px] sm:text-[11px] font-bold text-indigo-200 opacity-60 lowercase truncate max-w-[70px] sm:max-w-none">
-              {userEmail.split('@')[0]}
+              {userEmail?.split('@')[0]}
             </span>
           </div>
         </div>

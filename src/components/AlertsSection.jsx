@@ -1,10 +1,18 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { AlertCircle, Clock, CheckCircle2, ChevronRight, ChevronLeft, X } from 'lucide-react'
 
-const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
+const AlertSlider = ({ title, list, isExpired, onQuickPay, isSaving }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPayPromptOpen, setIsPayPromptOpen] = useState(false)
   const [paidValue, setPaidValue] = useState('')
+  const [justPaid, setJustPaid] = useState(false)
+
+  // Corrige índice quando a lista encolhe (ex: após pagar)
+  useEffect(() => {
+    if (currentIndex >= list.length && list.length > 0) {
+      setCurrentIndex(list.length - 1)
+    }
+  }, [list.length, currentIndex])
 
   if (list.length === 0) return null
 
@@ -20,19 +28,31 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
   }
 
   const handleInitialPayClick = () => {
-    if (isExpired) {
+    // Oferece campo de valor para atrasadas E para as que vencem hoje
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const due = new Date(currentBill.data + 'T12:00:00')
+    due.setHours(0, 0, 0, 0)
+    const isOverdueOrToday = due <= today
+
+    if (isOverdueOrToday) {
       setPaidValue(currentBill.valor.toString())
       setIsPayPromptOpen(true)
     } else {
-      onQuickPay(currentBill.id)
+      triggerPay(currentBill.id, null)
     }
   }
 
   const confirmPayment = () => {
-    onQuickPay(currentBill.id, false, null, Number(paidValue))
+    triggerPay(currentBill.id, Number(paidValue))
     setIsPayPromptOpen(false)
     setPaidValue('')
-    if (list.length > 1) nextSlide()
+  }
+
+  const triggerPay = (id, valorFinal) => {
+    setJustPaid(true)
+    setTimeout(() => setJustPaid(false), 1500)
+    onQuickPay(id, false, null, valorFinal)
   }
 
   return (
@@ -56,7 +76,21 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
       <div className={`relative overflow-hidden rounded-[2.5rem] p-4 shadow-sm border transition-all duration-500 ${
         isExpired ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'
       }`}>
-        <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${isPayPromptOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}>
+
+        {/* Feedback de pago */}
+        {justPaid && (
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-50/95 backdrop-blur-sm rounded-[2.5rem] animate-in fade-in duration-200 z-10">
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle2 size={32} className="text-emerald-500" />
+              <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Pagamento registrado!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo principal */}
+        <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${
+          isPayPromptOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
+        }`}>
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className={`p-2.5 rounded-2xl text-white shadow-lg flex-shrink-0 ${
               isExpired ? 'bg-rose-500 shadow-rose-200' : 'bg-amber-500 shadow-amber-200'
@@ -78,16 +112,20 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
               </p>
             </div>
           </div>
+
           <button
             onClick={handleInitialPayClick}
-            className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl font-black text-[9px] uppercase transition-all active:scale-95 shadow-md flex-shrink-0 ${
+            disabled={isSaving || justPaid}
+            className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl font-black text-[9px] uppercase transition-all active:scale-95 shadow-md flex-shrink-0 disabled:opacity-50 disabled:pointer-events-none ${
               isExpired ? 'bg-rose-500 text-white shadow-rose-200' : 'bg-amber-500 text-white shadow-amber-200'
             }`}
           >
-            <CheckCircle2 size={14} strokeWidth={3} /> Paguei
+            <CheckCircle2 size={14} strokeWidth={3} />
+            {isSaving ? '...' : 'Paguei'}
           </button>
         </div>
 
+        {/* Prompt de valor */}
         {isPayPromptOpen && (
           <div className="absolute inset-0 flex items-center p-4 bg-rose-50/95 backdrop-blur-sm animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex-1 space-y-2">
@@ -103,21 +141,30 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
                     className="w-full bg-white border border-rose-200 rounded-xl py-2 pl-8 pr-3 text-[13px] font-bold text-rose-600 outline-none focus:ring-2 ring-rose-300"
                   />
                 </div>
-                <button onClick={confirmPayment} className="bg-rose-500 text-white px-4 rounded-xl font-black text-[9px] uppercase shadow-lg active:scale-95">
-                  Confirmar
+                <button
+                  onClick={confirmPayment}
+                  disabled={isSaving}
+                  className="bg-rose-500 text-white px-4 rounded-xl font-black text-[9px] uppercase shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? '...' : 'Confirmar'}
                 </button>
-                <button onClick={() => setIsPayPromptOpen(false)} className="p-2 text-rose-400"><X size={18} /></button>
+                <button onClick={() => setIsPayPromptOpen(false)} className="p-2 text-rose-400">
+                  <X size={18} />
+                </button>
               </div>
             </div>
           </div>
         )}
       </div>
 
+      {/* Dots de paginação */}
       {list.length > 1 && (
         <div className="flex justify-center gap-1 mt-1">
           {list.map((_, idx) => (
             <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${
-              idx === currentIndex ? `w-4 ${isExpired ? 'bg-rose-400' : 'bg-amber-400'}` : 'w-1 bg-gray-200'
+              idx === currentIndex
+                ? `w-4 ${isExpired ? 'bg-rose-400' : 'bg-amber-400'}`
+                : 'w-1 bg-gray-200'
             }`} />
           ))}
         </div>
@@ -126,7 +173,7 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
   )
 }
 
-export const AlertsSection = ({ transactions, onQuickPay }) => {
+export function AlertsSection({ transactions, onQuickPay, isSaving }) {
   const { expiredBills, upcomingBills } = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -152,8 +199,20 @@ export const AlertsSection = ({ transactions, onQuickPay }) => {
 
   return (
     <div className="mb-8 space-y-6">
-      <AlertSlider title="🚨 Contas Vencidas" list={expiredBills} isExpired={true} onQuickPay={onQuickPay} />
-      <AlertSlider title="⏳ Próximos Vencimentos (Em até 3 dias)" list={upcomingBills} isExpired={false} onQuickPay={onQuickPay} />
+      <AlertSlider
+        title="🚨 Contas Vencidas"
+        list={expiredBills}
+        isExpired={true}
+        onQuickPay={onQuickPay}
+        isSaving={isSaving}
+      />
+      <AlertSlider
+        title="⏳ Próximos Vencimentos (Em até 3 dias)"
+        list={upcomingBills}
+        isExpired={false}
+        onQuickPay={onQuickPay}
+        isSaving={isSaving}
+      />
     </div>
   )
 }
