@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { 
-  TrendingDown, TrendingUp, Tag, ArrowLeft, 
-  ShoppingCart, Home, Car, Palmtree, Pill, 
+import {
+  TrendingDown, TrendingUp, Tag, ArrowLeft,
+  ShoppingCart, Home, Car, Palmtree, Pill,
   Hexagon, DollarSign, PiggyBank, Building2, Wallet, ChevronRight,
-  ArrowDownRight, ArrowUpRight
+  ArrowDownRight
 } from 'lucide-react'
+import { MonthlyChart } from './MonthlyChart'
 
 const categoryIcons = {
   "Mercado": { icon: <ShoppingCart size={16} />, color: "bg-amber-100 text-amber-600" },
@@ -17,7 +18,7 @@ const categoryIcons = {
   "Outros": { icon: <Hexagon size={16} />, color: "bg-gray-100 text-gray-600" }
 }
 
-export const FinancialAnalytics = ({ transactions }) => {
+export const FinancialAnalytics = ({ transactions, allTransactions }) => {
   const [transactionType, setTransactionType] = useState('gasto')
   const [expandedDestino, setExpandedDestino] = useState(null)
   const [expandedSubcat, setExpandedSubcat] = useState(null)
@@ -30,24 +31,20 @@ export const FinancialAnalytics = ({ transactions }) => {
 
   const groupedData = filteredTransactions.reduce((acc, t) => {
     const valor = parseFloat(t.valor) || 0
-    
     if (transactionType === 'investimento') {
       const dest = (t.destino_reserva || 'Outros Destinos').trim()
       const sub = (t.subcategoria || t.descricao || 'Sem Nome').trim()
       if (!acc[dest]) acc[dest] = { total: 0, subcategorias: {} }
       if (!acc[dest].subcategorias[sub]) acc[dest].subcategorias[sub] = { total: 0, items: [] }
-      
       acc[dest].total += valor
       acc[dest].subcategorias[sub].total += valor
       acc[dest].subcategorias[sub].items.push(t)
-    } 
-    else if (transactionType === 'renda') {
+    } else if (transactionType === 'renda') {
       const desc = (t.descricao || 'Outros').trim()
       if (!acc[desc]) acc[desc] = { total: 0, items: [] }
       acc[desc].total += valor
       acc[desc].items.push(t)
-    }
-    else {
+    } else {
       const cat = (t.categoria || 'Outros').trim()
       if (!acc[cat]) acc[cat] = { total: 0, items: [] }
       acc[cat].total += valor
@@ -59,7 +56,7 @@ export const FinancialAnalytics = ({ transactions }) => {
   const currentViewTotal = Object.values(groupedData).reduce((sum, d) => sum + (d.total || 0), 0)
 
   if (expandedSubcat) {
-    const items = transactionType === 'investimento' 
+    const items = transactionType === 'investimento'
       ? groupedData[expandedDestino].subcategorias[expandedSubcat].items
       : groupedData[expandedSubcat].items
 
@@ -74,11 +71,11 @@ export const FinancialAnalytics = ({ transactions }) => {
             <p className="text-2xl font-black text-gray-900">{expandedSubcat}</p>
           </div>
           <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-sm ${transactionType === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600'}`}>
-             {transactionType === 'renda' ? <DollarSign size={24} /> : <Wallet size={24} />}
+            {transactionType === 'renda' ? <DollarSign size={24} /> : <Wallet size={24} />}
           </div>
         </div>
         <div className="space-y-3">
-          {items.sort((a,b) => new Date(b.data) - new Date(a.data)).map((t, i) => {
+          {items.sort((a, b) => new Date(b.data) - new Date(a.data)).map((t, i) => {
             const isNegative = parseFloat(t.valor) < 0
             return (
               <div key={i} className="bg-white p-4 rounded-[2rem] border border-gray-100 flex justify-between items-center shadow-sm">
@@ -141,7 +138,7 @@ export const FinancialAnalytics = ({ transactions }) => {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setTransactionType(tab.id); setExpandedDestino(null); setExpandedSubcat(null); }}
+            onClick={() => { setTransactionType(tab.id); setExpandedDestino(null); setExpandedSubcat(null) }}
             className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 ${
               transactionType === tab.id ? 'bg-white shadow-sm ' + tab.color : 'text-gray-500'
             }`}
@@ -150,6 +147,8 @@ export const FinancialAnalytics = ({ transactions }) => {
           </button>
         ))}
       </div>
+
+      <MonthlyChart allTransactions={allTransactions} />
 
       <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
         <h4 className="text-gray-400 font-black text-[10px] uppercase tracking-[0.2em] mb-1">
@@ -161,40 +160,40 @@ export const FinancialAnalytics = ({ transactions }) => {
       </div>
 
       <div className="grid gap-3">
-        {Object.entries(groupedData).sort((a,b) => b[1].total - a[1].total).map(([name, info]) => {
+        {Object.entries(groupedData).sort((a, b) => b[1].total - a[1].total).map(([name, info]) => {
           const percentage = currentViewTotal > 0 ? ((info.total / currentViewTotal) * 100).toFixed(1) : 0
           return (
-            <div 
-              key={name} 
+            <div
+              key={name}
               onClick={() => {
                 if (transactionType === 'investimento') setExpandedDestino(name)
                 else setExpandedSubcat(name)
-              }} 
+              }}
               className="bg-white p-5 rounded-[2.5rem] border border-gray-100 shadow-sm cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                    transactionType === 'investimento' ? 'bg-purple-100 text-purple-600' : 
+                    transactionType === 'investimento' ? 'bg-purple-100 text-purple-600' :
                     transactionType === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'
                   }`}>
-                    {transactionType === 'investimento' ? <Building2 size={14} /> : 
+                    {transactionType === 'investimento' ? <Building2 size={14} /> :
                      transactionType === 'renda' ? <DollarSign size={14} /> : <Tag size={14} />}
                   </div>
                   <span className="text-sm font-bold text-gray-700 capitalize">{name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-right">
-                   <p className="text-sm font-black text-gray-900">R$ {info.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                   <ChevronRight size={14} className="text-gray-300" />
+                  <p className="text-sm font-black text-gray-900">R$ {info.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  <ChevronRight size={14} className="text-gray-300" />
                 </div>
               </div>
               <div className="relative h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ${
-                    transactionType === 'investimento' ? 'bg-purple-500' : 
+                    transactionType === 'investimento' ? 'bg-purple-500' :
                     transactionType === 'renda' ? 'bg-emerald-500' : 'bg-indigo-500'
-                  }`} 
-                  style={{ width: `${Math.max(0, percentage)}%` }} 
+                  }`}
+                  style={{ width: `${Math.max(0, percentage)}%` }}
                 />
               </div>
             </div>

@@ -1,25 +1,31 @@
-import React from 'react'
-import { 
-  ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target, 
-  CalendarDays, TrendingUp, TrendingDown, 
-  PiggyBank, Zap 
+import React, { useMemo } from 'react'
+import {
+  ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target,
+  CalendarDays, TrendingUp, TrendingDown,
+  PiggyBank, Zap
 } from 'lucide-react'
 
 export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTotal, currentDate, onMonthChange, onLogout, isLoading, userEmail }) => {
-  const progresso = totalDespesas > 0 ? Math.min((renda / totalDespesas) * 100, 100) : 0
+  const now = new Date()
+  const isToday = now.getMonth() === currentDate.getMonth() &&
+    now.getFullYear() === currentDate.getFullYear()
+
+  const metrics = useMemo(() => {
+    const progresso = totalDespesas > 0 ? Math.min((renda / totalDespesas) * 100, 100) : 0
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+    const currentDay = now.getDate()
+    const progressoIdealPercent = (currentDay / daysInMonth) * 100
+    const valorIdealAteHoje = (totalDespesas / daysInMonth) * currentDay
+    const faltaGanhar = totalDespesas - renda
+    const diasRestantes = (daysInMonth - currentDay) + 1
+    const rendaDiariaNecessaria = faltaGanhar > 0 ? faltaGanhar / diasRestantes : 0
+    return { progresso, daysInMonth, currentDay, progressoIdealPercent, valorIdealAteHoje, rendaDiariaNecessaria }
+  }, [renda, totalDespesas, currentDate])
+
   const isCoberto = renda >= totalDespesas && totalDespesas > 0
   const rendaInsuficiente = renda < totalDespesas
   const faltaRenda = totalDespesas - renda
-  
-  const now = new Date()
-  const isToday = now.getMonth() === currentDate.getMonth() && 
-                  now.getFullYear() === currentDate.getFullYear()
-
-  const currentDay = now.getDate()
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
-  const progressoIdealPercent = (currentDay / daysInMonth) * 100
-  const valorIdealAteHoje = (totalDespesas / daysInMonth) * currentDay
-  const estaNoRitmo = renda >= valorIdealAteHoje
+  const estaNoRitmo = renda >= metrics.valorIdealAteHoje
 
   const getBarColor = () => {
     if (isCoberto) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
@@ -27,19 +33,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
     return 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
   }
 
-  const formatMonth = () => {
-    return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  }
-
-  const getDailyTarget = () => {
-    const faltaGanhar = totalDespesas - renda
-    if (faltaGanhar <= 0) return 0
-    const diaReferencia = isToday ? now.getDate() : 1
-    const diasRestantes = (daysInMonth - diaReferencia) + 1
-    return faltaGanhar / diasRestantes
-  }
-
-  const rendaDiariaNecessaria = getDailyTarget()
+  const formatMonth = () => currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   if (isLoading) {
     return (
@@ -52,7 +46,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
   return (
     <header className="bg-indigo-600 p-4 sm:p-6 pb-8 rounded-b-[2.5rem] sm:rounded-b-[3.5rem] shadow-2xl lg:max-w-4xl lg:mx-auto relative overflow-hidden">
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-indigo-500 rounded-full blur-[80px] opacity-50 pointer-events-none" />
-      
+
       <div className="flex justify-between items-center text-white mb-5 sm:mb-8 relative z-10">
         <div className="flex flex-col min-w-0">
           <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-indigo-200/70 uppercase">
@@ -66,10 +60,10 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 sm:gap-3">
           {!isToday && (
-            <button 
+            <button
               onClick={() => onMonthChange((now.getFullYear() - currentDate.getFullYear()) * 12 + (now.getMonth() - currentDate.getMonth()))}
               className="bg-white/15 backdrop-blur-md p-2 sm:p-2.5 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/20"
             >
@@ -90,8 +84,8 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
           <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white">
             {formatMonth()}
           </span>
-          <input 
-            type="month" 
+          <input
+            type="month"
             className="absolute inset-0 opacity-0 cursor-pointer"
             value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
             onChange={(e) => {
@@ -126,15 +120,15 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
 
         <div className="relative h-5 sm:h-7 flex items-center mb-8 sm:mb-10">
           <div className="w-full h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor()}`}
-              style={{ width: `${progresso}%` }}
+              style={{ width: `${metrics.progresso}%` }}
             />
           </div>
           {isToday && (
-            <div 
+            <div
               className="absolute h-5 sm:h-7 w-0.5 sm:w-1 bg-gray-900 rounded-full z-20"
-              style={{ left: `${progressoIdealPercent}%` }}
+              style={{ left: `${metrics.progressoIdealPercent}%` }}
             >
               <div className="absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[6px] sm:text-[8px] font-black px-1 sm:px-1.5 py-0.5 rounded-sm">
                 HOJE
@@ -159,7 +153,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
               <Target className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
             </div>
             <p className="text-xs sm:text-lg font-black text-indigo-600 truncate">
-              {rendaDiariaNecessaria > 0 ? `R$ ${rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Ok! 🎉'}
+              {metrics.rendaDiariaNecessaria > 0 ? `R$ ${metrics.rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Ok! 🎉'}
             </p>
           </div>
         </div>
@@ -184,7 +178,7 @@ export const DashboardHeader = ({ renda, totalDespesas, despesasPagas, reservaTo
         <div className="flex justify-between items-center mt-5 sm:mt-8 px-0.5 border-t border-gray-50 pt-4">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isCoberto ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
-            <span className="text-[8px] sm:text-[11px] font-black text-gray-400 uppercase">{progresso.toFixed(0)}% Coberto</span>
+            <span className="text-[8px] sm:text-[11px] font-black text-gray-400 uppercase">{metrics.progresso.toFixed(0)}% Coberto</span>
           </div>
           <span className={`text-[8px] sm:text-[11px] font-black uppercase truncate ml-2 ${rendaInsuficiente ? 'text-rose-500' : 'text-emerald-500'}`}>
             {rendaInsuficiente ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Objetivo Alcançado'}

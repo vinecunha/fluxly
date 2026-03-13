@@ -1,78 +1,63 @@
-import React, { useState, useEffect } from 'react'
-import { X, Calendar as CalendarIcon, Repeat, Tag, Layers, PiggyBank, Building2 } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { X, Repeat, Layers, PiggyBank } from 'lucide-react'
 import { ActionConfirmationModal } from './BillsList'
 
+const getToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+
+const tiposFluxo = [
+  { id: 'renda', label: 'Renda', icon: '💰' },
+  { id: 'gasto_diario', label: 'Gasto', icon: '💸' },
+  { id: 'reserva', label: 'Reserva', icon: '🏦' },
+  { id: 'fixa', label: 'Fixa', icon: '🏠' },
+  { id: 'esporadica', label: 'Extra', icon: '⚡' }
+]
+
+const categorias = [
+  "Aplicativos", "Assinaturas", "Carro", "Casa", "Combustível",
+  "Educação", "Empréstimos", "Lazer", "Mercado", "Outros", "Renda", "Saúde"
+]
+
+const subcategoriasRenda = ["Salário", "Freelance", "Aplicativos", "Vendas", "Particular", "Gorjeta"]
+const subcategoriasApp = ["Uber", "99", "iFood", "Outros"]
+const bancosReserva = ["Nubank", "Inter", "CDB", "Poupança", "Outros"]
+
+const defaultForm = {
+  descricao: '', valor: '', tipo: 'renda',
+  categoria: 'Renda', subcategoria: '', destino_reserva: '',
+  data: getToday(), repetir: 'nao', recorrencia_limite: ''
+}
+
 export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transactions = [] }) => {
-  const getToday = () => {
-    const now = new Date()
-    return new Array(
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0')
-    ).join('-')
-  }
-
-  const [form, setForm] = useState({ 
-    descricao: '', 
-    valor: '', 
-    tipo: 'renda',
-    categoria: 'Renda',
-    subcategoria: '',
-    destino_reserva: '',
-    data: getToday(),
-    repetir: 'nao',
-    recorrencia_limite: ''
-  })
-
+  const [form, setForm] = useState(defaultForm)
   const [confirmTarget, setConfirmTarget] = useState(null)
-  const sugestoes = [...new Set(transactions.map(t => t.descricao))].sort()
-  
-  const tiposFluxo = [
-    { id: 'renda', label: 'Renda', icon: '💰' },
-    { id: 'gasto_diario', label: 'Gasto', icon: '💸' },
-    { id: 'reserva', label: 'Reserva', icon: '🏦' },
-    { id: 'fixa', label: 'Fixa', icon: '🏠' },
-    { id: 'esporadica', label: 'Extra', icon: '⚡' }
-  ]
 
-  const categorias = [
-    "Aplicativos", "Assinaturas", "Carro", "Casa", "Combustível", 
-    "Educação", "Empréstimos", "Lazer", "Mercado", "Outros", "Renda", "Saúde"
-  ]
-
-  const subcategoriasRenda = ["Salário", "Freelance", "Aplicativos", "Vendas", "Particular", "Gorjeta"]
-  const subcategoriasApp = ["Uber", "99", "iFood", "Outros"]
-  const bancosReserva = ["Nubank", "Inter", "CDB", "Poupança", "Outros"]
+  const sugestoes = useMemo(() =>
+    [...new Set(transactions.map(t => t.descricao))].sort(),
+    [transactions]
+  )
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setForm({
-          descricao: initialData.descricao || '',
-          valor: initialData.valor || '',
-          tipo: initialData.tipo || 'renda',
-          categoria: initialData.categoria || (initialData.tipo === 'renda' ? 'Renda' : 'Outros'),
-          subcategoria: initialData.subcategoria || '',
-          destino_reserva: initialData.destino_reserva || '',
-          data: initialData.data || getToday(),
-          repetir: initialData.repetir || 'nao',
-          recorrencia_limite: initialData.recorrencia_limite || ''
-        })
-      } else {
-        setForm({ 
-          descricao: '', valor: '', tipo: 'renda', 
-          categoria: 'Renda', subcategoria: '', destino_reserva: '',
-          data: getToday(),
-          repetir: 'nao', 
-          recorrencia_limite: '' 
-        })
-      }
+    if (!isOpen) return
+    if (initialData) {
+      setForm({
+        descricao: initialData.descricao || '',
+        valor: initialData.valor || '',
+        tipo: initialData.tipo || 'renda',
+        categoria: initialData.categoria || (initialData.tipo === 'renda' ? 'Renda' : 'Outros'),
+        subcategoria: initialData.subcategoria || '',
+        destino_reserva: initialData.destino_reserva || '',
+        data: initialData.data || getToday(),
+        repetir: initialData.repetir || 'nao',
+        recorrencia_limite: initialData.recorrencia_limite || ''
+      })
+    } else {
+      setForm({ ...defaultForm, data: getToday() })
     }
   }, [isOpen, initialData])
 
   if (!isOpen) return null
 
-  const dateLabel = (form.tipo === 'fixa' || form.tipo === 'esporadica') ? "Vencimento" : "Data"
+  const dateLabel = (form.tipo === 'fixa' || form.tipo === 'esporadica') ? 'Vencimento' : 'Data'
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -102,7 +87,6 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Tipo de Fluxo</label>
               <div className="grid grid-cols-5 gap-1.5">
@@ -111,16 +95,16 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     key={t.id}
                     type="button"
                     onClick={() => setForm({
-                      ...form, 
-                      tipo: t.id, 
+                      ...form,
+                      tipo: t.id,
                       categoria: t.id === 'renda' ? 'Renda' : t.id === 'reserva' ? 'Reserva' : 'Outros',
                       subcategoria: '',
                       destino_reserva: ''
                     })}
                     className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all border ${
-                      form.tipo === t.id 
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' 
-                      : 'bg-gray-50 border-transparent text-gray-400'
+                      form.tipo === t.id
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                        : 'bg-gray-50 border-transparent text-gray-400'
                     }`}
                   >
                     <span className="text-sm">{t.icon}</span>
@@ -140,11 +124,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     <button
                       key={sub}
                       type="button"
-                      onClick={() => setForm({...form, subcategoria: sub})}
+                      onClick={() => setForm({ ...form, subcategoria: sub })}
                       className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
-                        form.subcategoria === sub 
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm ring-1 ring-emerald-500' 
-                        : 'bg-gray-50 border-transparent text-gray-500'
+                        form.subcategoria === sub
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm ring-1 ring-emerald-500'
+                          : 'bg-gray-50 border-transparent text-gray-500'
                       }`}
                     >
                       {sub}
@@ -162,11 +146,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => setForm({...form, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : ''})}
+                      onClick={() => setForm({ ...form, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : '' })}
                       className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
-                        form.categoria === cat 
-                        ? 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-1 ring-indigo-500' 
-                        : 'bg-gray-50 border-transparent text-gray-500'
+                        form.categoria === cat
+                          ? 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-1 ring-indigo-500'
+                          : 'bg-gray-50 border-transparent text-gray-500'
                       }`}
                     >
                       {cat}
@@ -186,11 +170,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     <button
                       key={sub}
                       type="button"
-                      onClick={() => setForm({...form, subcategoria: sub})}
+                      onClick={() => setForm({ ...form, subcategoria: sub })}
                       className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                        form.subcategoria === sub 
-                        ? 'bg-indigo-100 border-indigo-300 text-indigo-700' 
-                        : 'bg-white border-gray-100 text-gray-400'
+                        form.subcategoria === sub
+                          ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                          : 'bg-white border-gray-100 text-gray-400'
                       }`}
                     >
                       {sub}
@@ -210,11 +194,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     <button
                       key={banco}
                       type="button"
-                      onClick={() => setForm({...form, destino_reserva: banco})}
+                      onClick={() => setForm({ ...form, destino_reserva: banco })}
                       className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                        form.destino_reserva === banco 
-                        ? 'bg-purple-600 border-purple-600 text-white shadow-md' 
-                        : 'bg-purple-50 border-transparent text-purple-400'
+                        form.destino_reserva === banco
+                          ? 'bg-purple-600 border-purple-600 text-white shadow-md'
+                          : 'bg-purple-50 border-transparent text-purple-400'
                       }`}
                     >
                       {banco}
@@ -228,13 +212,13 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">
                 {form.tipo === 'reserva' ? 'Nome da Caixinha (Objetivo)' : 'Descrição'}
               </label>
-              <input 
-                type="text" list="descricoes-comuns" 
-                placeholder={form.tipo === 'reserva' ? "Ex: Viagem, Emergência..." : "Ex: Mercado mensal..."} 
+              <input
+                type="text" list="descricoes-comuns"
+                placeholder={form.tipo === 'reserva' ? 'Ex: Viagem, Emergência...' : 'Ex: Mercado mensal...'}
                 required
                 className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 value={form.descricao}
-                onChange={e => setForm({...form, descricao: e.target.value})}
+                onChange={e => setForm({ ...form, descricao: e.target.value })}
               />
               <datalist id="descricoes-comuns">
                 {sugestoes.map((s, i) => <option key={i} value={s} />)}
@@ -244,27 +228,24 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Valor</label>
-                <input 
-                  type="text" 
-                  inputMode="decimal" 
-                  placeholder="0,00" 
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   required
                   className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-indigo-500"
                   value={form.valor}
-                  onChange={e => {
-                    const val = e.target.value.replace(/[^0-9.,-]/g, "");
-                    setForm({...form, valor: val});
-                  }}
+                  onChange={e => setForm({ ...form, valor: e.target.value.replace(/[^0-9.,-]/g, '') })}
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1">{dateLabel}</label>
-                <input 
+                <input
                   type="date" required
                   className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-bold focus:ring-2 focus:ring-indigo-500"
                   value={form.data}
-                  onChange={e => setForm({...form, data: e.target.value})}
+                  onChange={e => setForm({ ...form, data: e.target.value })}
                 />
               </div>
             </div>
@@ -275,10 +256,10 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                 <span className="text-[10px] font-black uppercase text-gray-400">Recorrência</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <select 
+                <select
                   className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
                   value={form.repetir}
-                  onChange={e => setForm({...form, repetir: e.target.value})}
+                  onChange={e => setForm({ ...form, repetir: e.target.value })}
                 >
                   <option value="nao">Não repetir</option>
                   <option value="semanal">Semanalmente</option>
@@ -286,11 +267,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                 </select>
                 {form.repetir !== 'nao' && (
                   <div className="animate-in fade-in zoom-in duration-200">
-                    <input 
+                    <input
                       type="date"
                       className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
                       value={form.recorrencia_limite}
-                      onChange={e => setForm({...form, recorrencia_limite: e.target.value})}
+                      onChange={e => setForm({ ...form, recorrencia_limite: e.target.value })}
                     />
                   </div>
                 )}
@@ -305,7 +286,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
       </div>
 
       {confirmTarget && (
-        <ActionConfirmationModal 
+        <ActionConfirmationModal
           target={confirmTarget}
           onClose={() => setConfirmTarget(null)}
           onConfirm={handleFinalConfirm}

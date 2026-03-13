@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useReducer, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import { useFinance } from './hooks/useFinance'
+import { useFinanceActions } from './hooks/useFinanceActions'
+import { useTotals } from './hooks/useTotals'
+import { useAlerts } from './hooks/useAlerts'
+import { useFilteredData } from './hooks/useFilteredData'
+import { useServiceWorker } from './hooks/useServiceWorker'
+import { useOffline } from './hooks/useOffline'
+import { uiReducer, initialUIState } from './reducers/uiReducer'
+import { UI_ACTIONS } from './lib/constants'
+
 import { DashboardHeader } from './components/DashboardHeader'
 import { TransactionModal } from './components/TransactionModal'
 import { AuthScreen } from './components/AuthScreen'
@@ -8,8 +17,12 @@ import { StatCard } from './components/StatCard'
 import { BillsList } from './components/BillsList'
 import { RecentFlow } from './components/RecentFlow'
 import { FinancialAnalytics } from './components/FinancialAnalytics'
-import { AlertsSection } from './components/AlertsSection'
-import { Plus, LayoutDashboard, ReceiptText, BarChart3, TrendingUp, TrendingDown, Loader2, AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react'
+import { AlertBanner } from './components/AlertBanner'
+import { TabBar } from './components/TabBar'
+import { Toast } from './components/Toast'
+import { OfflineBanner } from './components/OfflineBanner'
+
+import { Plus, LayoutDashboard, BarChart3, ReceiptText, TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
 
 const DashboardSkeleton = () => (
   <div className="space-y-8 animate-pulse">
@@ -41,373 +54,148 @@ const SavingSplash = ({ message }) => (
 
 export default function App() {
   const [user, setUser] = useState(null)
-  const [activeTab, setActiveTab] = useState('dashboard') 
-  const [isModalOpen, setModalOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [savingMessage, setSavingMessage] = useState('')
-  const [editingTransaction, setEditingTransaction] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [direction, setDirection] = useState('')
-  const [showAlerts, setShowAlerts] = useState(false)
+  const [ui, dispatch] = useReducer(uiReducer, initialUIState)
+
+  useServiceWorker()
+  const isOffline = useOffline()
+
   const { data, loading, refresh } = useFinance(user?.id)
+  const filteredData = useFilteredData(data, currentDate)
+  const totais = useTotals(data, currentDate)
+  const { overdueCount, todayCount } = useAlerts(data)
+
+  const handleSessionExpired = useCallback(() => {
+    supabase.auth.signOut()
+    setUser(null)
+    dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
+  }, [])
+
+  const { handleSave, handleDelete, handleQuickPay } = useFinanceActions({
+    user,
+    data,
+    refresh,
+    dispatch,
+    editingTransaction: ui.editingTransaction,
+    onSessionExpired: handleSessionExpired,
+  })
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null))
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null))
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthChecked(true)
+    })
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
     return () => authListener.subscription.unsubscribe()
   }, [])
 
-  const filteredData = (data || []).filter(t => {
-    const tDate = new Date(t.data + 'T12:00:00')
-    const pDate = t.data_pagamento ? new Date(t.data_pagamento) : null
-    const viewMonth = currentDate.getMonth()
-    const viewYear = currentDate.getFullYear()
-    const isDueThisMonth = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
-    const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
-    return isDueThisMonth || isPaidThisMonth
-  })
-
-  const changeMonth = (offset) => {
+  const changeMonth = useCallback((offset) => {
     setDirection(offset > 0 ? 'slide-left' : 'slide-right')
     setTimeout(() => {
-      const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + offset))
-      setCurrentDate(new Date(newDate))
+      setCurrentDate(prev => {
+        const d = new Date(prev)
+        d.setMonth(d.getMonth() + offset)
+        return d
+      })
       setDirection('')
     }, 10)
-  }
+  }, [])
 
-  const handleOpenModal = (transaction = null) => {
-    setEditingTransaction(transaction)
-    setModalOpen(true)
-  }
+  const handleOpenModal = useCallback((transaction = null) => {
+    dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: transaction })
+  }, [])
 
-  const handleQuickPay = async (id, alterarTodaSerie = false, recorrencia_id = null, valorFinal = null) => {
-    try {
-      setIsSaving(true)
-      setSavingMessage('Atualizando...')
-      const transaction = data.find(t => t.id === id)
-      if (!transaction) return
-      const novoStatus = !transaction.pago
-      const dataPagamento = novoStatus ? new Date().toISOString() : null
-      const valorOriginal = Number(transaction.valor)
-      const valorEfetivo = valorFinal || valorOriginal
-      const diferencaJuros = valorEfetivo - valorOriginal
-      let query = supabase.from('transacoes').update({ pago: novoStatus, data_pagamento: dataPagamento })
-      if (alterarTodaSerie && recorrencia_id) {
-        query = query.eq('recorrencia_id', recorrencia_id)
-      } else {
-        query = query.eq('id', id)
-      }
-      const { error: mainError } = await query
-      if (mainError) throw mainError
-      if (novoStatus && diferencaJuros > 0) {
-        await supabase.from('transacoes').insert([{
-          user_id: user.id,
-          descricao: `Juros/Encargos: ${transaction.descricao}`,
-          valor: diferencaJuros,
-          tipo: 'gasto_diario',
-          categoria: 'Outros',
-          pago: true,
-          data: new Date().toLocaleDateString('en-CA'),
-          data_pagamento: new Date().toISOString(),
-          recorrencia_id: null
-        }])
-      }
-      await refresh()
-    } catch (error) {
-      console.error(error.message)
-      refresh()
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleDelete = async (id, deleteSeries = false, recorrencia_id = null) => {
-    try {
-      setIsSaving(true)
-      setSavingMessage('Removendo...')
-      let query = supabase.from('transacoes').delete()
-      if (deleteSeries && recorrencia_id) {
-        query = query.eq('recorrencia_id', recorrencia_id)
-      } else {
-        query = query.eq('id', id)
-      }
-      const { error } = await query
-      if (error) throw error
-      refresh()
-    } catch (error) {
-      console.error(error.message)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleSave = async (formData, alterarTodaSerie = false) => {
-    setIsSaving(true)
-    setSavingMessage(editingTransaction ? 'Salvando Alterações...' : 'Confirmando Lançamento...')
-    
-    const isDaily = formData.tipo === 'gasto_diario'
-    const cleanPayload = {
-      user_id: user.id,
-      descricao: formData.descricao,
-      valor: Number(formData.valor),
-      tipo: formData.tipo,
-      categoria: formData.categoria,
-      subcategoria: formData.tipo === 'reserva' ? formData.descricao : (formData.subcategoria || null),
-      destino_reserva: formData.destino_reserva || null,
-      pago: isDaily ? true : (formData.pago ?? false),
-      data: formData.data,
-      repetir: formData.repetir || 'nao',
-      recorrencia_limite: formData.recorrencia_limite || null,
-      recorrencia_id: formData.recorrencia_id || null,
-      data_pagamento: isDaily ? new Date(formData.data + 'T12:00:00').toISOString() : ((formData.pago && !formData.data_pagamento) ? new Date().toISOString() : (formData.data_pagamento || null))
-    }
-
-    try {
-      if (editingTransaction) {
-        if (editingTransaction.recorrencia_id && alterarTodaSerie) {
-          const { error } = await supabase.from('transacoes').update({
-            descricao: cleanPayload.descricao,
-            valor: cleanPayload.valor,
-            categoria: cleanPayload.categoria,
-            subcategoria: cleanPayload.subcategoria,
-            destino_reserva: cleanPayload.destino_reserva,
-            tipo: cleanPayload.tipo
-          }).eq('recorrencia_id', editingTransaction.recorrencia_id)
-          if (error) throw error
-        } else {
-          const { repetir, recorrencia_limite, ...updateData } = cleanPayload
-          const { error } = await supabase.from('transacoes').update(updateData).eq('id', editingTransaction.id)
-          if (error) throw error
-        }
-      } else {
-        if (formData.repetir !== 'nao' && formData.recorrencia_limite) {
-          const transactionsToInsert = []
-          const groupID = crypto.randomUUID()
-          let dataAtual = new Date(formData.data + 'T12:00:00')
-          const dataLimite = new Date(formData.recorrencia_limite + 'T12:00:00')
-          while (dataAtual <= dataLimite) {
-            transactionsToInsert.push({
-              ...cleanPayload,
-              data: dataAtual.toISOString().split('T')[0],
-              recorrencia_id: groupID,
-              pago: isDaily ? true : false,
-              data_pagamento: isDaily ? dataAtual.toISOString() : null
-            })
-            if (formData.repetir === 'mensal') {
-              dataAtual.setMonth(dataAtual.getMonth() + 1)
-            } else if (formData.repetir === 'semanal') {
-              dataAtual.setDate(dataAtual.getDate() + 7)
-            }
-          }
-          const { error } = await supabase.from('transacoes').insert(transactionsToInsert)
-          if (error) throw error
-        } else {
-          const { error } = await supabase.from('transacoes').insert([cleanPayload])
-          if (error) throw error
-        }
-      }
-      await refresh()
-      setModalOpen(false)
-      setEditingTransaction(null)
-    } catch (error) {
-      console.error(error.message)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const getTodayString = () => {
-    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  }
-  
-  const todayStr = getTodayString()
-  const hojeRef = new Date(todayStr + 'T12:00:00')
-  const diaSemana = hojeRef.getDay()
-  const diffSegunda = hojeRef.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1)
-  const segundaFeira = new Date(hojeRef.getFullYear(), hojeRef.getMonth(), diffSegunda, 0, 0, 0)
-  const domingo = new Date(segundaFeira)
-  domingo.setDate(segundaFeira.getDate() + 6)
-  domingo.setHours(23, 59, 59, 999)
-
-  const totais = (data || []).reduce((acc, t) => {
-    const v = Number(t.valor) || 0
-    const tDate = new Date(t.data + 'T12:00:00')
-    const pDate = t.data_pagamento ? new Date(t.data_pagamento) : null
-    const viewMonth = currentDate.getMonth()
-    const viewYear = currentDate.getFullYear()
-    
-    const isDueThisMonth = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
-    const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
-    const isThisWeek = tDate >= segundaFeira && tDate <= domingo
-    const isToday = t.data === todayStr
-
-    if (t.tipo === 'reserva') acc.reservaTotal += v
-    
-    if (isDueThisMonth || isPaidThisMonth) {
-      if (t.tipo === 'renda') {
-        acc.renda += v
-        if (isToday) acc.rendaHoje += v
-        if (isThisWeek) acc.rendaSemana += v
-      } else if (t.tipo !== 'reserva') { 
-        acc.gastosTotal += v
-        if (isToday) acc.gastosHoje += v
-        if (isThisWeek) acc.gastosSemana += v
-        if (t.tipo === 'gasto_diario' || t.pago) acc.gastosPagos += v
-      }
-    }
-    return acc
-  }, { 
-    renda: 0, rendaHoje: 0, rendaSemana: 0, 
-    gastosTotal: 0, gastosHoje: 0, gastosSemana: 0, 
-    gastosPagos: 0, reservaTotal: 0 
-  })
-
-  const overdueCount = (data || []).filter(t => t.tipo !== 'renda' && !t.pago && new Date(t.data + 'T23:59:59') < new Date()).length
-  const todayCount = (data || []).filter(t => t.tipo !== 'renda' && !t.pago && t.data === todayStr).length
-
+  if (!authChecked) return null
   if (!user) return <AuthScreen />
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 overflow-x-hidden">
-      {isSaving && <SavingSplash message={savingMessage} />}
-      <DashboardHeader 
-        renda={totais.renda} 
-        totalDespesas={totais.gastosTotal} 
+    <div className="min-h-screen bg-[#F8FAFC] pb-24">
+      {isOffline && <OfflineBanner />}
+      {ui.isSaving && <SavingSplash message={ui.savingMessage} />}
+      {ui.toast && <Toast message={ui.toast.message} type={ui.toast.type} dispatch={dispatch} />}
+
+      <DashboardHeader
+        renda={totais.renda}
+        totalDespesas={totais.gastosTotal}
         despesasPagas={totais.gastosPagos}
         reservaTotal={totais.reservaTotal}
         currentDate={currentDate}
         onMonthChange={changeMonth}
-        onLogout={() => supabase.auth.signOut()} 
+        onLogout={() => supabase.auth.signOut()}
         isLoading={loading}
         userEmail={user?.email}
       />
-      <main className={`p-5 lg:max-w-4xl lg:mx-auto transition-all duration-300 transform 
-        ${direction === 'slide-left' ? 'translate-x-full opacity-0' : 
-          direction === 'slide-right' ? '-translate-x-full opacity-0' : 
-          'translate-x-0 opacity-100'}`}>
-        
-        <div className="flex bg-gray-200/50 p-1.5 rounded-[2rem] mb-8 relative z-10 backdrop-blur-md gap-1">
-          {[
-            { id: 'dashboard', label: 'Início', icon: <LayoutDashboard size={14} /> },
-            { id: 'analytics', label: 'Análise', icon: <BarChart3 size={14} /> },
-            { id: 'bills', label: 'Contas', icon: <ReceiptText size={14} /> }
-          ].map((tab) => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-[1.4rem] text-[9px] font-black uppercase transition-all whitespace-nowrap px-1 ${
-                activeTab === tab.id 
-                  ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-black/5' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="flex-shrink-0">{tab.icon}</span>
-              <span className="tracking-tight">{tab.label}</span>
-            </button>
-          ))}
-        </div>
+
+      <main className={`p-4 lg:max-w-4xl lg:mx-auto transition-all duration-300 transform 
+        ${direction === 'slide-left' ? 'translate-x-full opacity-0' :
+          direction === 'slide-right' ? '-translate-x-full opacity-0' :
+          'translate-x-0 opacity-100'} ${isOffline ? 'mt-8' : ''}`}>
+
+        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
         {activeTab === 'dashboard' && (
-          loading && data.length === 0 ? (
+          loading && (data || []).length === 0 ? (
             <DashboardSkeleton />
           ) : (
-            <div className="space-y-8">
-              {showAlerts ? (
-                <div className="relative pt-3">
-                  <AlertsSection transactions={data || []} onQuickPay={handleQuickPay} />
-                  Ver Menos<button 
-                    onClick={() => setShowAlerts(false)}
-                    className="absolute -top-8 -right-1 bg-indigo-500 shadow-[0_4px_12px_rgba(0,0,0,0.12)] border border-indigo-50 p-2.5 rounded-full text-white hover:bg-indigo-600 hover:text-white transition-all z-30 active:scale-90"
-                  >
-                    <ChevronDown size={14} className="rotate-180" />
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => setShowAlerts(true)}
-                  className="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm flex items-center justify-between cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all group animate-in fade-in zoom-in-95 duration-300"
-                >
-                  <div className="flex items-center gap-6 ml-2">
-                    {overdueCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="bg-rose-100 p-1.5 rounded-lg">
-                          <AlertCircle size={16} className="text-rose-600" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-rose-600 uppercase tracking-tighter leading-none">{overdueCount} Atrasadas</span>
-                          <span className="text-[8px] text-gray-400 font-bold uppercase mt-0.5 tracking-widest">Pendentes</span>
-                        </div>
-                      </div>
-                    )}
-                    {todayCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="bg-amber-100 p-1.5 rounded-lg">
-                          <AlertTriangle size={16} className="text-amber-600" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter leading-none">{todayCount} Vencem Hoje</span>
-                          <span className="text-[8px] text-gray-400 font-bold uppercase mt-0.5 tracking-widest">Atenção</span>
-                        </div>
-                      </div>
-                    )}
-                    {overdueCount === 0 && todayCount === 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="bg-emerald-100 p-1.5 rounded-lg">
-                          <TrendingUp size={14} className="text-emerald-600" />
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Nenhum alerta para exibir</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-indigo-500 font-black text-[9px] uppercase tracking-[0.15em] mr-1 bg-indigo-50/50 py-2.5 px-4 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                    Detalhes
-                    <ChevronDown size={12} className="group-hover:translate-y-0.5 transition-transform" />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <StatCard 
-                  title="Ganhos" 
+            <div className="space-y-6 mt-2">
+              <AlertBanner
+                overdueCount={overdueCount}
+                todayCount={todayCount}
+                showAlerts={ui.showAlerts}
+                dispatch={dispatch}
+                onQuickPay={handleQuickPay}
+                transactions={data || []}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard
+                  title="Ganhos"
                   value={totais.renda}
                   valueSemana={totais.rendaSemana}
                   valueHoje={totais.rendaHoje}
-                  color="text-emerald-600" 
+                  color="text-emerald-600"
                   bgLight="bg-emerald-50"
-                  icon={<TrendingUp />} 
+                  icon={<TrendingUp size={18} />}
                   isLoading={loading}
                 />
-                <StatCard 
-                  title="Despesas" 
+                <StatCard
+                  title="Despesas"
                   value={totais.gastosTotal}
                   valueSemana={totais.gastosSemana}
                   valueHoje={totais.gastosHoje}
-                  color="text-rose-600" 
+                  color="text-rose-600"
                   bgLight="bg-rose-50"
-                  icon={<TrendingDown />} 
+                  icon={<TrendingDown size={18} />}
                   isLoading={loading}
                 />
               </div>
-              
-              <RecentFlow 
-                transactions={filteredData} 
-                onDelete={handleDelete} 
-                onEdit={handleOpenModal} 
+              <RecentFlow
+                transactions={filteredData}
+                onDelete={handleDelete}
+                onEdit={handleOpenModal}
                 isLoading={loading}
                 currentViewDate={currentDate}
               />
             </div>
           )
         )}
-        
-        {activeTab === 'analytics' && <FinancialAnalytics transactions={filteredData} />}
-        
+
+        {activeTab === 'analytics' && (
+          <FinancialAnalytics
+            transactions={filteredData}
+            allTransactions={data}
+          />
+        )}
+
         {activeTab === 'bills' && (
-          <BillsList 
-            transactions={filteredData} 
-            allTransactions={data}      
-            onTogglePaid={handleQuickPay} 
+          <BillsList
+            transactions={filteredData}
+            allTransactions={data}
+            onTogglePaid={handleQuickPay}
             onEdit={handleOpenModal}
             onDelete={handleDelete}
             isLoading={loading}
@@ -415,27 +203,30 @@ export default function App() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 p-4 pb-6 flex justify-around items-center z-40">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 p-3 pb-6 flex justify-around items-center z-40">
         <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}>
-          <LayoutDashboard size={24} />
+          <LayoutDashboard size={22} />
         </button>
         <button onClick={() => setActiveTab('analytics')} className={activeTab === 'analytics' ? 'text-indigo-600' : 'text-gray-400'}>
-          <BarChart3 size={24} />
+          <BarChart3 size={22} />
         </button>
-        <button onClick={() => handleOpenModal()} className="bg-indigo-600 p-4 rounded-2xl text-white shadow-xl -mt-14 border-4 border-[#F8FAFC] active:scale-90 transition-transform">
-          <Plus size={30} strokeWidth={3} />
+        <button
+          onClick={() => handleOpenModal()}
+          className="bg-indigo-600 p-3.5 rounded-2xl text-white shadow-xl -mt-12 border-4 border-[#F8FAFC] active:scale-90 transition-transform"
+        >
+          <Plus size={28} strokeWidth={3} />
         </button>
         <button onClick={() => setActiveTab('bills')} className={activeTab === 'bills' ? 'text-indigo-600' : 'text-gray-400'}>
-          <ReceiptText size={24} />
+          <ReceiptText size={22} />
         </button>
       </nav>
 
-      <TransactionModal 
-        isOpen={isModalOpen} 
-        onClose={() => { setModalOpen(false); setEditingTransaction(null); }} 
-        onSave={handleSave} 
-        initialData={editingTransaction} 
-        transactions={data} 
+      <TransactionModal
+        isOpen={ui.isModalOpen}
+        onClose={() => dispatch({ type: UI_ACTIONS.CLOSE_MODAL })}
+        onSave={handleSave}
+        initialData={ui.editingTransaction}
+        transactions={data}
       />
     </div>
   )

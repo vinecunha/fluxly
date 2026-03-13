@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { AlertCircle, Clock, CheckCircle2, ChevronRight, ChevronLeft, X } from 'lucide-react'
 
 const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
@@ -78,7 +78,7 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
               </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={handleInitialPayClick}
             className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl font-black text-[9px] uppercase transition-all active:scale-95 shadow-md flex-shrink-0 ${
               isExpired ? 'bg-rose-500 text-white shadow-rose-200' : 'bg-amber-500 text-white shadow-amber-200'
@@ -95,8 +95,8 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-rose-400">R$</span>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={paidValue}
                     onChange={(e) => setPaidValue(e.target.value)}
                     autoFocus
@@ -127,42 +127,33 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay }) => {
 }
 
 export const AlertsSection = ({ transactions, onQuickPay }) => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const { expiredBills, upcomingBills } = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-  const allPending = (transactions || []).filter(t => {
-    if (t.tipo === 'renda' || t.tipo === 'reserva' || t.tipo === 'gasto_diario' || t.pago) return false
-    const dueDate = new Date(t.data + 'T12:00:00')
-    dueDate.setHours(0, 0, 0, 0)
-    const diffTime = dueDate - today
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return dueDate < today || (diffDays <= 3 && diffDays >= 0)
-  })
+    const expiredBills = []
+    const upcomingBills = []
 
-  const expiredBills = allPending
-    .filter(t => new Date(t.data + 'T12:00:00') < today)
-    .sort((a, b) => new Date(a.data) - new Date(b.data))
+    for (const t of transactions || []) {
+      if (t.tipo === 'renda' || t.tipo === 'reserva' || t.tipo === 'gasto_diario' || t.pago) continue
+      const dueDate = new Date(t.data + 'T12:00:00')
+      dueDate.setHours(0, 0, 0, 0)
+      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24))
+      if (dueDate < today) expiredBills.push(t)
+      else if (diffDays <= 3) upcomingBills.push(t)
+    }
 
-  const upcomingBills = allPending
-    .filter(t => new Date(t.data + 'T12:00:00') >= today)
-    .sort((a, b) => new Date(a.data) - new Date(b.data))
+    expiredBills.sort((a, b) => new Date(a.data) - new Date(b.data))
+    upcomingBills.sort((a, b) => new Date(a.data) - new Date(b.data))
+    return { expiredBills, upcomingBills }
+  }, [transactions])
 
   if (expiredBills.length === 0 && upcomingBills.length === 0) return null
 
   return (
     <div className="mb-8 space-y-6">
-      <AlertSlider 
-        title="🚨 Contas Vencidas" 
-        list={expiredBills} 
-        isExpired={true} 
-        onQuickPay={onQuickPay} 
-      />
-      <AlertSlider 
-        title="⏳ Próximos Vencimentos (Em até 3 dias)" 
-        list={upcomingBills} 
-        isExpired={false} 
-        onQuickPay={onQuickPay} 
-      />
+      <AlertSlider title="🚨 Contas Vencidas" list={expiredBills} isExpired={true} onQuickPay={onQuickPay} />
+      <AlertSlider title="⏳ Próximos Vencimentos (Em até 3 dias)" list={upcomingBills} isExpired={false} onQuickPay={onQuickPay} />
     </div>
   )
 }

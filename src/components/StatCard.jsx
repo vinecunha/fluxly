@@ -3,13 +3,6 @@ import React, { useState } from 'react'
 export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bgLight, isLoading }) => {
   const [filterMode, setFilterMode] = useState('hoje')
 
-  const getFontSize = (val) => {
-    const length = val.toLocaleString('pt-BR', { minimumFractionDigits: 2 }).length
-    if (length > 14) return 'text-[11px]'
-    if (length > 11) return 'text-[13px]'
-    return 'text-base'
-  }
-
   if (isLoading) {
     return (
       <div className="bg-white p-4 rounded-[2.2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 min-w-0 animate-pulse">
@@ -22,23 +15,25 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
     )
   }
 
+  const FILTERS = ['hoje', 'semana', 'geral']
+
   const handleCycleFilter = (e) => {
     e.stopPropagation()
-    if (filterMode === 'hoje') setFilterMode('semana')
-    else if (filterMode === 'semana') setFilterMode('geral')
-    else setFilterMode('hoje')
+    setFilterMode(prev => FILTERS[(FILTERS.indexOf(prev) + 1) % FILTERS.length])
   }
 
   const currentValue = filterMode === 'hoje' ? (valueHoje || 0) : 
                        filterMode === 'semana' ? (valueSemana || 0) : 
                        (value || 0)
 
-  const formattedValue = Number(currentValue).toLocaleString('pt-BR', { 
-    minimumFractionDigits: 2, 
-    maximumFractionDigits: 2 
-  })
-
+  const formattedValue = Number(currentValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const labels = { geral: 'Mês', semana: 'Semana', hoje: 'Hoje' }
+
+  const getFontSize = (formatted) => {
+    if (formatted.length > 14) return 'text-[11px]'
+    if (formatted.length > 11) return 'text-[13px]'
+    return 'text-base'
+  }
 
   return (
     <div className="bg-white p-4 rounded-[2.2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-1.5 min-w-0 overflow-hidden relative">

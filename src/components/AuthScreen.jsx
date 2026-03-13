@@ -13,9 +13,12 @@ export const AuthScreen = () => {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError("Credenciais inválidas ou erro de conexão.")
-    setLoading(false)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setError('Credenciais inválidas ou erro de conexão.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -33,7 +36,7 @@ export const AuthScreen = () => {
 
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
-            <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-xs font-bold border border-rose-100">
+            <div id="auth-error" role="alert" className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-xs font-bold border border-rose-100">
               {error}
             </div>
           )}
@@ -53,6 +56,8 @@ export const AuthScreen = () => {
             <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Senha</label>
             <div className="relative">
               <input 
+                aria-invalid={!!error}
+                aria-describedby={error ? 'auth-error' : undefined}
                 type={showPassword ? "text" : "password"} 
                 required
                 className="w-full p-4 bg-white border-2 border-gray-100 rounded-2xl outline-none focus:border-indigo-500 transition-all shadow-sm pr-12"
@@ -62,6 +67,7 @@ export const AuthScreen = () => {
               />
               <button
                 type="button"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-indigo-500 transition-colors"
               >
