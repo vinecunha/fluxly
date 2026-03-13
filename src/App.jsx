@@ -118,7 +118,7 @@ export default function App() {
         )}
 
         {/* Tabs */}
-        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} onAddClick={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}/>
 
         <Suspense fallback={TAB_FALLBACK}>
           {activeTab === TABS.DASHBOARD && (
@@ -168,7 +168,7 @@ export default function App() {
       />
 
       <UndoToast undo={undo} dispatch={dispatch} />
-      <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} />
+      <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} onAddNew={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}/>
     </div>
   )
 }
