@@ -132,10 +132,11 @@ export default function App() {
           {activeTab === TABS.BILLS && (
             <BillsList
               transactions={filteredData}
-              currentDate={currentDate}
-              onQuickPay={handleQuickPay}
+              allTransactions={data} 
+              onTogglePaid={handleQuickPay}
               onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
               onDelete={handleDelete}
+              isLoading={loading}
             />
           )}
 
