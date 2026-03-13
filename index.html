@@ -2,22 +2,23 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Fluxly</title>
+    <meta name="description" content="Controle seu fluxo financeiro de forma simples e inteligente." />
 
-    <link rel="icon" type="image/png" href="/fluxly/Fluxly.jpg" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" href="/Fluxly-light.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" href="/Fluxly-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/fluxly/Fluxly.png" />
 
-    <link rel="apple-touch-icon" href="/fluxly/Fluxly.png">
-    
-    <meta name="theme-color" content="#503BF7" id="theme-color">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Fluxly">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <link rel="manifest" href="/fluxly/manifest.json">
-    <script type="module" crossorigin src="/fluxly/assets/index-SAhjcOp5.js"></script>
+    <meta name="theme-color" content="#503BF7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Fluxly" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <link rel="manifest" href="/fluxly/manifest.json" />
+    <script type="module" crossorigin src="/fluxly/assets/index-qefc1Oen.js"></script>
     <link rel="stylesheet" crossorigin href="/fluxly/assets/index-Dwhay6d9.css">
   </head>
   <body>
@@ -28,15 +29,11 @@
       const matcher = window.matchMedia('(prefers-color-scheme: dark)');
 
       function updateTheme() {
-        if (matcher.matches) {
-          metaThemeColor.setAttribute("content", "#000000");
-        } else {
-          metaThemeColor.setAttribute("content", "##503BF7");
-        }
+        metaThemeColor.setAttribute("content", matcher.matches ? "#000000" : "#503BF7");
       }
 
       if (metaThemeColor) {
-        matcher.addListener(updateTheme);
+        matcher.addEventListener('change', updateTheme);
         updateTheme();
       }
     </script>
