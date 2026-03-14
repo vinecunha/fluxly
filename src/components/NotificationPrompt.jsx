@@ -29,8 +29,8 @@ export function NotificationPrompt() {
   }
 
   return (
-    <div className="mx-4 mb-3 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top duration-300">
-      <div className="bg-indigo-100 p-2 rounded-xl flex-shrink-0">
+    <div className="mx-4 mb-3 bg-indigo-50 border border-indigo-100 rounded-2xl-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+      <div className="bg-indigo-100 p-2 rounded-2xl-xl flex-shrink-0">
         <Bell size={16} className="text-indigo-600" />
       </div>
 
@@ -42,7 +42,7 @@ export function NotificationPrompt() {
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={handleAllow}
-          className="bg-indigo-600 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+          className="bg-indigo-600 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-2xl-xl active:scale-95 transition-all"
         >
           Ativar
         </button>

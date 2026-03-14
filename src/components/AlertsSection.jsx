@@ -63,23 +63,23 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay, isSaving }) => {
         </p>
         {list.length > 1 && (
           <div className="flex gap-1">
-            <button onClick={prevSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 active:scale-90 transition-all">
+            <button onClick={prevSlide} className="p-1.5 rounded-2xl bg-gray-100 text-gray-400 active:scale-90 transition-all">
               <ChevronLeft size={12} strokeWidth={3} />
             </button>
-            <button onClick={nextSlide} className="p-1.5 rounded-full bg-gray-100 text-gray-400 active:scale-90 transition-all">
+            <button onClick={nextSlide} className="p-1.5 rounded-2xl bg-gray-100 text-gray-400 active:scale-90 transition-all">
               <ChevronRight size={12} strokeWidth={3} />
             </button>
           </div>
         )}
       </div>
 
-      <div className={`relative overflow-hidden rounded-[2.5rem] p-4 shadow-sm border transition-all duration-500 ${
+      <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm border transition-all duration-500 ${
         isExpired ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'
       }`}>
 
         {/* Feedback de pago */}
         {justPaid && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-50/95 backdrop-blur-sm rounded-[2.5rem] animate-in fade-in duration-200 z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-50/95 backdrop-blur-sm rounded-2xl animate-in fade-in duration-200 z-10">
             <div className="flex flex-col items-center gap-2">
               <CheckCircle2 size={32} className="text-emerald-500" />
               <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Pagamento registrado!</p>
@@ -102,7 +102,7 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay, isSaving }) => {
                 <p className={`text-[8px] font-black uppercase tracking-wider ${isExpired ? 'text-rose-400' : 'text-amber-500'}`}>
                   {isExpired ? 'Atrasada' : 'Vence em breve'}
                 </p>
-                <span className="text-[7px] px-1 py-0.5 rounded-full bg-white/50 text-gray-500 font-black uppercase border border-black/5">
+                <span className="text-[7px] px-1 py-0.5 rounded-2xl bg-white/50 text-gray-500 font-black uppercase border border-black/5">
                   {currentBill.tipo}
                 </span>
               </div>
@@ -138,13 +138,13 @@ const AlertSlider = ({ title, list, isExpired, onQuickPay, isSaving }) => {
                     value={paidValue}
                     onChange={(e) => setPaidValue(e.target.value)}
                     autoFocus
-                    className="w-full bg-white border border-rose-200 rounded-xl py-2 pl-8 pr-3 text-[13px] font-bold text-rose-600 outline-none focus:ring-2 ring-rose-300"
+                    className="w-full bg-white border border-rose-200 rounded-2xl py-2 pl-8 pr-3 text-[13px] font-bold text-rose-600 outline-none focus:ring-2 ring-rose-300"
                   />
                 </div>
                 <button
                   onClick={confirmPayment}
                   disabled={isSaving}
-                  className="bg-rose-500 text-white px-4 rounded-xl font-black text-[9px] uppercase shadow-lg active:scale-95 disabled:opacity-50"
+                  className="bg-rose-500 text-white px-4 rounded-2xl font-black text-[9px] uppercase shadow-lg active:scale-95 disabled:opacity-50"
                 >
                   {isSaving ? '...' : 'Confirmar'}
                 </button>

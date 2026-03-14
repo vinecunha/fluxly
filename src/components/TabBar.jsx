@@ -9,12 +9,12 @@ const NAV_TABS = [
 
 export function TabBar({ activeTab, onChangeTab }) {
   return (
-    <div className="flex bg-gray-200/50 p-1 rounded-[1.8rem] relative z-10 backdrop-blur-md gap-1">
+    <div className="flex bg-gray-200/50 p-1 rounded-2xl relative z-10 backdrop-blur-md gap-1">
       {NAV_TABS.map(({ id, label, Icon }) => (
         <button
           key={id}
           onClick={() => onChangeTab(id)}
-          className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[1.2rem] text-[9px] font-black uppercase transition-all whitespace-nowrap ${
+          className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-2xl text-[9px] font-black uppercase transition-all whitespace-nowrap ${
             activeTab === id
               ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-black/5'
               : 'text-gray-500 hover:text-gray-700'

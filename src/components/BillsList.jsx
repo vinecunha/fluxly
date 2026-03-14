@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
 
-
 export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   if (!target) return null
   const { bill, type } = target
@@ -26,7 +25,9 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
       const isPaid = bill.pago
       return {
         title: isPaid ? 'Reabrir Conta' : 'Concluir Conta',
-        desc: bill.recorrencia_id ? `${isPaid ? 'Reabrir' : 'Baixar'} toda a série ou apenas esta?` : `${isPaid ? 'Reabrir' : 'Pagar'} "${bill.descricao}"?`,
+        desc: bill.recorrencia_id
+          ? `${isPaid ? 'Reabrir' : 'Baixar'} toda a série ou apenas esta?`
+          : `${isPaid ? 'Reabrir' : 'Pagar'} "${bill.descricao}"?`,
         icon: isPaid ? <Undo2 size={28} /> : <CheckCircle2 size={28} />,
         iconClass: isPaid ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500',
         btnClass: isPaid ? 'bg-amber-600 shadow-amber-100' : 'bg-emerald-600 shadow-emerald-100',
@@ -50,19 +51,15 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   const config = getModalConfig()
 
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 outline-none">
-      <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" 
-        onClick={onClose} 
-      />
-      <div className="relative z-[10001] bg-white rounded-[2.5rem] p-6 max-w-[320px] w-full shadow-2xl animate-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+      <div className="relative z-[10001] bg-white rounded-2xl p-6 max-w-[320px] w-full shadow-2xl animate-in zoom-in duration-200">
         <div className="text-center">
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${config.iconClass}`}>
             {config.icon}
           </div>
           <h3 className="text-lg font-black text-gray-800 mb-2">{config.title}</h3>
           <p className="text-gray-500 text-[11px] mb-6 leading-relaxed px-2">{config.desc}</p>
-          
           <div className="space-y-2.5">
             <button
               type="button"
@@ -71,7 +68,6 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
             >
               {config.primaryLabel}
             </button>
-
             {bill.recorrencia_id && (
               <>
                 {config.seriesWarning && (
@@ -93,12 +89,7 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
                 </button>
               </>
             )}
-            
-            <button 
-              type="button"
-              onClick={onClose} 
-              className="w-full py-2 text-gray-400 font-bold text-[9px] uppercase tracking-widest pt-1"
-            >
+            <button type="button" onClick={onClose} className="w-full py-2 text-gray-400 font-bold text-[9px] uppercase tracking-widest pt-1">
               Cancelar
             </button>
           </div>
@@ -118,23 +109,20 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
   const THRESHOLD = 72
 
   const onTouchStart = (e) => { startXRef.current = e.touches[0].clientX; setSwiping(true) }
-  const onTouchMove = (e) => {
+  const onTouchMove  = (e) => {
     if (startXRef.current === null) return
     setSwipeX(Math.max(-THRESHOLD * 1.2, Math.min(THRESHOLD * 1.2, e.touches[0].clientX - startXRef.current)))
   }
   const onTouchEnd = () => {
-    if (swipeX < -THRESHOLD) {
-      setActionTarget({ bill, type: 'delete' })
-    } else if (swipeX > THRESHOLD) {
-      setActionTarget({ bill, type: 'status' })
-    }
+    if (swipeX < -THRESHOLD) setActionTarget({ bill, type: 'delete' })
+    else if (swipeX > THRESHOLD) setActionTarget({ bill, type: 'status' })
     setSwipeX(0); setSwiping(false); startXRef.current = null
   }
 
   const catInfo = categoryInfo || FALLBACK_CATEGORY
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem]">
+    <div className="relative overflow-hidden rounded-2xl group">
       <div className="absolute inset-0 flex items-center justify-between px-5 pointer-events-none">
         <div className={`flex items-center gap-1.5 transition-opacity ${swipeX > 20 ? 'opacity-100' : 'opacity-0'}`}>
           <CheckCircle2 size={18} className="text-emerald-500" />
@@ -147,7 +135,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
       </div>
 
       <div
-        className="bg-white border border-gray-100 shadow-sm flex flex-col gap-2.5 p-3.5 rounded-[2rem] touch-pan-y"
+        className="bg-white border border-gray-100 shadow-sm flex flex-col gap-2.5 p-3.5 rounded-2xl"
         style={{ transform: `translateX(${swipeX}px)`, transition: swiping ? 'none' : 'transform 0.3s ease' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -186,23 +174,48 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
             </div>
           </div>
 
-          <div className="flex flex-col items-end flex-shrink-0">
-            <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300' : 'text-rose-600'}`}>
-              R$ {Number(bill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-            <div className="flex gap-2 mt-1">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
-                className="p-1 text-gray-300 active:text-indigo-500 transition-colors"
+                className="p-1.5 rounded-xl text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                title="Editar"
               >
                 <Edit3 size={14} />
               </button>
               <button
                 onClick={() => setActionTarget({ bill, type: 'delete' })}
-                className="p-1 text-gray-300 active:text-rose-500 transition-colors"
+                className="p-1.5 rounded-xl text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                title="Excluir"
               >
                 <Trash2 size={14} />
               </button>
+            </div>
+
+            <div className="flex flex-col items-end sm:hidden">
+              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300' : 'text-rose-600'}`}>
+                R$ {Number(bill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
+                  className="p-1 text-gray-300 active:text-indigo-500 transition-colors"
+                >
+                  <Edit3 size={14} />
+                </button>
+                <button
+                  onClick={() => setActionTarget({ bill, type: 'delete' })}
+                  className="p-1 text-gray-300 active:text-rose-500 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden sm:flex flex-col items-end">
+              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300' : 'text-rose-600'}`}>
+                R$ {Number(bill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
         </div>
@@ -227,7 +240,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
 }
 
 export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit, onDelete, isLoading }) => {
-  const [sortBy, setSortBy] = useState('vencimento')
+  const [sortBy, setSortBy]     = useState('vencimento')
   const [isReversed, setIsReversed] = useState(false)
   const [showPaid, setShowPaid] = useState(false)
   const [actionTarget, setActionTarget] = useState(null)
@@ -251,12 +264,17 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
     }, {})
   }, [allTransactions])
 
+  const handleSort = (type) => {
+    if (sortBy === type) setIsReversed(r => !r)
+    else { setSortBy(type); setIsReversed(false) }
+  }
+
   const sorted = useMemo(() => {
     return [...rawBills].sort((a, b) => {
       let cmp = 0
       if (sortBy === 'vencimento') cmp = new Date(a.data + 'T12:00:00') - new Date(b.data + 'T12:00:00')
       else if (sortBy === 'valor') cmp = Number(a.valor) - Number(b.valor)
-      else if (sortBy === 'az') cmp = a.descricao.localeCompare(b.descricao)
+      else if (sortBy === 'az')   cmp = a.descricao.localeCompare(b.descricao)
       return isReversed ? -cmp : cmp
     })
   }, [rawBills, sortBy, isReversed])
@@ -267,11 +285,9 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   const handleConfirmAction = (allSeries) => {
     if (!actionTarget) return
     const { bill, type } = actionTarget
-    
-    if (type === 'delete' && onDelete) onDelete(bill.id, allSeries, bill.recorrencia_id)
+    if (type === 'delete' && onDelete)      onDelete(bill.id, allSeries, bill.recorrencia_id)
     else if (type === 'status' && onTogglePaid) onTogglePaid(bill.id, allSeries, bill.recorrencia_id)
-    else if (type === 'edit' && onEdit) onEdit(bill, allSeries)
-    
+    else if (type === 'edit' && onEdit)     onEdit(bill, allSeries)
     setActionTarget(null)
   }
 
@@ -300,11 +316,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
 
   return (
     <div className="space-y-5">
-      <ActionConfirmationModal 
-        target={actionTarget} 
-        onClose={() => setActionTarget(null)} 
-        onConfirm={handleConfirmAction} 
-      />
+      <ActionConfirmationModal target={actionTarget} onClose={() => setActionTarget(null)} onConfirm={handleConfirmAction} />
 
       <div className="flex flex-col gap-3 px-1">
         <div className="flex items-center justify-between">
@@ -312,7 +324,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowPaid(p => !p)}
-              className={`flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1.5 rounded-xl transition-all border ${
+              className={`flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1.5 rounded-2xl transition-all border ${
                 showPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-gray-400 border-gray-100 shadow-sm'
               }`}
             >
@@ -324,18 +336,17 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
             </span>
           </div>
         </div>
-        
         <p className="text-[8px] text-gray-300 font-bold px-1">← Deslize para pagar ou excluir →</p>
       </div>
 
       {isLoading ? (
         <div className="space-y-2.5">
-          {[1, 2, 3].map(i => <div key={i} className="bg-white p-3.5 rounded-[2rem] border border-gray-50 animate-pulse h-[72px]" />)}
+          {[1, 2, 3].map(i => <div key={i} className="bg-white p-3.5 rounded-2xl border border-gray-50 animate-pulse h-[72px]" />)}
         </div>
       ) : (
         <div className="space-y-5">
           {pending.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-[2rem] border-2 border-dashed border-gray-100 italic text-gray-400 text-[10px]">
+            <div className="text-center py-10 bg-white rounded-2xl border-2 border-dashed border-gray-100 italic text-gray-400 text-[10px]">
               Nenhuma conta pendente 🎉
             </div>
           ) : (
@@ -344,7 +355,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
 
           {paid.length > 0 && (
             <div className="space-y-2">
-              <button onClick={() => setShowPaid(!showPaid)} className="flex items-center justify-between w-full px-2">
+              <button onClick={() => setShowPaid(p => !p)} className="flex items-center justify-between w-full px-2">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Pagas ({paid.length})</span>
                 {showPaid ? <ArrowUp size={12} className="text-gray-400" /> : <ArrowDown size={12} className="text-gray-400" />}
               </button>

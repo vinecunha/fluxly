@@ -76,7 +76,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto no-scrollbar">
+        <div className="bg-white w-full max-w-lg rounded-t-2xl p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto no-scrollbar">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-black text-gray-800 tracking-tight">
               {initialData ? 'Editar Registro' : 'Novo Registro'}
@@ -101,7 +101,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       subcategoria: '',
                       destino_reserva: ''
                     })}
-                    className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all border ${
+                    className={`py-3 rounded-2xl flex flex-col items-center gap-1 transition-all border ${
                       form.tipo === t.id
                         ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
                         : 'bg-gray-50 border-transparent text-gray-400'
@@ -125,7 +125,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       key={sub}
                       type="button"
                       onClick={() => setForm({ ...form, subcategoria: sub })}
-                      className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
+                      className={`py-2.5 rounded-2xl text-[9px] font-black uppercase transition-all border ${
                         form.subcategoria === sub
                           ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm ring-1 ring-emerald-500'
                           : 'bg-gray-50 border-transparent text-gray-500'
@@ -147,7 +147,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       key={cat}
                       type="button"
                       onClick={() => setForm({ ...form, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : '' })}
-                      className={`py-2.5 rounded-xl text-[9px] font-black uppercase transition-all border ${
+                      className={`py-2.5 rounded-2xl text-[9px] font-black uppercase transition-all border ${
                         form.categoria === cat
                           ? 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-1 ring-indigo-500'
                           : 'bg-gray-50 border-transparent text-gray-500'
@@ -171,7 +171,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       key={sub}
                       type="button"
                       onClick={() => setForm({ ...form, subcategoria: sub })}
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                      className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border ${
                         form.subcategoria === sub
                           ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
                           : 'bg-white border-gray-100 text-gray-400'
@@ -195,7 +195,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       key={banco}
                       type="button"
                       onClick={() => setForm({ ...form, destino_reserva: banco })}
-                      className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
+                      className={`py-3 rounded-2xl text-[10px] font-black uppercase transition-all border ${
                         form.destino_reserva === banco
                           ? 'bg-purple-600 border-purple-600 text-white shadow-md'
                           : 'bg-purple-50 border-transparent text-purple-400'
@@ -257,7 +257,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <select
-                  className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
+                  className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
                   value={form.repetir}
                   onChange={e => setForm({ ...form, repetir: e.target.value })}
                 >
@@ -269,7 +269,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                   <div className="animate-in fade-in zoom-in duration-200">
                     <input
                       type="date"
-                      className="w-full p-3 rounded-xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
+                      className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
                       value={form.recorrencia_limite}
                       onChange={e => setForm({ ...form, recorrencia_limite: e.target.value })}
                     />

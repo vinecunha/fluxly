@@ -9,6 +9,7 @@ import { useFilteredData } from './hooks/useFilteredData'
 import { useFinanceActions } from './hooks/useFinanceActions'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { useOffline } from './hooks/useOffline'
+import { usePullToRefresh } from './hooks/usePullToRefresh'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
@@ -21,23 +22,24 @@ import { UndoToast } from './components/UndoToast'
 import { OfflineBanner } from './components/OfflineBanner'
 import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
+import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
-const BillsList        = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
-const RecentFlow       = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
+const BillsList          = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
+const RecentFlow         = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
 const FinancialAnalytics = lazy(() => import('./components/FinancialAnalytics').then(m => ({ default: m.FinancialAnalytics })))
 
 const TAB_FALLBACK = (
   <div className="flex items-center justify-center py-20">
-    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-2xl animate-spin" />
   </div>
 )
 
 export default function App() {
-  const [user, setUser] = useState(null)
+  const [user, setUser]               = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
-  const [activeTab, setActiveTab] = useState(TABS.DASHBOARD)
+  const [activeTab, setActiveTab]     = useState(TABS.DASHBOARD)
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const [uiState, dispatch] = useReducer(uiReducer, initialUIState)
@@ -46,6 +48,7 @@ export default function App() {
   useServiceWorker()
   const isOffline = useOffline()
 
+  // ─── Auth ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -62,19 +65,19 @@ export default function App() {
     dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
   }, [])
 
+  // ─── Data ─────────────────────────────────────────────────────────────────
   const { data, loading, refresh } = useFinance(user)
   const filteredData = useFilteredData(data, currentDate)
-  const totals = useTotals(filteredData, currentDate)
+  const totals       = useTotals(filteredData, currentDate)
   const { overdueCount, todayCount } = useAlerts(data)
 
   const { handleSave, handleDelete, handleQuickPay } = useFinanceActions({
-    user,
-    data,
-    refresh,
-    dispatch,
-    editingTransaction,
+    user, data, refresh, dispatch, editingTransaction,
     onSessionExpired: handleSessionExpired,
   })
+
+  // ─── Pull-to-refresh ──────────────────────────────────────────────────────
+  const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(refresh)
 
   const changeMonth = useCallback((direction) => {
     setCurrentDate(prev => {
@@ -89,6 +92,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 max-w-2xl mx-auto relative">
+
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isPulling={isPulling}
+        isRefreshing={isRefreshing}
+      />
+
       {isOffline && <OfflineBanner />}
 
       <DashboardHeader
@@ -101,6 +111,9 @@ export default function App() {
         onLogout={() => supabase.auth.signOut()}
         isLoading={loading}
         userEmail={user?.email ?? ''}
+        onRefresh={refresh}
+        isRefreshing={isRefreshing}
+        onOpenAnalytics={() => setActiveTab(TABS.ANALYTICS)}
       />
 
       <div className="px-4 pt-3 space-y-3">
@@ -117,8 +130,9 @@ export default function App() {
             isSaving={isSaving}
           />
         )}
+
         <div className="grid grid-cols-2 gap-3">
-          <StatCard 
+          <StatCard
             title="Renda"
             value={totals.renda}
             valueHoje={totals.rendaHoje}
@@ -128,7 +142,7 @@ export default function App() {
             icon={<TrendingUp />}
             isLoading={loading}
           />
-          <StatCard 
+          <StatCard
             title="Despesas"
             value={totals.gastosTotal}
             valueHoje={totals.gastosHoje}
@@ -140,8 +154,8 @@ export default function App() {
           />
         </div>
 
-        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} onAddClick={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}/>
-        
+        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+
         <Suspense fallback={TAB_FALLBACK}>
           {activeTab === TABS.DASHBOARD && (
             <RecentFlow
@@ -150,18 +164,16 @@ export default function App() {
               onDelete={handleDelete}
             />
           )}
-
           {activeTab === TABS.BILLS && (
             <BillsList
               transactions={filteredData}
-              allTransactions={data} 
+              allTransactions={data}
               onTogglePaid={handleQuickPay}
               onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
               onDelete={handleDelete}
               isLoading={loading}
             />
           )}
-
           {activeTab === TABS.ANALYTICS && (
             <FinancialAnalytics
               transactions={filteredData}
@@ -183,14 +195,14 @@ export default function App() {
 
       {isSaving && <SavingSplash message={savingMessage} />}
 
-      <Toast
-        message={toast?.message}
-        type={toast?.type}
-        dispatch={dispatch}
-      />
-
+      <Toast message={toast?.message} type={toast?.type} dispatch={dispatch} />
       <UndoToast undo={undo} dispatch={dispatch} />
-      <BottomNav activeTab={activeTab} onChangeTab={setActiveTab} onAddNew={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}/>
+
+      <BottomNav
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+        onAddNew={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}
+      />
     </div>
   )
 }

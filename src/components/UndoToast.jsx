@@ -53,7 +53,7 @@ export function UndoToast({ undo, dispatch }) {
         <span className="text-sm font-medium truncate pr-2">{undo.label}</span>
         <button
           onClick={handleUndo}
-          className="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-400 active:scale-95 transition-all px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wide flex-shrink-0"
+          className="flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-400 active:scale-95 transition-all px-3 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wide flex-shrink-0"
         >
           <Undo2 size={13} />
           Desfazer

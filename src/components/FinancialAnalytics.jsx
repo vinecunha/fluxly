@@ -98,7 +98,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
           <ArrowLeft size={13} /> Voltar
         </button>
 
-        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex justify-between items-center">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Detalhes</p>
             <p className="text-xl font-black text-gray-900">{expandedSubcat}</p>
@@ -112,9 +112,9 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
 
         <div className="space-y-2">
           {items.sort((a, b) => new Date(b.data) - new Date(a.data)).map((t, i) => (
-            <div key={i} className="bg-white p-4 rounded-[2rem] border border-gray-100 flex justify-between items-center shadow-sm">
+            <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0">
                   <Tag size={14} />
                 </div>
                 <div>
@@ -142,7 +142,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
 
-        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm text-center">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Saldo Líquido em {expandedDestino}</p>
           <p className="text-3xl font-black text-purple-600">{fmt(liquidDestino)}</p>
         </div>
@@ -150,9 +150,9 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
         <div className="space-y-2">
           {subs.sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, data]) => (
             <div key={name} onClick={() => setExpandedSubcat(name)}
-              className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
+              className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center flex-shrink-0">
                   <PiggyBank size={16} />
                 </div>
                 <div>
@@ -184,7 +184,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
         ].map(({ id, label, Icon, color }) => (
           <button key={id}
             onClick={() => { setTab(id); resetDrill() }}
-            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
               tab === id ? `bg-white shadow-sm ${color}` : 'text-gray-400'
             }`}
           >
@@ -193,12 +193,12 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
         ))}
       </div>
 
-      <Suspense fallback={<div className="h-40 bg-gray-50 rounded-[2rem] animate-pulse" />}>
-        <MonthlyChart allTransactions={allTransactions} />
+      <Suspense fallback={<div className="h-40 bg-gray-50 rounded-2xl animate-pulse" />}>
+        <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
       <div className="space-y-2">
-        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
             {tab === 'investimento' 
               ? (projectionDays === 0 ? 'Saldo Líquido Atual (100% CDI)' : `Projeção Líquida para ${projectionDays} dias`) 
@@ -221,7 +221,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
                 <div className="flex gap-1">
                   {[0, 30, 60, 90, 365].map(d => (
                     <button key={d} onClick={() => setProjectionDays(d)}
-                      className={`px-2.5 py-1 rounded-lg text-[8px] font-black transition-all ${
+                      className={`px-2.5 py-1 rounded-2xl text-[8px] font-black transition-all ${
                         projectionDays === d ? 'bg-purple-600 text-white' : 'bg-gray-50 text-gray-400'
                       }`}>
                       {d === 0 ? 'HOJE' : d === 365 ? '1 ANO' : `${d}D`}
@@ -256,11 +256,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
           return (
             <div key={name}
               onClick={() => tab === 'investimento' ? setExpandedDestino(name) : setExpandedSubcat(name)}
-              className="bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm cursor-pointer active:scale-[0.98] transition-all"
+              className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                     catData?.color ||
                     (tab === 'investimento' ? 'bg-purple-100 text-purple-600' :
                      tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600')
@@ -301,7 +301,7 @@ function TrendBadge({ diff, invertGood = false, small = false }) {
   const isUp = diff > 0
   const isGood = invertGood ? !isUp : isUp
   return (
-    <span className={`flex items-center gap-0.5 font-black rounded-lg ${small ? 'text-[8px] px-1 py-0.5' : 'text-[9px] px-1.5 py-0.5'} ${
+    <span className={`flex items-center gap-0.5 font-black rounded-2xl ${small ? 'text-[8px] px-1 py-0.5' : 'text-[9px] px-1.5 py-0.5'} ${
       isGood ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
     }`}>
       {isUp ? '↑' : '↓'} {Math.abs(diff).toFixed(0)}%

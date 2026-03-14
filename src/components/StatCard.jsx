@@ -5,12 +5,12 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
 
   if (isLoading) {
     return (
-      <div className="bg-white p-4 rounded-[2.2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-2 min-w-0 animate-pulse">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 min-w-0 animate-pulse">
         <div className="min-w-0 flex-1">
-          <div className="h-2 w-10 bg-gray-100 rounded mb-2 ml-0.5" />
-          <div className="h-4 w-20 bg-gray-50 rounded" />
+          <div className="h-2 w-10 bg-gray-100 rounded-2xl mb-2 ml-0.5" />
+          <div className="h-4 w-20 bg-gray-50 rounded-2xl" />
         </div>
-        <div className="w-10 h-10 rounded-[1.2rem] bg-gray-50 flex-shrink-0" />
+        <div className="w-10 h-10 rounded-2xl bg-gray-50 flex-shrink-0" />
       </div>
     )
   }
@@ -36,7 +36,7 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
   }
 
   return (
-    <div className="bg-white p-4 rounded-[2.2rem] shadow-sm border border-gray-100 flex items-center justify-between gap-1.5 min-w-0 overflow-hidden relative">
+    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-1.5 min-w-0 overflow-hidden relative">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 mb-0.5 ml-0.5">
           <p className="text-[8px] font-black uppercase text-gray-400 tracking-[0.12em] truncate">
@@ -61,7 +61,7 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
       </div>
       
       {icon && (
-        <div className={`w-9 h-9 rounded-[1.1rem] flex-shrink-0 flex items-center justify-center shadow-sm ${bgLight} ${color}`}>
+        <div className={`w-9 h-9 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${bgLight} ${color}`}>
           {React.cloneElement(icon, { size: 16, strokeWidth: 3 })}
         </div>
       )}
