@@ -1,16 +1,24 @@
 export function getTodayString() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const agora = new Date();
+  const offset = agora.getTimezoneOffset() * 60000;
+  return new Date(agora - offset).toISOString().split('T')[0];
 }
 
-export function getWeekRange(todayStr) {
-  const hojeRef = new Date(todayStr + 'T12:00:00')
-  const diaSemana = hojeRef.getDay()
-  const diffSegunda = hojeRef.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1)
-  const segundaFeira = new Date(hojeRef.getFullYear(), hojeRef.getMonth(), diffSegunda, 0, 0, 0)
-  const domingo = new Date(segundaFeira)
-  domingo.setDate(segundaFeira.getDate() + 6)
-  domingo.setHours(23, 59, 59, 999)
-  return { segundaFeira, domingo }
+export function getWeekRange(referenceDateStr) {
+  const date = new Date(referenceDateStr + 'T12:00:00');
+  const day = date.getDay(); 
+  
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  
+  const segunda = new Date(date);
+  segunda.setDate(date.getDate() + diffToMonday);
+  segunda.setHours(0, 0, 0, 0);
+
+  const domingo = new Date(segunda);
+  domingo.setDate(segunda.getDate() + 6);
+  domingo.setHours(23, 59, 59, 999); 
+
+  return { segundaFeira: segunda, domingo: domingo };
 }
 
 export function isInMonth(dateStr, paymentDateStr, viewMonth, viewYear) {

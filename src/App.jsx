@@ -12,6 +12,7 @@ import { useOffline } from './hooks/useOffline'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
+import { StatCard } from './components/StatCard'
 import { TabBar, BottomNav } from './components/TabBar'
 import { AlertBanner } from './components/AlertBanner'
 import { SavingSplash } from './components/SavingSplash'
@@ -20,6 +21,8 @@ import { UndoToast } from './components/UndoToast'
 import { OfflineBanner } from './components/OfflineBanner'
 import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
+
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const BillsList        = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
 const RecentFlow       = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
@@ -101,10 +104,8 @@ export default function App() {
       />
 
       <div className="px-4 pt-3 space-y-3">
-        {/* Permissão push — aparece uma vez */}
         <NotificationPrompt />
 
-        {/* Alertas de vencimento */}
         {(overdueCount > 0 || todayCount > 0) && (
           <AlertBanner
             overdueCount={overdueCount}
@@ -116,10 +117,31 @@ export default function App() {
             isSaving={isSaving}
           />
         )}
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard 
+            title="Renda"
+            value={totals.renda}
+            valueHoje={totals.rendaHoje}
+            valueSemana={totals.rendaSemana}
+            color="text-emerald-600"
+            bgLight="bg-emerald-50"
+            icon={<TrendingUp />}
+            isLoading={loading}
+          />
+          <StatCard 
+            title="Despesas"
+            value={totals.gastosTotal}
+            valueHoje={totals.gastosHoje}
+            valueSemana={totals.gastosSemana}
+            color="text-rose-600"
+            bgLight="bg-rose-50"
+            icon={<TrendingDown />}
+            isLoading={loading}
+          />
+        </div>
 
-        {/* Tabs */}
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} onAddClick={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}/>
-
+        
         <Suspense fallback={TAB_FALLBACK}>
           {activeTab === TABS.DASHBOARD && (
             <RecentFlow
@@ -149,7 +171,6 @@ export default function App() {
         </Suspense>
       </div>
 
-      {/* Modals & toasts */}
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}
