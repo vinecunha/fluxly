@@ -10,6 +10,7 @@ import { useFinanceActions } from './hooks/useFinanceActions'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { useOffline } from './hooks/useOffline'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
+import { useCartoes } from './hooks/useCartoes'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
@@ -23,6 +24,7 @@ import { OfflineBanner } from './components/OfflineBanner'
 import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
+import { CartoesScreen } from './components/CartoesScreen'
 
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
@@ -66,7 +68,8 @@ export default function App() {
   }, [])
 
   // ─── Data ─────────────────────────────────────────────────────────────────
-  const { data, loading, refresh } = useFinance(user)
+  const { data, loading, refresh }   = useFinance(user)
+  const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
   const filteredData = useFilteredData(data, currentDate)
   const totals       = useTotals(filteredData, currentDate)
   const { overdueCount, todayCount } = useAlerts(data)
@@ -180,6 +183,15 @@ export default function App() {
               allTransactions={data}
             />
           )}
+          {activeTab === TABS.CARTOES && (
+            <CartoesScreen
+              cartoes={cartoes}
+              faturas={faturas}
+              onCriar={criarCartao}
+              onEditar={editarCartao}
+              onExcluir={excluirCartao}
+            />
+          )}
         </Suspense>
       </div>
 
@@ -190,6 +202,7 @@ export default function App() {
           onSave={handleSave}
           initialData={editingTransaction}
           transactions={data}
+          cartoes={cartoes}
         />
       )}
 

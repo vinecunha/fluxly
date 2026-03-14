@@ -5,26 +5,25 @@ export function useTotals(data, currentDate) {
   const todayStr = getTodayString()
 
   return useMemo(() => {
-    // Calculamos o range da semana atual baseada no dia de HOJE real
     const { segundaFeira, domingo } = getWeekRange(todayStr)
     const viewMonth = currentDate.getMonth()
-    const viewYear = currentDate.getFullYear()
+    const viewYear  = currentDate.getFullYear()
 
     return (data || []).reduce((acc, t) => {
-      const v = Number(t.valor) || 0
-      // Garantimos que a data seja tratada sem problemas de fuso horário
+      // pagamento_cartao é quitação de dívida, não é gasto novo — ignora nos totais
+      if (t.tipo === 'pagamento_cartao') return acc
+
+      const v     = Number(t.valor) || 0
       const tDate = new Date(t.data + 'T12:00:00')
       const pDate = t.data_pagamento ? new Date(t.data_pagamento + 'T12:00:00') : null
 
-      // Lógica de Mês (para o total do Dashboard)
-      const isDueThisMonth = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
+      const isDueThisMonth  = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
       const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
-      
-      // Lógica Temporal Real (Hoje e Semana independem do mês que você está olhando)
-      const isToday = t.data === todayStr
+
+      const isToday    = t.data === todayStr
       const isThisWeek = tDate >= segundaFeira && tDate <= domingo
 
-      // 1. Reservas (Independe de data, é saldo acumulado)
+      // 1. Reservas — saldo acumulado, independe de mês
       if (t.tipo === 'reserva') {
         acc.reservaTotal += v
         return acc
@@ -32,23 +31,19 @@ export function useTotals(data, currentDate) {
 
       // 2. Renda
       if (t.tipo === 'renda') {
-        // Acumula no mês visualizado
         if (isDueThisMonth || isPaidThisMonth) acc.renda += v
-        // Acumula no Hoje/Semana real (independente do mês selecionado)
-        if (isToday) acc.rendaHoje += v
+        if (isToday)    acc.rendaHoje   += v
         if (isThisWeek) acc.rendaSemana += v
-      } 
-      // 3. Gastos
-      else {
-        // Acumula no mês visualizado
-        if (isDueThisMonth || isPaidThisMonth) {
-          acc.gastosTotal += v
-          if (t.tipo === 'gasto_diario' || t.pago) acc.gastosPagos += v
-        }
-        // Acumula no Hoje/Semana real
-        if (isToday) acc.gastosHoje += v
-        if (isThisWeek) acc.gastosSemana += v
+        return acc
       }
+
+      // 3. Gastos (gasto_diario, fixa, esporadica)
+      if (isDueThisMonth || isPaidThisMonth) {
+        acc.gastosTotal += v
+        if (t.tipo === 'gasto_diario' || t.pago) acc.gastosPagos += v
+      }
+      if (isToday)    acc.gastosHoje   += v
+      if (isThisWeek) acc.gastosSemana += v
 
       return acc
     }, {

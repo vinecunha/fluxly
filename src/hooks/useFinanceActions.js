@@ -3,11 +3,10 @@ import { supabase } from '../lib/supabase'
 import { AUTO_PAID_TYPES, UI_ACTIONS } from '../lib/constants'
 import { getTodayString } from '../lib/dateHelpers'
 
-const UNDO_TIMEOUT = 5000 // ms antes de deletar de verdade
+const UNDO_TIMEOUT = 5000
 
 export function useFinanceActions({ user, data, refresh, dispatch, editingTransaction, onSessionExpired }) {
 
-  // ─── Quick Pay ──────────────────────────────────────────────────────────────
   const handleQuickPay = useCallback(async (id, alterarTodaSerie = false, recorrencia_id = null, valorFinal = null) => {
     const transaction = data.find(t => t.id === id)
     if (!transaction) return
@@ -43,7 +42,6 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
         }])
       }
 
-      // Notificação push ao marcar como pago
       if (novoStatus) {
         sendLocalNotification(
           '✅ Pagamento confirmado',
@@ -69,17 +67,13 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     }
   }, [data, user, refresh, dispatch, onSessionExpired])
 
-  // ─── Delete (com Desfazer) ───────────────────────────────────────────────────
   const handleDelete = useCallback(async (id, deleteSeries = false, recorrencia_id = null) => {
-    // Guarda snapshot para desfazer
     const snapshot = deleteSeries && recorrencia_id
       ? data.filter(t => t.recorrencia_id === recorrencia_id)
       : data.filter(t => t.id === id)
 
     if (snapshot.length === 0) return
 
-    // Remove otimisticamente do estado (não do banco ainda)
-    // O timeout vai deletar de verdade. Cancelar = restaurar.
     const timerId = setTimeout(async () => {
       dispatch({ type: UI_ACTIONS.CLEAR_UNDO })
       dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Removendo...' })
@@ -110,14 +104,12 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
         restore: () => {
           clearTimeout(timerId)
           dispatch({ type: UI_ACTIONS.CLEAR_UNDO })
-          // Não precisamos reinserir — refresh() já vai buscar do banco (não deletamos ainda)
           refresh()
         },
       },
     })
   }, [data, refresh, dispatch, onSessionExpired])
 
-  // ─── Save ────────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async (formData, alterarTodaSerie = false) => {
     const valorNumerico = parseFloat(String(formData.valor).replace(',', '.'))
     if (isNaN(valorNumerico)) return
@@ -128,7 +120,6 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     })
 
     const isAutoPaid = AUTO_PAID_TYPES.includes(formData.tipo)
-    const todayStr = getTodayString()
 
     const transactionPayload = {
       user_id: user.id,
@@ -138,6 +129,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       categoria: formData.categoria,
       subcategoria: formData.tipo === 'reserva' ? formData.descricao : (formData.subcategoria || null),
       destino_reserva: formData.destino_reserva || null,
+      cartao_id: formData.cartao_id || null,
       pago: isAutoPaid ? true : (formData.pago ?? false),
       data: formData.data,
       repetir: formData.repetir || 'nao',
@@ -152,7 +144,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       if (editingTransaction) {
         await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie)
       } else {
-        await _insertTransaction(transactionPayload, formData, isAutoPaid, user.id)
+        await _insertTransaction(transactionPayload, formData, isAutoPaid)
       }
 
       dispatch({
@@ -175,8 +167,6 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
   return { handleQuickPay, handleDelete, handleSave }
 }
 
-// ─── Helpers privados ────────────────────────────────────────────────────────
-
 function _isSessionError(error) {
   return error?.message?.includes('JWT') || error?.status === 401
 }
@@ -195,6 +185,7 @@ async function _updateTransaction(payload, editingTransaction, alterarTodaSerie)
       categoria: payload.categoria,
       subcategoria: payload.subcategoria,
       destino_reserva: payload.destino_reserva,
+      cartao_id: payload.cartao_id,
       tipo: payload.tipo,
     }).eq('recorrencia_id', editingTransaction.recorrencia_id)
     if (error) throw error
