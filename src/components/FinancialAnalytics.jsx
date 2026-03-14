@@ -2,10 +2,11 @@ import React, { useState, useMemo, lazy, Suspense } from 'react'
 import {
   TrendingDown, TrendingUp, Tag, ArrowLeft,
   DollarSign, PiggyBank, Building2, Wallet,
-  ChevronRight, Minus
+  ChevronRight, Minus, Zap
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
 import { useMonthlyAverages } from '../hooks/useMonthlyAverages'
+import { useCDI } from '../hooks/useCDI' 
 
 const MonthlyChart = lazy(() =>
   import('./MonthlyChart').then(m => ({ default: m.MonthlyChart }))
@@ -17,8 +18,10 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
   const [tab, setTab] = useState('gasto')
   const [expandedDestino, setExpandedDestino] = useState(null)
   const [expandedSubcat, setExpandedSubcat] = useState(null)
+  const [projectionDays, setProjectionDays] = useState(0)
 
   const { averageByCategory, averageRenda, averageDespesas } = useMonthlyAverages(allTransactions, 3)
+  const { taxaAnual: cdiReal } = useCDI()
 
   const filtered = useMemo(() => (transactions || []).filter(t => {
     if (tab === 'renda') return t.tipo === 'renda'
@@ -52,9 +55,40 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
 
   const viewTotal = Object.values(grouped).reduce((s, d) => s + d.total, 0)
 
-  const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null) }
+  const projection = useMemo(() => {
+    if (tab !== 'investimento' || projectionDays === 0) return null;
+    
+    let totalFuturo = 0;
+    const taxaDiaria = Math.pow(1 + cdiReal, 1 / 252) - 1;
+    const hoje = new Date();
 
-  // ─── Nível 3: lançamentos individuais ───────────────────────────────────────
+    filtered.forEach(t => {
+      const valor = parseFloat(t.valor) || 0;
+      const dataTransacao = new Date(t.data);
+      const diffDias = Math.floor((hoje - dataTransacao) / (1000 * 60 * 60 * 24));
+      
+      const diasAptos = Math.max(0, (diffDias + projectionDays) - 30);
+      const diasUteisRendimento = Math.floor(Math.min(projectionDays, diasAptos) * 0.71);
+
+      if (diasUteisRendimento > 0) {
+        const bruto = valor * Math.pow(1 + taxaDiaria, diasUteisRendimento);
+        const lucro = bruto - valor;
+        const ir = lucro * 0.225; 
+        totalFuturo += (bruto - ir);
+      } else {
+        totalFuturo += valor;
+      }
+    });
+
+    return totalFuturo;
+  }, [filtered, tab, projectionDays, cdiReal]);
+
+  const resetDrill = () => { 
+    setExpandedDestino(null); 
+    setExpandedSubcat(null); 
+    setProjectionDays(0); 
+  }
+
   if (expandedSubcat) {
     const items = tab === 'investimento'
       ? grouped[expandedDestino]?.subcategorias[expandedSubcat]?.items || []
@@ -99,7 +133,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     )
   }
 
-  // ─── Nível 2: caixinhas dentro de um destino (só reservas) ──────────────────
   if (expandedDestino && tab === 'investimento') {
     const subs = Object.entries(grouped[expandedDestino]?.subcategorias || {})
     const destiTotal = grouped[expandedDestino]?.total || 0
@@ -140,14 +173,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     )
   }
 
-  // ─── Nível 1: visão principal ────────────────────────────────────────────────
   const avgTotal = tab === 'renda' ? averageRenda : tab === 'gasto' ? averageDespesas : 0
   const trendDiff = avgTotal > 0 ? ((viewTotal - avgTotal) / avgTotal) * 100 : null
 
   return (
     <section className="space-y-4 animate-in fade-in duration-300">
-
-      {/* Tabs */}
       <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
         {[
           { id: 'gasto',        label: 'Gastos',   Icon: TrendingDown, color: 'text-rose-600' },
@@ -165,28 +195,63 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
         ))}
       </div>
 
-      {/* Gráfico mensal */}
       <Suspense fallback={<div className="h-40 bg-gray-50 rounded-[2rem] animate-pulse" />}>
         <MonthlyChart allTransactions={allTransactions} />
       </Suspense>
 
-      {/* Card totalizador com tendência */}
-      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
-        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
-          {tab === 'investimento' ? 'Total das Reservas' : tab === 'renda' ? 'Renda Total' : 'Total de Gastos'}
-        </p>
-        <div className="flex items-end gap-3">
-          <p className={`text-3xl font-black ${
-            tab === 'investimento' ? 'text-purple-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
-          }`}>{fmt(viewTotal)}</p>
-          {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
+      {/* Card Totalizador + Simulação CDI */}
+      <div className="space-y-2">
+        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+            {tab === 'investimento' ? 'Total das Reservas' : tab === 'renda' ? 'Renda Total' : 'Total de Gastos'}
+          </p>
+          <div className="flex items-end gap-3">
+            <p className={`text-3xl font-black ${
+              tab === 'investimento' ? 'text-purple-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
+            }`}>{fmt(viewTotal)}</p>
+            {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
+          </div>
+          {avgTotal > 0 && (
+            <p className="text-[10px] text-gray-400 mt-1">média 3 meses: {fmt(avgTotal)}</p>
+          )}
+
+          {/* Seletor de Projeção (Apenas em Reservas) */}
+          {tab === 'investimento' && (
+            <div className="mt-5 pt-4 border-t border-gray-50">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-1">
+                  <Zap size={10} className="text-purple-400 fill-purple-400" />
+                  <span className="text-[9px] font-black text-gray-400 uppercase">Projeção 100% CDI</span>
+                </div>
+                <div className="flex gap-1">
+                  {[0, 30, 60, 90].map(d => (
+                    <button key={d} onClick={() => setProjectionDays(d)}
+                      className={`px-2.5 py-1 rounded-lg text-[8px] font-black transition-all ${
+                        projectionDays === d ? 'bg-purple-600 text-white' : 'bg-gray-50 text-gray-400'
+                      }`}>
+                      {d === 0 ? 'HOJE' : `${d}D`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {projectionDays > 0 && (
+                <div className="bg-purple-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
+                  <div>
+                    <p className="text-[8px] font-bold text-purple-400 uppercase">Saldo Líquido Estimado</p>
+                    <p className="text-lg font-black text-purple-700">{fmt(projection)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-emerald-600">+{fmt(projection - viewTotal)}</p>
+                    <p className="text-[7px] text-gray-400 font-bold uppercase">já descontado IR</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        {avgTotal > 0 && (
-          <p className="text-[10px] text-gray-400 mt-1">média 3 meses: {fmt(avgTotal)}</p>
-        )}
       </div>
 
-      {/* Lista com drill-down */}
       <div className="space-y-2">
         {Object.entries(grouped).length === 0 && (
           <div className="text-center py-10 text-gray-400 text-[11px] font-bold">
@@ -207,7 +272,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
             >
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  {/* Ícone */}
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     catData?.color ||
                     (tab === 'investimento' ? 'bg-purple-100 text-purple-600' :
@@ -218,15 +282,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
                       tab === 'renda' ? <DollarSign size={14} /> : <Tag size={14} />
                     )}
                   </div>
-
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-gray-700 truncate">{name}</p>
-                    {avg > 0 && (
-                      <p className="text-[9px] text-gray-400">média {fmt(avg)}</p>
-                    )}
+                    {avg > 0 && <p className="text-[9px] text-gray-400">média {fmt(avg)}</p>}
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="text-right">
                     <p className="text-sm font-black text-gray-900">{fmt(info.total)}</p>
@@ -235,11 +295,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
                   <ChevronRight size={14} className="text-gray-300" />
                 </div>
               </div>
-
-              {/* Barra de progresso */}
               <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${
+                <div className={`h-full rounded-full transition-all duration-700 ${
                     tab === 'investimento' ? 'bg-purple-400' :
                     tab === 'renda' ? 'bg-emerald-400' : 'bg-indigo-400'
                   }`}
