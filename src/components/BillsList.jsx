@@ -40,8 +40,8 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
       title: 'Editar Série',
       desc: 'Deseja alterar toda a série ou apenas esta parcela?',
       icon: <Edit3 size={28} />,
-      iconClass: 'bg-indigo-50 text-indigo-500',
-      btnClass: 'bg-indigo-600 shadow-indigo-100',
+      iconClass: 'bg-slate-50 text-slate-500',
+      btnClass: 'bg-slate-900 shadow-slate-100',
       primaryLabel: 'Apenas Esta',
       secondaryLabel: 'Toda a Série',
       seriesWarning: false,
@@ -128,10 +128,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
           <CheckCircle2 size={18} className="text-emerald-500" />
           <span className="text-[9px] font-black text-emerald-600 uppercase">{bill.pago ? 'Reabrir' : 'Pagar'}</span>
         </div>
-        <div className={`flex items-center gap-1.5 transition-opacity ${swipeX < -20 ? 'opacity-100' : 'opacity-0'}`}>
-          <span className="text-[9px] font-black text-rose-600 uppercase">Excluir</span>
-          <Trash2 size={18} className="text-rose-500" />
-        </div>
+        <span className="text-[10px] font-black py-8 px-2 bg-rose-700 text-white uppercase">🗑️ Excluir</span>
       </div>
 
       <div
@@ -169,7 +166,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
               <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400 uppercase mt-1">
                 <span>{new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                 <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
-                <span className={`truncate ${bill.pago ? 'text-gray-300' : 'text-indigo-400'}`}>{bill.categoria || 'Geral'}</span>
+                <span className={`truncate ${bill.pago ? 'text-gray-300' : 'text-slate-400'}`}>{bill.categoria || 'Geral'}</span>
               </div>
             </div>
           </div>
@@ -178,7 +175,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
             <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
-                className="p-1.5 rounded-xl text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                className="p-1.5 rounded-xl text-gray-300 hover:text-slate-500 hover:bg-slate-50 transition-colors"
                 title="Editar"
               >
                 <Edit3 size={14} />
@@ -199,7 +196,7 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
               <div className="flex gap-2 mt-1">
                 <button
                   onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
-                  className="p-1 text-gray-300 active:text-indigo-500 transition-colors"
+                  className="p-1 text-gray-300 active:text-slate-500 transition-colors"
                 >
                   <Edit3 size={14} />
                 </button>
@@ -224,11 +221,11 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
           <div className="space-y-1.5 mt-0.5">
             <div className="flex justify-between items-end px-1">
               <span className="text-[7px] text-gray-400 font-black uppercase tracking-widest">Progresso</span>
-              <span className="text-[8px] text-indigo-500 font-black tracking-tighter">{stats.paid}/{stats.total} parcelas</span>
+              <span className="text-[8px] text-slate-500 font-black tracking-tighter">{stats.paid}/{stats.total} parcelas</span>
             </div>
             <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden border border-black/5">
               <div
-                className="h-full bg-indigo-500 rounded-full transition-all duration-500 ease-out"
+                className="h-full bg-slate-500 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${stats.percent}%` }}
               />
             </div>
@@ -331,7 +328,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
               <Filter size={10} />
               {showPaid ? 'Todas' : 'Pendentes'}
             </button>
-            <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">
+            <span className="text-[9px] bg-slate-50 text-slate-600 px-2.5 py-1 rounded-full font-black uppercase tracking-tighter">
               {isLoading ? '...' : `${pending.length} pendentes`}
             </span>
           </div>

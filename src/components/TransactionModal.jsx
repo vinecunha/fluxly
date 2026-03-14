@@ -103,7 +103,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     })}
                     className={`py-3 rounded-2xl flex flex-col items-center gap-1 transition-all border ${
                       form.tipo === t.id
-                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                        ? 'bg-slate-900 border-slate-600 text-white shadow-md'
                         : 'bg-gray-50 border-transparent text-gray-400'
                     }`}
                   >
@@ -149,7 +149,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       onClick={() => setForm({ ...form, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : '' })}
                       className={`py-2.5 rounded-2xl text-[9px] font-black uppercase transition-all border ${
                         form.categoria === cat
-                          ? 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-1 ring-indigo-500'
+                          ? 'bg-white border-slate-500 text-slate-600 shadow-sm ring-1 ring-slate-500'
                           : 'bg-gray-50 border-transparent text-gray-500'
                       }`}
                     >
@@ -162,7 +162,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
 
             {form.categoria === 'Aplicativos' && form.tipo !== 'reserva' && (
               <div className="space-y-2 animate-in zoom-in-95 duration-200">
-                <label className="text-[10px] font-black uppercase text-indigo-500 ml-1 flex items-center gap-1">
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-1 flex items-center gap-1">
                   <Layers size={10} /> Qual aplicativo?
                 </label>
                 <div className="flex gap-2">
@@ -173,7 +173,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       onClick={() => setForm({ ...form, subcategoria: sub })}
                       className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all border ${
                         form.subcategoria === sub
-                          ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                          ? 'bg-slate-100 border-slate-300 text-slate-700'
                           : 'bg-white border-gray-100 text-gray-400'
                       }`}
                     >
@@ -186,7 +186,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
 
             {form.tipo === 'reserva' && (
               <div className="space-y-2 animate-in zoom-in-95 duration-200">
-                <label className="text-[10px] font-black uppercase text-purple-600 ml-1 flex items-center gap-1">
+                <label className="text-[10px] font-black uppercase text-blue-600 ml-1 flex items-center gap-1">
                   <PiggyBank size={12} /> Onde está guardado? (Destino)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -197,8 +197,8 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                       onClick={() => setForm({ ...form, destino_reserva: banco })}
                       className={`py-3 rounded-2xl text-[10px] font-black uppercase transition-all border ${
                         form.destino_reserva === banco
-                          ? 'bg-purple-600 border-purple-600 text-white shadow-md'
-                          : 'bg-purple-50 border-transparent text-purple-400'
+                          ? 'bg-blue-600 border-purple-600 text-white shadow-md'
+                          : 'bg-blue-50 border-transparent text-blue-400'
                       }`}
                     >
                       {banco}
@@ -216,7 +216,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                 type="text" list="descricoes-comuns"
                 placeholder={form.tipo === 'reserva' ? 'Ex: Viagem, Emergência...' : 'Ex: Mercado mensal...'}
                 required
-                className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-slate-500 font-medium"
                 value={form.descricao}
                 onChange={e => setForm({ ...form, descricao: e.target.value })}
               />
@@ -233,7 +233,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                   inputMode="decimal"
                   placeholder="0,00"
                   required
-                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-slate-500"
                   value={form.valor}
                   onChange={e => setForm({ ...form, valor: e.target.value.replace(/[^0-9.,-]/g, '') })}
                 />
@@ -243,7 +243,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1">{dateLabel}</label>
                 <input
                   type="date" required
-                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-bold focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-bold focus:ring-2 focus:ring-slate-500"
                   value={form.data}
                   onChange={e => setForm({ ...form, data: e.target.value })}
                 />
@@ -257,7 +257,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <select
-                  className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold text-gray-600"
+                  className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-slate-500 text-xs font-bold text-gray-600"
                   value={form.repetir}
                   onChange={e => setForm({ ...form, repetir: e.target.value })}
                 >
@@ -269,7 +269,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                   <div className="animate-in fade-in zoom-in duration-200">
                     <input
                       type="date"
-                      className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 text-[10px] font-bold"
+                      className="w-full p-3 rounded-2xl bg-white border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-slate-500 text-[10px] font-bold"
                       value={form.recorrencia_limite}
                       onChange={e => setForm({ ...form, recorrencia_limite: e.target.value })}
                     />

@@ -9,7 +9,7 @@ export function AlertBanner({ overdueCount, todayCount, showAlerts, dispatch, on
         <AlertsSection transactions={transactions} onQuickPay={onQuickPay} isSaving={isSaving}/>
         <button
           onClick={() => dispatch({ type: UI_ACTIONS.TOGGLE_ALERTS })}
-          className="absolute mt-5 -top-12 -right-1 bg-indigo-500 shadow-lg border border-indigo-400 p-2 rounded-2xl text-white transition-all z-30 active:scale-90"
+          className="absolute mt-5 -top-12 -right-1 bg-slate-500 shadow-lg border border-slate-400 p-2 rounded-2xl text-white transition-all z-30 active:scale-90"
         >
           <ChevronDown size={14} className="rotate-180" />
         </button>
@@ -54,7 +54,7 @@ export function AlertBanner({ overdueCount, todayCount, showAlerts, dispatch, on
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1.5 text-indigo-500 font-black text-[8px] uppercase tracking-widest bg-indigo-50/50 py-2 px-3 rounded-2xl transition-all">
+      <div className="flex items-center gap-1.5 text-slate-500 font-black text-[8px] uppercase tracking-widest bg-slate-50/50 py-2 px-3 rounded-2xl transition-all">
         Ver
         <ChevronDown size={10} />
       </div>

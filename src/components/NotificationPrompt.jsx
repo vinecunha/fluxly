@@ -29,26 +29,26 @@ export function NotificationPrompt() {
   }
 
   return (
-    <div className="mx-4 mb-3 bg-indigo-50 border border-indigo-100 rounded-2xl-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top duration-300">
-      <div className="bg-indigo-100 p-2 rounded-2xl-xl flex-shrink-0">
-        <Bell size={16} className="text-indigo-600" />
+    <div className="mx-4 mb-3 bg-slate-50 border border-slate-100 rounded-2xl-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+      <div className="bg-slate-100 p-2 rounded-2xl-xl flex-shrink-0">
+        <Bell size={16} className="text-slate-600" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-black text-indigo-800 leading-tight">Ativar lembretes de vencimento</p>
-        <p className="text-[10px] text-indigo-500 mt-0.5">Receba avisos antes das contas vencerem.</p>
+        <p className="text-[11px] font-black text-slate-800 leading-tight">Ativar lembretes de vencimento</p>
+        <p className="text-[10px] text-slate-500 mt-0.5">Receba avisos antes das contas vencerem.</p>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={handleAllow}
-          className="bg-indigo-600 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-2xl-xl active:scale-95 transition-all"
+          className="bg-slate-900 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-2xl-xl active:scale-95 transition-all"
         >
           Ativar
         </button>
         <button
           onClick={handleDismiss}
-          className="text-indigo-400 hover:text-indigo-600 transition-colors p-1"
+          className="text-slate-400 hover:text-slate-600 transition-colors p-1"
           aria-label="Dispensar"
         >
           <X size={14} />

@@ -94,7 +94,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedSubcat(null)}
-          className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
           <ArrowLeft size={13} /> Voltar
         </button>
 
@@ -104,7 +104,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
             <p className="text-xl font-black text-gray-900">{expandedSubcat}</p>
           </div>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
-            tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600'
+            tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
           }`}>
             {tab === 'renda' ? <DollarSign size={20} /> : <Wallet size={20} />}
           </div>
@@ -138,13 +138,13 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedDestino(null)}
-          className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Saldo Líquido em {expandedDestino}</p>
-          <p className="text-3xl font-black text-purple-600">{fmt(liquidDestino)}</p>
+          <p className="text-3xl font-black text-blue-600">{fmt(liquidDestino)}</p>
         </div>
 
         <div className="space-y-2">
@@ -152,7 +152,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
             <div key={name} onClick={() => setExpandedSubcat(name)}
               className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
                   <PiggyBank size={16} />
                 </div>
                 <div>
@@ -179,7 +179,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
       <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
         {[
           { id: 'gasto', label: 'Gastos', Icon: TrendingDown, color: 'text-rose-600' },
-          { id: 'investimento', label: 'Reservas', Icon: PiggyBank, color: 'text-purple-600' },
+          { id: 'investimento', label: 'Reservas', Icon: PiggyBank, color: 'text-blue-600' },
           { id: 'renda', label: 'Renda', Icon: TrendingUp, color: 'text-emerald-600' },
         ].map(({ id, label, Icon, color }) => (
           <button key={id}
@@ -206,7 +206,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
           </p>
           <div className="flex items-end gap-3">
             <p className={`text-3xl font-black ${
-              tab === 'investimento' ? 'text-purple-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
+              tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
             }`}>{fmt(viewTotal)}</p>
             {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
           </div>
@@ -215,14 +215,14 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
             <div className="mt-5 pt-4 border-t border-gray-50">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-1">
-                  <Zap size={10} className="text-purple-400 fill-purple-400" />
+                  <Zap size={10} className="text-blue-400 fill-purple-400" />
                   <span className="text-[9px] font-black text-gray-400 uppercase">Projetar Futuro</span>
                 </div>
                 <div className="flex gap-1">
                   {[0, 30, 60, 90, 365].map(d => (
                     <button key={d} onClick={() => setProjectionDays(d)}
                       className={`px-2.5 py-1 rounded-2xl text-[8px] font-black transition-all ${
-                        projectionDays === d ? 'bg-purple-600 text-white' : 'bg-gray-50 text-gray-400'
+                        projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
                       }`}>
                       {d === 0 ? 'HOJE' : d === 365 ? '1 ANO' : `${d}D`}
                     </button>
@@ -231,9 +231,9 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
               </div>
               
               {projectionDays > 0 && (
-                <div className="bg-purple-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
+                <div className="bg-blue-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
                   <div>
-                    <p className="text-[8px] font-bold text-purple-400 uppercase">Lucro Estimado no Período</p>
+                    <p className="text-[8px] font-bold text-blue-400 uppercase">Lucro Estimado no Período</p>
                     <p className="text-lg font-black text-purple-700">+{fmt(viewTotal - calculateLiquidValue(filtered, 0))}</p>
                   </div>
                   <div className="text-right">
@@ -262,8 +262,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                     catData?.color ||
-                    (tab === 'investimento' ? 'bg-purple-100 text-purple-600' :
-                     tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600')
+                    (tab === 'investimento' ? 'bg-blue-100 text-blue-600' :
+                     tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600')
                   }`}>
                     {catData?.icon || (
                       tab === 'investimento' ? <Building2 size={14} /> :
@@ -282,8 +282,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
               </div>
               <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-700 ${
-                    tab === 'investimento' ? 'bg-purple-400' :
-                    tab === 'renda' ? 'bg-emerald-400' : 'bg-indigo-400'
+                    tab === 'investimento' ? 'bg-blue-400' :
+                    tab === 'renda' ? 'bg-emerald-400' : 'bg-slate-400'
                   }`}
                   style={{ width: `${Math.min(100, pct)}%` }}
                 />

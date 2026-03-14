@@ -46,7 +46,7 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
             onClick={handleCycleFilter}
             className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase transition-all border ${
               filterMode !== 'geral'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+              ? 'bg-slate-900 text-white border-slate-600 shadow-sm' 
               : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
             }`}
           >

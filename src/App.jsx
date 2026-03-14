@@ -32,7 +32,7 @@ const FinancialAnalytics = lazy(() => import('./components/FinancialAnalytics').
 
 const TAB_FALLBACK = (
   <div className="flex items-center justify-center py-20">
-    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-2xl animate-spin" />
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-600 rounded-2xl animate-spin" />
   </div>
 )
 

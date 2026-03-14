@@ -29,7 +29,7 @@ export function PullToRefreshIndicator({ pullDistance, isPulling, isRefreshing }
       }}
     >
       <div className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-white text-[10px] font-black uppercase tracking-wide transition-all ${
-        ready || isRefreshing ? 'bg-indigo-600' : 'bg-gray-400'
+        ready || isRefreshing ? 'bg-slate-900' : 'bg-gray-400'
       }`}>
         <RefreshCw
           size={14}

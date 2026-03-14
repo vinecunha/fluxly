@@ -43,7 +43,7 @@ export const DashboardHeader = ({
 
   const getBarColor = () => {
     if (isCoberto)         return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-    if (estaNoRitmo)       return 'bg-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
+    if (estaNoRitmo)       return 'bg-slate-400 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
     return 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
   }
 
@@ -51,26 +51,26 @@ export const DashboardHeader = ({
 
   if (isLoading) {
     return (
-      <header className="bg-gradient-to-br from-indigo-600 to-violet-700 p-5 rounded-b-2xl shadow-2xl animate-pulse">
+      <header className="bg-gradient-to-br from-slate-900 to-slate-800 p-5 rounded-b-2xl shadow-2xl animate-pulse">
         <div className="h-36 bg-white/10 rounded-2xl" />
       </header>
     )
   }
 
   return (
-    <header className="bg-gradient-to-br from-indigo-600 to-violet-700 p-4 sm:p-6 pb-8 rounded-b-2xl shadow-2xl relative overflow-hidden">
+    <header className="bg-gradient-to-br from-slate-900 to-slate-800 p-4 sm:p-6 pb-8 rounded-b-2xl shadow-2xl relative overflow-hidden">
       <div className="absolute top-[-10%] right-[-10%] w-72 h-72 bg-white/5 rounded-full blur-[80px] pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[-5%] w-48 h-48 bg-violet-500/20 rounded-full blur-[60px] pointer-events-none" />
 
       <div className="flex justify-between items-center text-white mb-5 sm:mb-8 relative z-10">
         <div className="flex flex-col min-w-0">
-          <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-indigo-200/70 uppercase">
+          <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-slate-300/70 uppercase">
             Simples. Inteligente.
           </span>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <h1 className="font-black text-2xl sm:text-4xl tracking-tighter">Fluxly</h1>
             <div className="h-3 sm:h-5 w-[1px] bg-white/20" />
-            <span className="text-[8px] sm:text-[11px] font-bold text-indigo-200/60 lowercase truncate max-w-[70px] sm:max-w-none">
+            <span className="text-[8px] sm:text-[11px] font-bold text-slate-300/60 lowercase truncate max-w-[70px] sm:max-w-none">
               {userEmail?.split('@')[0]}
             </span>
           </div>
@@ -204,9 +204,9 @@ export const DashboardHeader = ({
               <span className="text-[7px] sm:text-[10px] font-black text-gray-400 uppercase tracking-tighter">
                 {isCurrentMonth ? 'Meta/Dia' : 'Progresso'}
               </span>
-              <Target className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+              <Target className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-slate-500 shrink-0" />
             </div>
-            <p className="text-xs sm:text-lg font-black text-indigo-600 truncate">
+            <p className="text-xs sm:text-lg font-black text-slate-600 truncate">
               {isCurrentMonth
                 ? metrics.rendaDiariaNecessaria > 0
                   ? `R$ ${metrics.rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -219,14 +219,14 @@ export const DashboardHeader = ({
 
         <button
           onClick={onOpenAnalytics}
-          className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-4 sm:p-6 flex items-center justify-between hover:from-indigo-700 hover:to-violet-700 active:scale-[0.98] transition-all"
+          className="w-full bg-gradient-to-r from-slate-900 to-violet-600 rounded-2xl p-4 sm:p-6 flex items-center justify-between hover:from-slate-700 hover:to-slate-800 active:scale-[0.98] transition-all"
         >
           <div className="flex items-center gap-3 sm:gap-5 min-w-0">
             <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-inner">
               <PiggyBank className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div className="min-w-0 text-left">
-              <p className="text-[7px] sm:text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-0.5">Patrimônio</p>
+              <p className="text-[7px] sm:text-[10px] font-black text-slate-300 uppercase tracking-widest mb-0.5">Patrimônio</p>
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-sm sm:text-2xl font-black text-white leading-none">
                   R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

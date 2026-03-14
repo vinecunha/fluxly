@@ -2,13 +2,13 @@ import React, { useMemo, useState } from 'react'
 
 const TAB_CONFIG = {
   gasto:        { label: 'Gastos',  barKey: 'despesas', color: 'bg-rose-400',    dimColor: 'bg-rose-100',    textColor: 'text-rose-500',    goal: 'below' },
-  investimento: { label: 'Reserva', barKey: 'reserva',  color: 'bg-purple-400',  dimColor: 'bg-purple-100',  textColor: 'text-purple-500',  goal: 'above' },
+  investimento: { label: 'Reserva', barKey: 'reserva',  color: 'bg-blue-400',  dimColor: 'bg-blue-100',  textColor: 'text-blue-500',  goal: 'above' },
   renda:        { label: 'Renda',   barKey: 'renda',    color: 'bg-emerald-400', dimColor: 'bg-emerald-100', textColor: 'text-emerald-500', goal: 'above' },
 }
 
 const LEGEND = [
   { id: 'gasto',        color: 'bg-rose-400',    label: 'Gastos'  },
-  { id: 'investimento', color: 'bg-purple-400',  label: 'Reserva' },
+  { id: 'investimento', color: 'bg-blue-400',  label: 'Reserva' },
   { id: 'renda',        color: 'bg-emerald-400', label: 'Renda'   },
 ]
 
@@ -108,7 +108,7 @@ export function MonthlyChart({ allTransactions, activeTab = null }) {
                       >
                         <div className={`w-full border-t-2 border-dashed ${
                           highlighted === 'gasto' ? 'border-rose-400' :
-                          highlighted === 'investimento' ? 'border-purple-400' : 'border-emerald-400'
+                          highlighted === 'investimento' ? 'border-blue-400' : 'border-emerald-400'
                         } opacity-70`} />
                       </div>
                     )
@@ -128,8 +128,8 @@ export function MonthlyChart({ allTransactions, activeTab = null }) {
                   <div
                     className={`flex-1 rounded-t transition-all duration-700 ${
                       !highlighted || highlighted === 'investimento'
-                        ? 'bg-purple-400'
-                        : 'bg-purple-100'
+                        ? 'bg-blue-400'
+                        : 'bg-blue-100'
                     }`}
                     style={{ height: barHeight(m.reserva) }}
                   />
