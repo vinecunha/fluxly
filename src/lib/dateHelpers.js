@@ -28,3 +28,25 @@ export function isInMonth(dateStr, paymentDateStr, viewMonth, viewYear) {
   const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
   return isDueThisMonth || isPaidThisMonth
 }
+
+export function getFaturaPeriodo(dataTransacao, diaFechamento) {
+  if (!dataTransacao) return ''
+  const data = new Date(dataTransacao + 'T12:00:00')
+  const dia = data.getDate()
+  let mes = data.getMonth()
+  let ano = data.getFullYear()
+
+  if (dia > Number(diaFechamento)) {
+    mes += 1
+    if (mes > 11) {
+      mes = 0
+      ano += 1
+    }
+  }
+
+  return `${ano}-${String(mes + 1).padStart(2, '0')}`
+}
+
+export function getPeriodoAtual(diaFechamento) {
+  return getFaturaPeriodo(new Date().toISOString().split('T')[0], diaFechamento)
+}

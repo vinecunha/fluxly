@@ -139,7 +139,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                           : 'bg-gray-50 border-transparent text-gray-400'
                       }`}
                     >
-                      Dinheiro / Débito
+                      Dinheiro / Pix
                     </button>
                   )}
                   {cartoes.map(c => (

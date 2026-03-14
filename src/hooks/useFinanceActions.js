@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { AUTO_PAID_TYPES, UI_ACTIONS } from '../lib/constants'
-import { getTodayString } from '../lib/dateHelpers'
 
 const UNDO_TIMEOUT = 5000
 
