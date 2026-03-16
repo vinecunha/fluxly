@@ -2,11 +2,12 @@ import React, { useState, useMemo, lazy, Suspense } from 'react'
 import {
   TrendingDown, TrendingUp, Tag, ArrowLeft,
   DollarSign, PiggyBank, Building2, Wallet,
-  ChevronRight, Minus, Zap
+  ChevronRight, Zap
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
 import { useMonthlyAverages } from '../hooks/useMonthlyAverages'
 import { useCDI } from '../hooks/useCDI'
+import { CalendarView } from './CalendarView'
 
 const MonthlyChart = lazy(() =>
   import('./MonthlyChart').then(m => ({ default: m.MonthlyChart }))
@@ -14,32 +15,28 @@ const MonthlyChart = lazy(() =>
 
 const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-export function FinancialAnalytics({ transactions = [], allTransactions = [] }) {
-  const [tab, setTab] = useState('gasto')
+export function FinancialAnalytics({ transactions = [], allTransactions = [], currentDate }) {
+  const [tab, setTab]                         = useState('gasto')
   const [expandedDestino, setExpandedDestino] = useState(null)
-  const [expandedSubcat, setExpandedSubcat] = useState(null)
-  const [projectionDays, setProjectionDays] = useState(0)
+  const [expandedSubcat, setExpandedSubcat]   = useState(null)
+  const [projectionDays, setProjectionDays]   = useState(0)
 
-  const { averageByCategory, averageRenda, averageDespesas } = useMonthlyAverages(allTransactions, 3)
+  const { averageRenda, averageDespesas } = useMonthlyAverages(allTransactions, 3)
   const { taxaAnual: cdiReal } = useCDI()
 
-  // Helper para calcular rendimento de um item ou grupo de itens
   const calculateLiquidValue = (items, extraDays = 0) => {
     const taxaDiaria = Math.pow(1 + cdiReal, 1 / 252) - 1
     const hoje = new Date()
-
     return items.reduce((total, t) => {
       const valorOriginal = parseFloat(t.valor) || 0
       const dataTransacao = new Date(t.data + 'T12:00:00')
-      
-      const diasPassados = Math.max(0, Math.floor((hoje - dataTransacao) / (1000 * 60 * 60 * 24)))
-      const diasTotais = diasPassados + extraDays
-
+      const diasPassados  = Math.max(0, Math.floor((hoje - dataTransacao) / (1000 * 60 * 60 * 24)))
+      const diasTotais    = diasPassados + extraDays
       if (diasTotais >= 30) {
         const diasUteis = Math.floor(diasTotais * 0.69)
         const bruto = valorOriginal * Math.pow(1 + taxaDiaria, diasUteis)
         const lucro = bruto - valorOriginal
-        const ir = lucro * 0.225 // Alíquota regressiva simplificada
+        const ir    = lucro * 0.225
         return total + (bruto - ir)
       }
       return total + valorOriginal
@@ -47,7 +44,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
   }
 
   const filtered = useMemo(() => (transactions || []).filter(t => {
-    if (tab === 'renda') return t.tipo === 'renda'
+    if (tab === 'renda')        return t.tipo === 'renda'
     if (tab === 'investimento') return t.tipo === 'reserva'
     return t.tipo !== 'renda' && t.tipo !== 'reserva' && (t.tipo === 'gasto_diario' || t.pago === true)
   }), [transactions, tab])
@@ -56,10 +53,9 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     const v = parseFloat(t.valor) || 0
     if (tab === 'investimento') {
       const dest = (t.destino_reserva || 'Outros').trim()
-      const sub = (t.subcategoria || t.descricao || 'Sem Nome').trim()
+      const sub  = (t.subcategoria || t.descricao || 'Sem Nome').trim()
       if (!acc[dest]) acc[dest] = { totalBruto: 0, items: [], subcategorias: {} }
       if (!acc[dest].subcategorias[sub]) acc[dest].subcategorias[sub] = { totalBruto: 0, items: [] }
-      
       acc[dest].totalBruto += v
       acc[dest].items.push(t)
       acc[dest].subcategorias[sub].totalBruto += v
@@ -73,7 +69,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     return acc
   }, {}), [filtered, tab])
 
-  // Saldo Líquido Totalizado (já com rendimento passado e projeção futura)
   const viewTotal = useMemo(() => {
     if (tab === 'investimento') return calculateLiquidValue(filtered, projectionDays)
     return Object.values(grouped).reduce((s, d) => s + d.totalBruto, 0)
@@ -85,7 +80,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     setProjectionDays(0)
   }
 
-  // View: Detalhes da Subcategoria / Lançamentos
   if (expandedSubcat) {
     const items = tab === 'investimento'
       ? grouped[expandedDestino]?.subcategorias[expandedSubcat]?.items || []
@@ -97,7 +91,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
           className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
           <ArrowLeft size={13} /> Voltar
         </button>
-
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Detalhes</p>
@@ -109,7 +102,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
             {tab === 'renda' ? <DollarSign size={20} /> : <Wallet size={20} />}
           </div>
         </div>
-
         <div className="space-y-2">
           {items.sort((a, b) => new Date(b.data) - new Date(a.data)).map((t, i) => (
             <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
@@ -130,23 +122,19 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     )
   }
 
-  // View: Detalhes do Destino (Reservas)
   if (expandedDestino && tab === 'investimento') {
     const subs = Object.entries(grouped[expandedDestino]?.subcategorias || {})
     const liquidDestino = calculateLiquidValue(grouped[expandedDestino]?.items || [], projectionDays)
-
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedDestino(null)}
           className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
-
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Saldo Líquido em {expandedDestino}</p>
           <p className="text-3xl font-black text-blue-600">{fmt(liquidDestino)}</p>
         </div>
-
         <div className="space-y-2">
           {subs.sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, data]) => (
             <div key={name} onClick={() => setExpandedSubcat(name)}
@@ -171,16 +159,16 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
     )
   }
 
-  const avgTotal = tab === 'renda' ? averageRenda : tab === 'gasto' ? averageDespesas : 0
+  const avgTotal  = tab === 'renda' ? averageRenda : tab === 'gasto' ? averageDespesas : 0
   const trendDiff = (tab !== 'investimento' && avgTotal > 0) ? ((viewTotal - avgTotal) / avgTotal) * 100 : null
 
   return (
     <section className="space-y-4 animate-in fade-in duration-300">
       <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
         {[
-          { id: 'gasto', label: 'Gastos', Icon: TrendingDown, color: 'text-rose-600' },
-          { id: 'investimento', label: 'Reservas', Icon: PiggyBank, color: 'text-blue-600' },
-          { id: 'renda', label: 'Renda', Icon: TrendingUp, color: 'text-emerald-600' },
+          { id: 'gasto',        label: 'Gastos',  Icon: TrendingDown, color: 'text-rose-600'    },
+          { id: 'investimento', label: 'Reservas', Icon: PiggyBank,   color: 'text-blue-600'    },
+          { id: 'renda',        label: 'Renda',    Icon: TrendingUp,  color: 'text-emerald-600' },
         ].map(({ id, label, Icon, color }) => (
           <button key={id}
             onClick={() => { setTab(id); resetDrill() }}
@@ -197,11 +185,13 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
         <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
+      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />
+
       <div className="space-y-2">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
-            {tab === 'investimento' 
-              ? (projectionDays === 0 ? 'Saldo Líquido Atual (100% CDI)' : `Projeção Líquida para ${projectionDays} dias`) 
+            {tab === 'investimento'
+              ? (projectionDays === 0 ? 'Saldo Líquido Atual (100% CDI)' : `Projeção Líquida para ${projectionDays} dias`)
               : tab === 'renda' ? 'Renda Total' : 'Total de Gastos'}
           </p>
           <div className="flex items-end gap-3">
@@ -229,7 +219,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
                   ))}
                 </div>
               </div>
-              
               {projectionDays > 0 && (
                 <div className="bg-blue-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
                   <div>
@@ -250,9 +239,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
       <div className="space-y-2">
         {Object.entries(grouped).sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, info]) => {
           const liquidValue = tab === 'investimento' ? calculateLiquidValue(info.items, projectionDays) : info.totalBruto
-          const pct = viewTotal > 0 ? (liquidValue / viewTotal) * 100 : 0
-          const catData = tab === 'gasto' ? categoryIcons[name] : null
-
+          const pct         = viewTotal > 0 ? (liquidValue / viewTotal) * 100 : 0
+          const catData     = tab === 'gasto' ? categoryIcons[name] : null
           return (
             <div key={name}
               onClick={() => tab === 'investimento' ? setExpandedDestino(name) : setExpandedSubcat(name)}
@@ -298,7 +286,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [] }) 
 
 function TrendBadge({ diff, invertGood = false, small = false }) {
   if (Math.abs(diff) < 5) return null
-  const isUp = diff > 0
+  const isUp   = diff > 0
   const isGood = invertGood ? !isUp : isUp
   return (
     <span className={`flex items-center gap-0.5 font-black rounded-2xl ${small ? 'text-[8px] px-1 py-0.5' : 'text-[9px] px-1.5 py-0.5'} ${

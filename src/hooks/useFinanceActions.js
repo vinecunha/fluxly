@@ -120,6 +120,13 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
 
     const isAutoPaid = AUTO_PAID_TYPES.includes(formData.tipo)
 
+    const dataLancamento = new Date(formData.data + 'T12:00:00')
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    const isDataPassadaOuHoje = dataLancamento <= hoje
+
+    const devePagar = isAutoPaid || (formData.tipo === 'esporadica' && isDataPassadaOuHoje)
+
     const transactionPayload = {
       user_id: user.id,
       descricao: formData.descricao,
@@ -129,12 +136,12 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       subcategoria: formData.tipo === 'reserva' ? formData.descricao : (formData.subcategoria || null),
       destino_reserva: formData.destino_reserva || null,
       cartao_id: formData.cartao_id || null,
-      pago: isAutoPaid ? true : (formData.pago ?? false),
+      pago: devePagar ? true : (formData.pago ?? false),
       data: formData.data,
       repetir: formData.repetir || 'nao',
       recorrencia_limite: formData.recorrencia_limite || null,
       recorrencia_id: formData.recorrencia_id || null,
-      data_pagamento: isAutoPaid
+      data_pagamento: devePagar
         ? new Date(formData.data + 'T12:00:00').toISOString()
         : ((formData.pago && !formData.data_pagamento) ? new Date().toISOString() : (formData.data_pagamento || null)),
     }
@@ -143,7 +150,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       if (editingTransaction) {
         await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie)
       } else {
-        await _insertTransaction(transactionPayload, formData, isAutoPaid)
+        await _insertTransaction(transactionPayload, formData, devePagar)
       }
 
       dispatch({
@@ -195,7 +202,7 @@ async function _updateTransaction(payload, editingTransaction, alterarTodaSerie)
   }
 }
 
-async function _insertTransaction(payload, formData, isAutoPaid) {
+async function _insertTransaction(payload, formData, devePagar) {
   if (formData.repetir !== 'nao' && formData.recorrencia_limite) {
     const groupID = crypto.randomUUID()
     const transactions = []
@@ -207,8 +214,8 @@ async function _insertTransaction(payload, formData, isAutoPaid) {
         ...payload,
         data: dataAtual.toISOString().split('T')[0],
         recorrencia_id: groupID,
-        pago: isAutoPaid,
-        data_pagamento: isAutoPaid ? dataAtual.toISOString() : null,
+        pago: devePagar,
+        data_pagamento: devePagar ? dataAtual.toISOString() : null,
       })
 
       if (formData.repetir === 'mensal') {

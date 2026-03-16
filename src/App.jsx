@@ -50,7 +50,6 @@ export default function App() {
   useServiceWorker()
   const isOffline = useOffline()
 
-  // ─── Auth ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -67,7 +66,6 @@ export default function App() {
     dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
   }, [])
 
-  // ─── Data ─────────────────────────────────────────────────────────────────
   const { data, loading, refresh }   = useFinance(user)
   const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
   const filteredData = useFilteredData(data, currentDate)
@@ -79,7 +77,6 @@ export default function App() {
     onSessionExpired: handleSessionExpired,
   })
 
-  // ─── Pull-to-refresh ──────────────────────────────────────────────────────
   const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(refresh)
 
   const changeMonth = useCallback((direction) => {
@@ -181,6 +178,7 @@ export default function App() {
             <FinancialAnalytics
               transactions={filteredData}
               allTransactions={data}
+              currentDate={currentDate}
             />
           )}
           {activeTab === TABS.CARTOES && (

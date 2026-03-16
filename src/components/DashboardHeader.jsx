@@ -103,7 +103,7 @@ export const DashboardHeader = ({
 
           <button
             onClick={onLogout}
-            className="bg-white/10 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl border border-white/10 text-rose-200 active:scale-90 transition-all hover:bg-white/20"
+            className="bg-white/10 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl border border-white/10 active:scale-90 transition-all hover:bg-white/20"
             title="Sair"
           >
             <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -144,7 +144,7 @@ export const DashboardHeader = ({
             <p className="text-[9px] sm:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Minhas Finanças</p>
             <div className="flex items-center gap-2">
               <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight truncate">
-                R$ {renda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {renda.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
               {isCurrentMonth && (
                 estaNoRitmo
@@ -153,7 +153,7 @@ export const DashboardHeader = ({
               )}
             </div>
             <p className="text-[9px] sm:text-[12px] font-bold text-gray-400 mt-0.5">
-              de R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              de R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <span className={`text-[8px] sm:text-[10px] font-black px-2 sm:px-3 py-0.5 sm:py-1 rounded-full uppercase shrink-0 mt-1 ${
@@ -184,7 +184,7 @@ export const DashboardHeader = ({
 
         {isCurrentMonth && (
           <p className="text-[9px] text-gray-400 font-bold mb-6 sm:mb-8">
-            ideal até hoje: R$ {metrics.valorIdealAteHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            ideal até hoje: R$ {metrics.valorIdealAteHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         )}
         {!isCurrentMonth && <div className="mb-6 sm:mb-8" />}
@@ -196,7 +196,7 @@ export const DashboardHeader = ({
               <span className="text-[7px] sm:text-[10px] font-black text-gray-400 uppercase tracking-tighter">Pagas</span>
             </div>
             <p className="text-xs sm:text-lg font-black text-gray-800 truncate">
-              R$ {despesasPagas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {despesasPagas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="bg-gray-50/50 p-3 sm:p-4 rounded-2xl border border-gray-100 text-right">
@@ -209,7 +209,7 @@ export const DashboardHeader = ({
             <p className="text-xs sm:text-lg font-black text-slate-600 truncate">
               {isCurrentMonth
                 ? metrics.rendaDiariaNecessaria > 0
-                  ? `R$ ${metrics.rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                  ? `R$ ${metrics.rendaDiariaNecessaria.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : 'Ok! 🎉'
                 : `${metrics.progresso.toFixed(0)}%`
               }
@@ -229,7 +229,7 @@ export const DashboardHeader = ({
               <p className="text-[7px] sm:text-[10px] font-black text-slate-300 uppercase tracking-widest mb-0.5">Patrimônio</p>
               <div className="flex items-center gap-1.5 truncate">
                 <span className="text-sm sm:text-2xl font-black text-white leading-none">
-                  R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {reservaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <Zap size={8} className="text-amber-300 fill-amber-300 shrink-0" />
               </div>
@@ -249,7 +249,7 @@ export const DashboardHeader = ({
             rendaInsuficiente ? 'text-rose-500' : 'text-emerald-500'
           }`}>
             {rendaInsuficiente
-              ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : 'Objetivo Alcançado'}
           </span>
         </div>
