@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import {
   ChevronLeft, ChevronRight, LogOut, CheckCircle2, Target,
   CalendarDays, TrendingUp, TrendingDown, PiggyBank, Zap, RefreshCw
@@ -9,6 +9,16 @@ export const DashboardHeader = ({
   currentDate, onMonthChange, onLogout, isLoading, userEmail,
   onRefresh, isRefreshing, onOpenAnalytics,
 }) => {
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const metrics = useMemo(() => {
     const now = new Date()
     const isCurrentMonth =
@@ -36,29 +46,28 @@ export const DashboardHeader = ({
   }, [renda, totalDespesas, currentDate])
 
   const { now, isCurrentMonth, estaNoRitmo } = metrics
-
-  const isCoberto        = renda >= totalDespesas && totalDespesas > 0
-  const rendaInsuficiente = renda < totalDespesas
-  const faltaRenda       = totalDespesas - renda
+  const isCoberto = renda >= totalDespesas && totalDespesas > 0
 
   const getBarColor = () => {
-    if (isCoberto)   return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+    if (isCoberto) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
     if (estaNoRitmo) return 'bg-slate-400 shadow-[0_0_10px_rgba(99,102,241,0.4)]'
     return 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
   }
 
-  const formatMonth = () => currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const formatMonth = () => {
+    if (isScrolled) {
+      const m = String(currentDate.getMonth() + 1).padStart(2, '0')
+      const y = currentDate.getFullYear()
+      return `${m}/${y}`
+    }
+    return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  }
 
   if (isLoading) {
     return (
-      <>
-        <div className="h-[180px] sm:h-[220px]" />
-        <header className="fixed top-0 left-0 right-0 z-[100] bg-slate-900 pt-4 sm:pt-6 px-4 sm:px-6 pb-6 animate-pulse">
-          <div className="max-w-2xl mx-auto">
-            <div className="h-36 bg-white/10 rounded-2xl" />
-          </div>
-        </header>
-      </>
+      <header className="fixed top-0 left-0 right-0 z-[100] bg-slate-900 pt-4 px-4 pb-6 animate-pulse">
+        <div className="max-w-2xl mx-auto h-32 bg-white/10 rounded-2xl" />
+      </header>
     )
   }
 
@@ -66,86 +75,102 @@ export const DashboardHeader = ({
     <>
       <div className="h-[180px] sm:h-[220px]" />
 
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-slate-900 pt-4 sm:pt-6 px-4 sm:px-6 pb-8">
-        <div className="max-w-2xl mx-auto">
-
-          <div className="flex justify-between items-center text-white mb-4">
-            <div className="flex flex-col min-w-0">
-              <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                Simples. Inteligente.
-              </span>
-              <div className="flex items-center gap-1.5 sm:gap-3">
-                <h1 className="font-black text-2xl sm:text-4xl tracking-tighter text-white">Fluxly</h1>
+      <header 
+        className={`fixed top-0 left-0 right-0 z-[100] bg-slate-900 px-4 transition-all duration-300 ease-in-out border-b border-white/5 shadow-lg
+          ${isScrolled ? 'py-3' : 'pt-4 sm:pt-6 pb-6'}`}
+      >
+        <div className="max-w-2xl mx-auto relative">
+          
+          <div className={`flex transition-all duration-300 ${isScrolled ? 'flex-row items-center justify-between gap-2' : 'flex-col'}`}>
+            
+            {/* 1. LOGO (order-1 no scroll) */}
+            <div className={`flex flex-col min-w-0 transition-all duration-300 shrink-0 order-1 ${isScrolled ? 'scale-90 origin-left' : 'mb-4'}`}>
+              {!isScrolled && (
+                <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase mb-0.5">
+                  Simples. Inteligente.
+                </span>
+              )}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className={`font-black tracking-tighter text-white transition-all ${isScrolled ? 'text-xl' : 'text-2xl sm:text-4xl'}`}>
+                  Fluxly
+                </h1>
                 <div className="h-3 sm:h-5 w-[1px] bg-white/20" />
-                <span className="text-[8px] sm:text-[11px] font-bold text-slate-400 lowercase truncate max-w-[70px] sm:max-w-none">
+                <span className="text-[8px] sm:text-[11px] font-bold text-slate-400 lowercase truncate max-w-[40px] sm:max-w-none">
                   {userEmail?.split('@')[0]}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            {/* 2. MÊS (order-2 no scroll) */}
+            <div className={`flex items-center bg-white/10 rounded-2xl p-1 border border-white/10 transition-all duration-300 order-2
+              ${isScrolled 
+                ? 'flex-1 max-w-[120px] mx-auto' 
+                : 'w-full py-1.5 sm:py-2'}`}
+            >
+              <button onClick={() => onMonthChange(-1)} className="p-1 text-white/50 active:text-white hover:text-white transition-colors">
+                <ChevronLeft size={isScrolled ? 14 : 16} />
+              </button>
+              <div className="relative flex-1 text-center">
+                <span className={`font-black uppercase text-white transition-all duration-300 block truncate
+                  ${isScrolled ? 'text-[10px] tracking-tight' : 'text-[9px] sm:text-[11px] tracking-widest'}`}>
+                  {formatMonth()}
+                </span>
+                <input
+                  type="month"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
+                  onChange={(e) => {
+                    const [y, m] = e.target.value.split('-')
+                    onMonthChange(
+                      (parseInt(y) - currentDate.getFullYear()) * 12 +
+                      (parseInt(m) - 1 - currentDate.getMonth())
+                    )
+                  }}
+                />
+              </div>
+              <button onClick={() => onMonthChange(1)} className="p-1 text-white/50 active:text-white hover:text-white transition-colors">
+                <ChevronRight size={isScrolled ? 14 : 16} />
+              </button>
+            </div>
+
+            {/* 3. BOTÕES (order-3 no scroll) */}
+            <div className={`flex items-center gap-1.5 shrink-0 order-3 transition-all
+              ${isScrolled ? '' : 'absolute top-2 sm:top-4 right-0'}`}>
               {!isCurrentMonth && (
                 <button
                   onClick={() => onMonthChange(
                     (now.getFullYear() - currentDate.getFullYear()) * 12 +
                     (now.getMonth() - currentDate.getMonth())
                   )}
-                  className="bg-white/10 p-2 sm:p-2.5 rounded-2xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
+                  className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
                 >
-                  <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  <CalendarDays className="w-4 h-4 text-white" />
                 </button>
               )}
-
               {onRefresh && (
                 <button
                   onClick={onRefresh}
                   disabled={isRefreshing || isLoading}
-                  className="bg-white/10 p-2 sm:p-2.5 rounded-2xl border border-white/10 active:scale-90 transition-all hover:bg-white/15 disabled:opacity-40"
+                  className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
                 >
-                  <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
               )}
-
               <button
                 onClick={onLogout}
-                className="bg-white/10 p-2 sm:p-2.5 rounded-2xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
+                className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
               >
-                <LogOut className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
+                <LogOut className="w-4 h-4 text-slate-300" />
               </button>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between bg-white/10 rounded-2xl p-1 border border-white/10">
-            <button onClick={() => onMonthChange(-1)} className="p-1.5 sm:p-2 text-white/50 active:text-white hover:text-white transition-colors">
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-            <div className="relative px-3 py-1">
-              <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-white">
-                {formatMonth()}
-              </span>
-              <input
-                type="month"
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
-                onChange={(e) => {
-                  const [y, m] = e.target.value.split('-')
-                  onMonthChange(
-                    (parseInt(y) - currentDate.getFullYear()) * 12 +
-                    (parseInt(m) - 1 - currentDate.getMonth())
-                  )
-                }}
-              />
-            </div>
-            <button onClick={() => onMonthChange(1)} className="p-1.5 sm:p-2 text-white/50 active:text-white hover:text-white transition-colors">
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
           </div>
         </div>
       </header>
 
-      <div className="px-4 sm:px-6 relative z-10 -mt-8">
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl p-5 sm:p-8 border border-gray-100 animate-in fade-in duration-500">
-
+      {/* Card Section */}
+      <div className="px-4 sm:px-6 relative z-10 -mt-10">
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-5 sm:p-8 border border-gray-100">
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="min-w-0">
               <p className="text-[9px] sm:text-[11px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Minhas Finanças</p>
@@ -229,7 +254,7 @@ export const DashboardHeader = ({
             className="w-full bg-slate-900 rounded-2xl p-4 sm:p-6 flex items-center justify-between hover:bg-slate-800 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-3 sm:gap-5 min-w-0">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white/15 rounded-2xl flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white/15 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-inner">
                 <PiggyBank className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0 text-left">
@@ -244,22 +269,6 @@ export const DashboardHeader = ({
             </div>
             <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
           </button>
-
-          <div className="flex justify-between items-center mt-5 sm:mt-8 px-0.5 border-t border-gray-50 pt-4">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isCoberto ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
-              <span className="text-[8px] sm:text-[11px] font-black text-gray-400 uppercase">
-                {metrics.progresso.toFixed(0)}% Coberto
-              </span>
-            </div>
-            <span className={`text-[8px] sm:text-[11px] font-black uppercase truncate ml-2 ${
-              rendaInsuficiente ? 'text-rose-500' : 'text-emerald-500'
-            }`}>
-              {rendaInsuficiente
-                ? `Faltam R$ ${faltaRenda.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : 'Objetivo Alcançado'}
-            </span>
-          </div>
         </div>
       </div>
     </>
