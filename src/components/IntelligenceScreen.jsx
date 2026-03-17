@@ -324,24 +324,24 @@ export function IntelligenceScreen({ allTransactions = [], currentDate, user }) 
         )}
 
         {(!confirmado || editando) ? (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder={rendaHoje > 0 ? 'Ou informe outro valor' : 'Valor a distribuir'}
-              value={rendaInput}
-              onChange={e => setRendaInput(e.target.value.replace(/[^0-9.,-]/g, ''))}
-              className="flex-1 p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-lg font-black focus:ring-2 focus:ring-slate-500"
-            />
-            <button
-              onClick={handleConfirmar}
-              disabled={!rendaInput}
-              className="px-5 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all"
-            >
-              Ver plano
-            </button>
-          </div>
-        ) : (
+            <div className="flex gap-2 w-full">
+                <input
+                type="text"
+                inputMode="decimal"
+                placeholder={rendaHoje > 0 ? 'Outro valor' : 'Valor total'}
+                value={rendaInput}
+                onChange={e => setRendaInput(e.target.value.replace(/[^0-9.,-]/g, ''))}
+                className="w-full min-w-0 p-3.5 sm:p-4 rounded-2xl bg-gray-50 ring-1 ring-gray-200 outline-none text-base sm:text-lg font-black focus:ring-2 focus:ring-slate-500 transition-all"
+                />
+                <button
+                onClick={handleConfirmar}
+                disabled={!rendaInput}
+                className="shrink-0 px-4 sm:px-6 bg-slate-900 text-white rounded-2xl font-black text-[10px] sm:text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all whitespace-nowrap"
+                >
+                Ver plano
+                </button>
+            </div>
+            ) : (
           <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-3">
             <div>
               <p className="text-[9px] font-black text-gray-400 uppercase">Distribuindo</p>
