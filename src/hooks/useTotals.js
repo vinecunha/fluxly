@@ -10,7 +10,6 @@ export function useTotals(data, currentDate) {
     const viewYear  = currentDate.getFullYear()
 
     return (data || []).reduce((acc, t) => {
-      // pagamento_cartao é quitação de dívida, não é gasto novo — ignora nos totais
       if (t.tipo === 'pagamento_cartao') return acc
 
       const v     = Number(t.valor) || 0
@@ -23,13 +22,11 @@ export function useTotals(data, currentDate) {
       const isToday    = t.data === todayStr
       const isThisWeek = tDate >= segundaFeira && tDate <= domingo
 
-      // 1. Reservas — saldo acumulado, independe de mês
       if (t.tipo === 'reserva') {
         acc.reservaTotal += v
         return acc
       }
 
-      // 2. Renda
       if (t.tipo === 'renda') {
         if (isDueThisMonth || isPaidThisMonth) acc.renda += v
         if (isToday)    acc.rendaHoje   += v
@@ -37,7 +34,6 @@ export function useTotals(data, currentDate) {
         return acc
       }
 
-      // 3. Gastos (gasto_diario, fixa, esporadica)
       if (isDueThisMonth || isPaidThisMonth) {
         acc.gastosTotal += v
         if (t.tipo === 'gasto_diario' || t.pago) acc.gastosPagos += v

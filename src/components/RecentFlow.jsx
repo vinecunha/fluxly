@@ -51,16 +51,23 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
     if (filterTipo) list = list.filter(t => t.tipo === filterTipo)
 
     list.sort((a, b) => {
-      const dateA = a.data_pagamento ? new Date(a.data_pagamento) : new Date(a.data + 'T12:00:00')
-      const dateB = b.data_pagamento ? new Date(b.data_pagamento) : new Date(b.data + 'T12:00:00')
-
-      switch (sortBy) {
-        case 'data_asc':   return dateA - dateB
-        case 'data_desc':  return dateB - dateA
-        case 'valor_desc': return Number(b.valor) - Number(a.valor)
-        case 'valor_asc':  return Number(a.valor) - Number(b.valor)
-        default: return 0
+      if (sortBy === 'data_desc' || sortBy === 'data_asc') {
+        const parseDate = (item) => {
+          const raw = item.data_pagamento || (item.data + 'T12:00:00')
+          const date = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw)
+          return date.getTime() || 0
+        }
+        const timeA = parseDate(a)
+        const timeB = parseDate(b)
+        const diff = sortBy === 'data_desc' ? timeB - timeA : timeA - timeB
+        if (diff !== 0) return diff
+        return (b.id || '').toString().localeCompare((a.id || '').toString())
       }
+
+      if (sortBy === 'valor_desc') return Number(b.valor) - Number(a.valor)
+      if (sortBy === 'valor_asc') return Number(a.valor) - Number(b.valor)
+      
+      return 0
     })
 
     return list
@@ -82,7 +89,6 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
       <div className="p-5 pb-3">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-gray-800 font-black text-sm">Fluxo de Caixa</h3>
@@ -229,7 +235,6 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
   )
 }
 
-
 function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
   const startX = useRef(null)
   const [offset, setOffset] = useState(0)
@@ -258,15 +263,25 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
   const isRenda    = t.tipo === 'renda'
   const isReserva  = t.tipo === 'reserva' && Number(t.valor) >= 0  
   const isRetirada = t.tipo === 'reserva' && Number(t.valor) < 0   
-  const isToday    = t.data === todayStr
+  const rawDate    = t.data_pagamento || t.data
+  const dateStr    = typeof rawDate === 'string' ? rawDate.split(' ')[0] : ''
+  const isToday    = dateStr === todayStr
   const valor      = Math.abs(Number(t.valor))
 
-  const colorClass = isRenda    ? 'text-emerald-600'
-                  : isReserva  ? 'text-blue-600'
-                  : isRetirada ? 'text-rose-500'
-                  :              'text-rose-500'
+  const colorClass = isRenda     ? 'text-emerald-600'
+                   : isReserva  ? 'text-blue-600'
+                   : isRetirada ? 'text-rose-500'
+                   :              'text-rose-500'
 
   const prefix = isRenda || isReserva ? '+' : '-'
+
+  const formattedDate = useMemo(() => {
+    const raw = t.data_pagamento || (t.data + 'T12:00:00')
+    const date = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw)
+    return isNaN(date.getTime()) 
+      ? '--/--' 
+      : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  }, [t.data_pagamento, t.data])
 
   return (
     <div className="relative overflow-hidden group">
@@ -292,7 +307,7 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
           <p className="text-xs font-bold text-gray-800 truncate">{t.descricao}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-[10px] text-gray-400">
-              {new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              {formattedDate}
             </span>
             {isToday && (
               <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-2xl uppercase">Hoje</span>
