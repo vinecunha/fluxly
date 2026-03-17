@@ -11,6 +11,7 @@ import { useServiceWorker } from './hooks/useServiceWorker'
 import { useOffline } from './hooks/useOffline'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useCartoes } from './hooks/useCartoes'
+import { useCaixinhas } from './hooks/useCaixinhas'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
@@ -25,6 +26,7 @@ import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { CartoesScreen } from './components/CartoesScreen'
+import { IntelligenceScreen } from './components/IntelligenceScreen'
 
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
@@ -66,16 +68,27 @@ export default function App() {
     dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
   }, [])
 
+  const mesStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+
   const { data, loading, refresh }   = useFinance(user)
   const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
+  const { zerarCaixinha }            = useCaixinhas(user, mesStr)
   const filteredData = useFilteredData(data, currentDate)
   const totals       = useTotals(filteredData, currentDate)
   const { overdueCount, todayCount } = useAlerts(data)
 
-  const { handleSave, handleDelete, handleQuickPay } = useFinanceActions({
+  const { handleSave, handleDelete, handleQuickPay: _handleQuickPay } = useFinanceActions({
     user, data, refresh, dispatch, editingTransaction,
     onSessionExpired: handleSessionExpired,
   })
+
+  const handleQuickPay = useCallback(async (id, alterarTodaSerie, recorrencia_id, valorFinal) => {
+    await _handleQuickPay(id, alterarTodaSerie, recorrencia_id, valorFinal)
+    const t = data.find(t => t.id === id)
+    if (t && (t.tipo === 'fixa' || t.tipo === 'esporadica') && !t.pago) {
+      await zerarCaixinha(id)
+    }
+  }, [_handleQuickPay, data, zerarCaixinha])
 
   const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(refresh)
 
@@ -188,6 +201,13 @@ export default function App() {
               onCriar={criarCartao}
               onEditar={editarCartao}
               onExcluir={excluirCartao}
+            />
+          )}
+          {activeTab === TABS.INTELLIGENCE && (
+            <IntelligenceScreen
+              allTransactions={data}
+              currentDate={currentDate}
+              user={user}
             />
           )}
         </Suspense>

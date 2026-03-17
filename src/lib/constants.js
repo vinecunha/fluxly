@@ -6,6 +6,7 @@ export const TABS = {
   FLOW:      'flow',
   ANALYTICS: 'analytics',
   CARTOES:   'cartoes',
+  INTELLIGENCE: 'intelligence',
 }
 
 export const TRANSACTION_TYPES = [
