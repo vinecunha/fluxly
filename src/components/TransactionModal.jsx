@@ -14,13 +14,35 @@ const tiposFluxo = [
 ]
 
 const categorias = [
-  'Aplicativos', 'Assinaturas', 'Carro', 'Casa', 'Combustível',
-  'Educação', 'Empréstimos', 'Lazer', 'Mercado', 'Outros', 'Renda', 'Saúde',
-]
+  "Aplicativos",
+  "Assinaturas",
+  "Boletos diversos",
+  "Carro",
+  "Casa",
+  "Combustível",
+  "Cuidados pessoais",
+  "Delivery",
+  "Educação",
+  "Empréstimos e financiamentos",
+  "Lazer",
+  "Lojas e sites",
+  "Mercado",
+  "Mesma titularidade",
+  "Outros gastos",
+  "Pagamento de fatura",
+  "Pets",
+  "Restaurantes",
+  "Saque",
+  "Saúde",
+  "Transferências diversas",
+  "Transporte por app",
+  "Transporte público",
+  "Viagens"
+];
 
-const subcategoriasRenda  = ['Salário', 'Freelance', 'Aplicativos', 'Vendas', 'Particular', 'Gorjeta']
+const subcategoriasRenda  = ['Salário', 'Freelance', 'Aplicativos', 'Vendas', 'Particular', 'Gorjeta', "Empréstimos"]
 const subcategoriasApp    = ['Uber', '99', 'iFood', 'Outros']
-const bancosReserva       = ['Nubank', 'Inter', 'CDB', 'Poupança', 'Outros']
+const bancosReserva       = ['Nubank', 'MercadoPago', 'Inter', 'CDB', 'Poupança', 'Outros']
 
 const defaultForm = {
   descricao: '', valor: '', tipo: 'renda',
@@ -82,8 +104,9 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white w-full max-w-lg rounded-t-2xl p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto no-scrollbar">
+      {/* Ajuste de Z-INDEX para 100 para garantir que fique sobre o Header */}
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto no-scrollbar relative">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-black text-gray-800 tracking-tight">
               {initialData ? 'Editar Registro' : 'Novo Registro'}
@@ -104,7 +127,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     onClick={() => setForm(f => ({
                       ...f,
                       tipo: t.id,
-                      categoria:       t.id === 'renda' ? 'Renda' : t.id === 'reserva' ? 'Reserva' : t.id === 'pagamento_cartao' ? 'Cartão' : 'Outros',
+                      categoria:        t.id === 'renda' ? 'Renda' : t.id === 'reserva' ? 'Reserva' : t.id === 'pagamento_cartao' ? 'Cartão' : 'Outros',
                       subcategoria:    '',
                       destino_reserva: '',
                       cartao_id:       ['gasto_diario','fixa','esporadica','pagamento_cartao'].includes(t.id) ? f.cartao_id : null,
