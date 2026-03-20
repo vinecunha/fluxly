@@ -1,4 +1,4 @@
-import React, { useState, useMemo, lazy, Suspense } from 'react'
+import React, { useState, useMemo, lazy, Suspense, useRef, useEffect } from 'react'
 import {
   TrendingDown, TrendingUp, Tag, ArrowLeft,
   DollarSign, PiggyBank, Building2, Wallet,
@@ -14,6 +14,193 @@ const MonthlyChart = lazy(() =>
 )
 
 const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const fmtK = (v) => {
+  if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
+  return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
+}
+
+const PALETTE = [
+  '#1e293b', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316',
+  '#64748b', '#a78bfa', '#34d399', '#fbbf24', '#fb923c',
+]
+
+// ─── Donut Chart ─────────────────────────────────────────────────────────────
+function DonutChart({ data, total, color, activeIdx, onHover }) {
+  const SIZE   = 160
+  const CX     = SIZE / 2
+  const CY     = SIZE / 2
+  const R      = 58
+  const INNER  = 36
+  const GAP    = 2
+
+  const slices = useMemo(() => {
+    if (!data.length || total <= 0) return []
+    let angle = -90
+    return data.map((d, i) => {
+      const pct   = d.value / total
+      const sweep = pct * 360
+      const start = angle
+      angle += sweep + (sweep > 5 ? GAP : 0)
+      return { ...d, pct, sweep, start, i }
+    })
+  }, [data, total])
+
+  const polarToXY = (angleDeg, r) => {
+    const rad = (angleDeg * Math.PI) / 180
+    return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
+  }
+
+  const describeArc = (start, sweep, r, inner) => {
+    if (sweep >= 359.9) {
+      return [
+        `M ${CX} ${CY - r}`,
+        `A ${r} ${r} 0 1 1 ${CX - 0.01} ${CY - r}`,
+        `Z`,
+        `M ${CX} ${CY - inner}`,
+        `A ${inner} ${inner} 0 1 0 ${CX - 0.01} ${CY - inner}`,
+        `Z`,
+      ].join(' ')
+    }
+    const p1 = polarToXY(start, r)
+    const p2 = polarToXY(start + sweep, r)
+    const p3 = polarToXY(start + sweep, inner)
+    const p4 = polarToXY(start, inner)
+    const large = sweep > 180 ? 1 : 0
+    return [
+      `M ${p1.x} ${p1.y}`,
+      `A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`,
+      `L ${p3.x} ${p3.y}`,
+      `A ${inner} ${inner} 0 ${large} 0 ${p4.x} ${p4.y}`,
+      `Z`,
+    ].join(' ')
+  }
+
+  const active = activeIdx !== null ? slices[activeIdx] : null
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="overflow-visible">
+        {slices.map((s, i) => {
+          const isActive = activeIdx === i
+          const scale    = isActive ? 1.06 : 1
+          return (
+            <path
+              key={i}
+              d={describeArc(s.start, Math.max(s.sweep - (s.sweep > 5 ? GAP : 0), 0.5), R, INNER)}
+              fill={PALETTE[i % PALETTE.length]}
+              opacity={activeIdx === null ? 1 : isActive ? 1 : 0.35}
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: `${CX}px ${CY}px`,
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={() => onHover(i)}
+              onMouseLeave={() => onHover(null)}
+              onTouchStart={() => onHover(i)}
+            />
+          )
+        })}
+        <circle cx={CX} cy={CY} r={INNER - 2} fill="white" />
+        <text x={CX} y={CY - 7} textAnchor="middle" fontSize="10" fontWeight="800" fill="#1e293b">
+          {active ? `${(active.pct * 100).toFixed(0)}%` : fmtK(total)}
+        </text>
+        <text x={CX} y={CY + 8} textAnchor="middle" fontSize="7" fontWeight="700" fill="#94a3b8">
+          {active ? active.label.substring(0, 10) : 'total'}
+        </text>
+      </svg>
+    </div>
+  )
+}
+
+// ─── Category Row ─────────────────────────────────────────────────────────────
+function CategoryRow({ name, value, total, color, catData, rank, isActive, onHover, onClick }) {
+  const pct = total > 0 ? (value / total) * 100 : 0
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={() => {}}
+      className={`flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-all ${
+        isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
+      }`}
+    >
+      <div className="w-5 h-5 rounded-lg flex-shrink-0" style={{ backgroundColor: color }} />
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${catData?.color || 'bg-gray-100 text-gray-400'}`}>
+        {catData?.icon || <Tag size={12} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[11px] font-bold text-gray-700 truncate">{name}</p>
+          <p className="text-[11px] font-black text-gray-900 ml-2 flex-shrink-0">{fmtK(value)}</p>
+        </div>
+        <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+        </div>
+      </div>
+      <span className="text-[9px] font-black text-gray-300 w-7 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
+    </div>
+  )
+}
+
+// ─── Pie Section ─────────────────────────────────────────────────────────────
+function PieSection({ grouped, viewTotal, tab, onDrillDown }) {
+  const [activeIdx, setActiveIdx] = useState(null)
+
+  const entries = useMemo(() =>
+    Object.entries(grouped)
+      .sort((a, b) => b[1].totalBruto - a[1].totalBruto)
+      .map(([name, info], i) => ({
+        label: name,
+        value: info.totalBruto,
+        items: info.items,
+        color: PALETTE[i % PALETTE.length],
+      })),
+    [grouped]
+  )
+
+  if (entries.length === 0) return null
+
+  const tabColor = tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-4 pt-4 pb-2">
+        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Distribuição</p>
+      </div>
+
+      <div className="flex items-center gap-2 px-4 pb-4">
+        <DonutChart
+          data={entries}
+          total={viewTotal}
+          color={tab}
+          activeIdx={activeIdx}
+          onHover={setActiveIdx}
+        />
+        <div className="flex-1 min-w-0 space-y-0.5 max-h-[160px] overflow-y-auto no-scrollbar">
+          {entries.map((e, i) => {
+            const catData = tab === 'gasto' ? categoryIcons[e.label] : null
+            return (
+              <CategoryRow
+                key={e.label}
+                name={e.label}
+                value={e.value}
+                total={viewTotal}
+                color={e.color}
+                catData={catData}
+                rank={i + 1}
+                isActive={activeIdx === i}
+                onHover={() => setActiveIdx(i)}
+                onClick={() => onDrillDown(e.label)}
+              />
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function FinancialAnalytics({ transactions = [], allTransactions = [], currentDate }) {
   const [tab, setTab]                         = useState('gasto')
@@ -74,11 +261,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return Object.values(grouped).reduce((s, d) => s + d.totalBruto, 0)
   }, [grouped, tab, filtered, projectionDays, cdiReal])
 
-  const resetDrill = () => {
-    setExpandedDestino(null)
-    setExpandedSubcat(null)
-    setProjectionDays(0)
-  }
+  const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null); setProjectionDays(0) }
 
   if (expandedSubcat) {
     const items = tab === 'investimento'
@@ -185,111 +368,81 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
-      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />
-
-      <div className="space-y-2">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
-            {tab === 'investimento'
-              ? (projectionDays === 0 ? 'Saldo Líquido Atual (100% CDI)' : `Projeção Líquida para ${projectionDays} dias`)
-              : tab === 'renda' ? 'Renda Total' : 'Total de Gastos'}
-          </p>
-          <div className="flex items-end gap-3">
-            <p className={`text-3xl font-black ${
-              tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
-            }`}>{fmt(viewTotal)}</p>
-            {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
+      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-end justify-between mb-1">
+          <div>
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+              {tab === 'investimento'
+                ? (projectionDays === 0 ? 'Saldo Líquido (100% CDI)' : `Projeção ${projectionDays}d`)
+                : tab === 'renda' ? 'Renda Total' : 'Total de Gastos'}
+            </p>
+            <div className="flex items-end gap-2">
+              <p className={`text-3xl font-black ${
+                tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
+              }`}>{fmt(viewTotal)}</p>
+              {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
+            </div>
           </div>
-
-          {tab === 'investimento' && (
-            <div className="mt-5 pt-4 border-t border-gray-50">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-1">
-                  <Zap size={10} className="text-blue-400 fill-purple-400" />
-                  <span className="text-[9px] font-black text-gray-400 uppercase">Projetar Futuro</span>
-                </div>
-                <div className="flex gap-1">
-                  {[0, 30, 60, 90, 365].map(d => (
-                    <button key={d} onClick={() => setProjectionDays(d)}
-                      className={`px-2.5 py-1 rounded-2xl text-[8px] font-black transition-all ${
-                        projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
-                      }`}>
-                      {d === 0 ? 'HOJE' : d === 365 ? '1 ANO' : `${d}D`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {projectionDays > 0 && (
-                <div className="bg-blue-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
-                  <div>
-                    <p className="text-[8px] font-bold text-blue-400 uppercase">Lucro Estimado no Período</p>
-                    <p className="text-lg font-black text-purple-700">+{fmt(viewTotal - calculateLiquidValue(filtered, 0))}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[7px] text-gray-400 font-bold uppercase">Taxa CDI: {(cdiReal * 100).toFixed(2)}% aa</p>
-                    <p className="text-[7px] text-gray-400 font-bold uppercase">Líquido de IR (22,5%)</p>
-                  </div>
-                </div>
-              )}
+          {avgTotal > 0 && (
+            <div className="text-right">
+              <p className="text-[8px] font-black text-gray-300 uppercase">Média 3m</p>
+              <p className="text-xs font-black text-gray-400">{fmtK(avgTotal)}</p>
             </div>
           )}
         </div>
-      </div>
 
-      <div className="space-y-2">
-        {Object.entries(grouped).sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, info]) => {
-          const liquidValue = tab === 'investimento' ? calculateLiquidValue(info.items, projectionDays) : info.totalBruto
-          const pct         = viewTotal > 0 ? (liquidValue / viewTotal) * 100 : 0
-          const catData     = tab === 'gasto' ? categoryIcons[name] : null
-          return (
-            <div key={name}
-              onClick={() => tab === 'investimento' ? setExpandedDestino(name) : setExpandedSubcat(name)}
-              className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm cursor-pointer active:scale-[0.98] transition-all"
-            >
-              <div className="flex justify-between items-center mb-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                    catData?.color ||
-                    (tab === 'investimento' ? 'bg-blue-100 text-blue-600' :
-                     tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600')
-                  }`}>
-                    {catData?.icon || (
-                      tab === 'investimento' ? <Building2 size={14} /> :
-                      tab === 'renda' ? <DollarSign size={14} /> : <Tag size={14} />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-700 truncate">{name}</p>
-                    <p className="text-[9px] text-gray-400">{info.items.length} itens</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-black text-gray-900">{fmt(liquidValue)}</p>
-                  <ChevronRight size={14} className="text-gray-300" />
-                </div>
+        {tab === 'investimento' && (
+          <div className="mt-4 pt-4 border-t border-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <Zap size={10} className="text-blue-400 fill-purple-400" />
+                <span className="text-[9px] font-black text-gray-400 uppercase">Projetar Futuro</span>
               </div>
-              <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-700 ${
-                    tab === 'investimento' ? 'bg-blue-400' :
-                    tab === 'renda' ? 'bg-emerald-400' : 'bg-slate-400'
-                  }`}
-                  style={{ width: `${Math.min(100, pct)}%` }}
-                />
+              <div className="flex gap-1">
+                {[0, 30, 60, 90, 365].map(d => (
+                  <button key={d} onClick={() => setProjectionDays(d)}
+                    className={`px-2.5 py-1 rounded-2xl text-[8px] font-black transition-all ${
+                      projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
+                    }`}>
+                    {d === 0 ? 'HOJE' : d === 365 ? '1A' : `${d}D`}
+                  </button>
+                ))}
               </div>
             </div>
-          )
-        })}
+            {projectionDays > 0 && (
+              <div className="bg-blue-50/50 p-3 rounded-2xl flex justify-between items-center animate-in zoom-in-95 duration-200">
+                <div>
+                  <p className="text-[8px] font-bold text-blue-400 uppercase">Lucro Estimado</p>
+                  <p className="text-lg font-black text-purple-700">+{fmt(viewTotal - calculateLiquidValue(filtered, 0))}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[7px] text-gray-400 font-bold uppercase">CDI: {(cdiReal * 100).toFixed(2)}% aa</p>
+                  <p className="text-[7px] text-gray-400 font-bold uppercase">IR 22,5% descontado</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      <PieSection
+        grouped={grouped}
+        viewTotal={viewTotal}
+        tab={tab}
+        onDrillDown={(name) => tab === 'investimento' ? setExpandedDestino(name) : setExpandedSubcat(name)}
+      />
+
+      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />
     </section>
   )
 }
 
-function TrendBadge({ diff, invertGood = false, small = false }) {
+function TrendBadge({ diff, invertGood = false }) {
   if (Math.abs(diff) < 5) return null
   const isUp   = diff > 0
   const isGood = invertGood ? !isUp : isUp
   return (
-    <span className={`flex items-center gap-0.5 font-black rounded-2xl ${small ? 'text-[8px] px-1 py-0.5' : 'text-[9px] px-1.5 py-0.5'} ${
+    <span className={`flex items-center gap-0.5 font-black rounded-2xl text-[9px] px-1.5 py-0.5 mb-1 ${
       isGood ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
     }`}>
       {isUp ? '↑' : '↓'} {Math.abs(diff).toFixed(0)}%

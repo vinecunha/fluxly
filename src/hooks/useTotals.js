@@ -14,13 +14,14 @@ export function useTotals(data, currentDate) {
 
       const v     = Number(t.valor) || 0
       const tDate = new Date(t.data + 'T12:00:00')
-      const pDate = t.data ? new Date(t.data + 'T12:00:00') : null
+      const pDate = t.data_pagamento ? new Date(t.data_pagamento) : null
 
       const isDueThisMonth  = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
       const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
 
-      const isToday    = t.data === todayStr
-      const isThisWeek = tDate >= segundaFeira && tDate <= domingo
+      const pDateStr       = pDate ? pDate.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) : null
+      const isPaidToday    = pDateStr === todayStr
+      const isPaidThisWeek = pDate && pDate >= segundaFeira && pDate <= domingo
 
       if (t.tipo === 'reserva') {
         acc.reservaTotal += v
@@ -28,9 +29,9 @@ export function useTotals(data, currentDate) {
       }
 
       if (t.tipo === 'renda') {
-        if (isDueThisMonth || isPaidThisMonth) acc.renda += v
-        if (isToday)    acc.rendaHoje   += v
-        if (isThisWeek) acc.rendaSemana += v
+        if (isDueThisMonth || isPaidThisMonth) acc.renda       += v
+        if (isPaidToday)                       acc.rendaHoje   += v
+        if (isPaidThisWeek)                    acc.rendaSemana += v
         return acc
       }
 
@@ -38,8 +39,8 @@ export function useTotals(data, currentDate) {
         acc.gastosTotal += v
         if (t.tipo === 'gasto_diario' || t.pago) acc.gastosPagos += v
       }
-      if (isToday)    acc.gastosHoje   += v
-      if (isThisWeek) acc.gastosSemana += v
+      if (isPaidToday    && (t.tipo === 'gasto_diario' || t.pago)) acc.gastosHoje   += v
+      if (isPaidThisWeek && (t.tipo === 'gasto_diario' || t.pago)) acc.gastosSemana += v
 
       return acc
     }, {

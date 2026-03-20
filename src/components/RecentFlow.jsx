@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Search, X, ArrowUpDown, Filter, CheckCircle2, Edit3, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, X, ArrowUpDown, Filter, CheckCircle2, Edit3, Trash2, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
 
 const ITEMS_PER_PAGE = 8
@@ -17,6 +17,11 @@ const TIPOS = [
   { id: 'esporadica',   label: 'Extra'   },
   { id: 'reserva',      label: 'Reserva' },
 ]
+
+const fmtK = (v) => {
+  if (v >= 1000) return `R$${(v/1000).toFixed(1)}k`
+  return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+}
 
 export function RecentFlow({ transactions = [], onEdit, onDelete }) {
   const [search, setSearch]           = useState('')
@@ -57,21 +62,30 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
           const date = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw)
           return date.getTime() || 0
         }
-        const timeA = parseDate(a)
-        const timeB = parseDate(b)
-        const diff = sortBy === 'data_desc' ? timeB - timeA : timeA - timeB
+        const diff = sortBy === 'data_desc'
+          ? parseDate(b) - parseDate(a)
+          : parseDate(a) - parseDate(b)
         if (diff !== 0) return diff
         return (b.id || '').toString().localeCompare((a.id || '').toString())
       }
-
       if (sortBy === 'valor_desc') return Number(b.valor) - Number(a.valor)
-      if (sortBy === 'valor_asc') return Number(a.valor) - Number(b.valor)
-      
+      if (sortBy === 'valor_asc')  return Number(a.valor) - Number(b.valor)
       return 0
     })
 
     return list
   }, [transactions, search, filterCat, filterTipo, sortBy])
+
+  const totals = useMemo(() => {
+    return filtered.reduce((acc, t) => {
+      const v = Math.abs(Number(t.valor)) || 0
+      if (t.tipo === 'renda')                                       acc.renda   += v
+      else if (t.tipo === 'reserva' && Number(t.valor) >= 0)        acc.reserva += v
+      else if (t.tipo === 'reserva' && Number(t.valor) < 0)         acc.retirada += v
+      else if (t.tipo !== 'pagamento_cartao')                        acc.gastos  += v
+      return acc
+    }, { renda: 0, gastos: 0, reserva: 0, retirada: 0 })
+  }, [filtered])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
 
@@ -86,6 +100,8 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
   const handleFilterTipo = (v) => { setFilterTipo(p => p === v ? null : v); setCurrentPage(1) }
 
   const activeFiltersCount = [filterCat, filterTipo].filter(Boolean).length
+
+  const hasTotals = totals.renda > 0 || totals.gastos > 0 || totals.reserva > 0 || totals.retirada > 0
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -190,6 +206,47 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
             )}
           </div>
         )}
+
+        {hasTotals && (
+          <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {totals.renda > 0 && (
+              <div className="bg-emerald-50 rounded-2xl px-3 py-2 flex items-center gap-1.5">
+                <TrendingUp size={11} className="text-emerald-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[7px] font-black text-emerald-600 uppercase">Renda</p>
+                  <p className="text-[11px] font-black text-emerald-700 truncate">{fmtK(totals.renda)}</p>
+                </div>
+              </div>
+            )}
+            {totals.gastos > 0 && (
+              <div className="bg-rose-50 rounded-2xl px-3 py-2 flex items-center gap-1.5">
+                <TrendingDown size={11} className="text-rose-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[7px] font-black text-rose-500 uppercase">Gastos</p>
+                  <p className="text-[11px] font-black text-rose-600 truncate">{fmtK(totals.gastos)}</p>
+                </div>
+              </div>
+            )}
+            {totals.reserva > 0 && (
+              <div className="bg-blue-50 rounded-2xl px-3 py-2 flex items-center gap-1.5">
+                <PiggyBank size={11} className="text-blue-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[7px] font-black text-blue-500 uppercase">Reserva</p>
+                  <p className="text-[11px] font-black text-blue-600 truncate">{fmtK(totals.reserva)}</p>
+                </div>
+              </div>
+            )}
+            {totals.retirada > 0 && (
+              <div className="bg-orange-50 rounded-2xl px-3 py-2 flex items-center gap-1.5">
+                <PiggyBank size={11} className="text-orange-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[7px] font-black text-orange-500 uppercase">Retirada</p>
+                  <p className="text-[11px] font-black text-orange-600 truncate">{fmtK(totals.retirada)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="divide-y divide-gray-50">
@@ -241,34 +298,26 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
   const [swiping, setSwiping] = useState(false)
   const THRESHOLD = 80
 
-  const handleTouchStart = (e) => {
-    startX.current = e.touches[0].clientX
-    setSwiping(true)
-  }
-
-  const handleTouchMove = (e) => {
+  const handleTouchStart = (e) => { startX.current = e.touches[0].clientX; setSwiping(true) }
+  const handleTouchMove  = (e) => {
     if (startX.current === null) return
-    const diff = e.touches[0].clientX - startX.current
-    setOffset(Math.max(-120, Math.min(120, diff)))
+    setOffset(Math.max(-120, Math.min(120, e.touches[0].clientX - startX.current)))
   }
-
   const handleTouchEnd = () => {
     if (offset > THRESHOLD)       onEdit(t)
     else if (offset < -THRESHOLD) onDelete(t.id)
-    setOffset(0)
-    setSwiping(false)
-    startX.current = null
+    setOffset(0); setSwiping(false); startX.current = null
   }
 
   const isRenda    = t.tipo === 'renda'
-  const isReserva  = t.tipo === 'reserva' && Number(t.valor) >= 0  
-  const isRetirada = t.tipo === 'reserva' && Number(t.valor) < 0   
+  const isReserva  = t.tipo === 'reserva' && Number(t.valor) >= 0
+  const isRetirada = t.tipo === 'reserva' && Number(t.valor) < 0
   const rawDate    = t.data_pagamento || t.data
   const dateStr    = typeof rawDate === 'string' ? rawDate.split(' ')[0] : ''
   const isToday    = dateStr === todayStr
   const valor      = Math.abs(Number(t.valor))
 
-  const colorClass = isRenda     ? 'text-emerald-600'
+  const colorClass = isRenda    ? 'text-emerald-600'
                    : isReserva  ? 'text-blue-600'
                    : isRetirada ? 'text-rose-500'
                    :              'text-rose-500'
@@ -276,10 +325,10 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
   const prefix = isRenda || isReserva ? '+' : '-'
 
   const formattedDate = useMemo(() => {
-    const raw = t.data_pagamento || (t.data + 'T12:00:00')
+    const raw  = t.data_pagamento || (t.data + 'T12:00:00')
     const date = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw)
-    return isNaN(date.getTime()) 
-      ? '--/--' 
+    return isNaN(date.getTime())
+      ? '--/--'
       : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
   }, [t.data_pagamento, t.data])
 
@@ -306,9 +355,7 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-gray-800 truncate">{t.descricao}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-gray-400">
-              {formattedDate}
-            </span>
+            <span className="text-[10px] text-gray-400">{formattedDate}</span>
             {isToday && (
               <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-2xl uppercase">Hoje</span>
             )}
@@ -320,18 +367,10 @@ function SwipeableFlowItem({ transaction: t, todayStr, onEdit, onDelete }) {
 
         <div className="flex-shrink-0 flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onEdit(t)}
-              className="p-1.5 rounded-xl text-gray-300 hover:text-slate-500 hover:bg-slate-50 transition-colors"
-              title="Editar"
-            >
+            <button onClick={() => onEdit(t)} className="p-1.5 rounded-xl text-gray-300 hover:text-slate-500 hover:bg-slate-50 transition-colors">
               <Edit3 size={14} />
             </button>
-            <button
-              onClick={() => onDelete(t.id)}
-              className="p-1.5 rounded-xl text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
-              title="Excluir"
-            >
+            <button onClick={() => onDelete(t.id)} className="p-1.5 rounded-xl text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors">
               <Trash2 size={14} />
             </button>
           </div>
