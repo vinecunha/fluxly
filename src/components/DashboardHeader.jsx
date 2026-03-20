@@ -57,7 +57,7 @@ export const DashboardHeader = ({
   const formatMonth = () => {
     if (isScrolled) {
       const m = String(currentDate.getMonth() + 1).padStart(2, '0')
-      const y = currentDate.getFullYear()
+      const y = String(currentDate.getFullYear()).slice(-2)
       return `${m}/${y}`
     }
     return currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
@@ -79,12 +79,12 @@ export const DashboardHeader = ({
         className={`fixed top-0 left-0 right-0 z-[100] bg-slate-900 px-4 transition-all duration-300 ease-in-out border-b border-white/5 shadow-lg
           ${isScrolled ? 'py-3' : 'pt-4 sm:pt-6 pb-6'}`}
       >
-        <div className="max-w-2xl mx-auto relative">
+        <div className="max-w-2xl mx-auto">
           
-          <div className={`flex transition-all duration-300 ${isScrolled ? 'flex-row items-center justify-between gap-2' : 'flex-col'}`}>
+          <div className={`flex transition-all duration-300 items-center ${isScrolled ? 'justify-between' : 'flex-col'}`}>
             
-            {/* 1. LOGO (order-1 no scroll) */}
-            <div className={`flex flex-col min-w-0 transition-all duration-300 shrink-0 order-1 ${isScrolled ? 'scale-90 origin-left' : 'mb-4'}`}>
+            {/* 1. LOGO */}
+            <div className={`flex flex-col min-w-0 transition-all duration-300 shrink-0 ${isScrolled ? 'scale-90 origin-left' : 'w-full mb-4'}`}>
               {!isScrolled && (
                 <span className="text-[7px] sm:text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase mb-0.5">
                   Simples. Inteligente.
@@ -95,24 +95,24 @@ export const DashboardHeader = ({
                   Fluxly
                 </h1>
                 <div className="h-3 sm:h-5 w-[1px] bg-white/20" />
-                <span className="text-[8px] sm:text-[11px] font-bold text-slate-400 lowercase truncate max-w-[40px] sm:max-w-none">
+                <span className="text-[8px] sm:text-[11px] font-bold text-slate-400 lowercase truncate max-w-[50px] sm:max-w-none">
                   {userEmail?.split('@')[0]}
                 </span>
               </div>
             </div>
 
-            {/* 2. MÊS (order-2 no scroll) */}
-            <div className={`flex items-center bg-white/10 rounded-2xl p-1 border border-white/10 transition-all duration-300 order-2
+            {/* 2. MÊS */}
+            <div className={`flex items-center bg-white/10 rounded-2xl border border-white/10 transition-all duration-300
               ${isScrolled 
-                ? 'flex-1 max-w-[120px] mx-auto' 
-                : 'w-full py-1.5 sm:py-2'}`}
+                ? 'flex-1 max-w-[100px] sm:max-w-[140px] p-0.5 mx-2' 
+                : 'w-full p-1 py-1.5 sm:py-2 mb-0'}`}
             >
               <button onClick={() => onMonthChange(-1)} className="p-1 text-white/50 active:text-white hover:text-white transition-colors">
-                <ChevronLeft size={isScrolled ? 14 : 16} />
+                <ChevronLeft size={isScrolled ? 12 : 16} />
               </button>
-              <div className="relative flex-1 text-center">
+              <div className="relative flex-1 text-center min-w-0">
                 <span className={`font-black uppercase text-white transition-all duration-300 block truncate
-                  ${isScrolled ? 'text-[10px] tracking-tight' : 'text-[9px] sm:text-[11px] tracking-widest'}`}>
+                  ${isScrolled ? 'text-[9px] tracking-tighter' : 'text-[9px] sm:text-[11px] tracking-widest'}`}>
                   {formatMonth()}
                 </span>
                 <input
@@ -129,38 +129,38 @@ export const DashboardHeader = ({
                 />
               </div>
               <button onClick={() => onMonthChange(1)} className="p-1 text-white/50 active:text-white hover:text-white transition-colors">
-                <ChevronRight size={isScrolled ? 14 : 16} />
+                <ChevronRight size={isScrolled ? 12 : 16} />
               </button>
             </div>
 
-            {/* 3. BOTÕES (order-3 no scroll) */}
-            <div className={`flex items-center gap-1.5 shrink-0 order-3 transition-all
-              ${isScrolled ? '' : 'absolute top-2 sm:top-4 right-0'}`}>
+            {/* 3. BOTÕES */}
+            <div className={`flex items-center gap-1 shrink-0 transition-all
+              ${isScrolled ? 'justify-end' : 'absolute top-2 sm:top-4 right-0'}`}>
               {!isCurrentMonth && (
                 <button
                   onClick={() => onMonthChange(
                     (now.getFullYear() - currentDate.getFullYear()) * 12 +
                     (now.getMonth() - currentDate.getMonth())
                   )}
-                  className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
+                  className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
                 >
-                  <CalendarDays className="w-4 h-4 text-white" />
+                  <CalendarDays className="w-3.5 h-3.5 text-white" />
                 </button>
               )}
               {onRefresh && (
                 <button
                   onClick={onRefresh}
                   disabled={isRefreshing || isLoading}
-                  className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
+                  className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
                 >
-                  <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
               )}
               <button
                 onClick={onLogout}
-                className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
+                className="bg-white/10 p-1.5 sm:p-2 rounded-xl border border-white/10 active:scale-90 transition-all hover:bg-white/15"
               >
-                <LogOut className="w-4 h-4 text-slate-300" />
+                <LogOut className="w-3.5 h-3.5 text-slate-300" />
               </button>
             </div>
 
@@ -169,7 +169,7 @@ export const DashboardHeader = ({
       </header>
 
       {/* Card Section */}
-      <div className="px-4 sm:px-6 relative z-10 -mt-10">
+      <div className="px-4 sm:px-6 relative z-10 -mt-8">
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-5 sm:p-8 border border-gray-100">
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="min-w-0">
