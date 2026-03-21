@@ -109,18 +109,24 @@ function FaturaDetalhe({ faturas, corHex, fmt }) {
 
             {/* Resumo */}
             <div className="space-y-1 mt-3">
+              {fat.creditoAnt > 0 && (
+                <div className="flex items-center justify-between bg-blue-50 rounded-xl px-3 py-2">
+                  <span className="text-[9px] font-black text-blue-600 uppercase">Crédito anterior</span>
+                  <span className="text-xs font-black text-blue-700">-{fmt(fat.creditoAnt)}</span>
+                </div>
+              )}
               {fat.totalPago > 0 && (
                 <div className="flex items-center justify-between bg-emerald-50 rounded-xl px-3 py-2">
                   <span className="text-[9px] font-black text-emerald-600 uppercase">Pago</span>
-                  <span className="text-xs font-black text-emerald-700">{fmt(fat.totalPago)}</span>
+                  <span className="text-xs font-black text-emerald-700">{fmt(fat.totalPagoEfetivo ?? fat.totalPago)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                 <span className="text-[9px] font-black text-gray-500 uppercase">
-                  {fat.saldo > 0 ? 'Saldo' : 'Quitada'}
+                  {fat.saldo > 0 ? 'Saldo' : fat.credito > 0 ? 'Crédito p/ próxima' : 'Quitada'}
                 </span>
-                <span className={`text-xs font-black ${fat.saldo > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {fat.saldo > 0 ? fmt(fat.saldo) : '✓ R$0,00'}
+                <span className={`text-xs font-black ${fat.saldo > 0 ? 'text-rose-600' : fat.credito > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
+                  {fat.saldo > 0 ? fmt(fat.saldo) : fat.credito > 0 ? fmt(fat.credito) : '✓ R$0,00'}
                 </span>
               </div>
             </div>
@@ -260,7 +266,10 @@ export function CartoesScreen({ cartoes, onCriar, onEditar, onExcluir, allTransa
                     </div>
                     <div className="bg-black/20 rounded-2xl p-3">
                       <p className="text-[7px] font-black opacity-50 uppercase mb-0.5">Pago</p>
-                      <p className="text-sm font-black text-emerald-300">{fmtK(f.totalPago)}</p>
+                      <p className="text-sm font-black text-emerald-300">{fmtK(f.totalPagoEfetivo ?? f.totalPago)}</p>
+                      {f.creditoAnt > 0 && (
+                        <p className="text-[7px] font-black text-emerald-400 opacity-70">+{fmtK(f.creditoAnt)} crédito</p>
+                      )}
                     </div>
                     <div className="bg-black/20 rounded-2xl p-3">
                       <p className="text-[7px] font-black opacity-50 uppercase mb-0.5">Saldo</p>

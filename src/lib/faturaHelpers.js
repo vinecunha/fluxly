@@ -150,7 +150,7 @@ export function calcFatura(cartao, allTransactions, viewDate) {
     cicloAno = anoRef
   }
 
-  return calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno)
+  return _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, cicloAno)
 }
 
 export function getFaturasExibicao(cartao, allTransactions, viewDate) {
@@ -164,17 +164,17 @@ export function getFaturasExibicao(cartao, allTransactions, viewDate) {
 
   if (jáFechou) {
     // Fatura que fechou hoje/passou: ciclo atual
-    const fatFechada = calcFaturaParaCiclo(cartao, allTransactions, mesRef, anoRef)
+    const fatFechada = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
     // Próxima: ciclo do mês seguinte
     const proxMes = mesRef === 11 ? 0 : mesRef + 1
     const proxAno = mesRef === 11 ? anoRef + 1 : anoRef
-    const fatProxima = calcFaturaParaCiclo(cartao, allTransactions, proxMes, proxAno)
+    const fatProxima = _calcFaturaParaCicloSemCredito(cartao, allTransactions, proxMes, proxAno)
     return [
       { ...fatFechada,  _label: 'Fatura em cobrança' },
       { ...fatProxima,  _label: 'Próxima fatura'     },
     ]
   }
 
-  const fat = calcFaturaParaCiclo(cartao, allTransactions, mesRef, anoRef)
+  const fat = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
   return [{ ...fat, _label: 'Fatura' }]
 }
