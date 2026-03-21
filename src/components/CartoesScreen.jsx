@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Plus, CreditCard, Trash2, Edit3, X, Check, ChevronDown, ChevronUp, TrendingDown, AlertCircle } from 'lucide-react'
+import { Plus, CreditCard, Trash2, Edit3, X, Check, ChevronDown, ChevronUp, TrendingDown, AlertCircle, ArrowDownCircle } from 'lucide-react'
 import { getFaturasExibicao } from '../lib/faturaHelpers'
 
 const CORES = [
@@ -33,11 +33,18 @@ function FaturaDetalhe({ faturas, corHex, fmt }) {
   return (
     <div className="bg-white border-x border-b border-gray-100 rounded-b-[1.75rem] animate-in slide-in-from-top-1 duration-200">
       {faturas.map((fat, fi) => {
-        const sorted   = [...fat.gastos].sort((a, b) => new Date(b.data) - new Date(a.data))
-        const total    = sorted.length
+        // Misturar gastos e pagamentos ordenados por data desc
+        const itens = [
+          ...(fat.gastos || []).map(t => ({ ...t, _isPagamento: false })),
+          ...(fat.pagamentos || []).map(t => ({ ...t, _isPagamento: true })),
+        ].sort((a, b) => new Date(b.data) - new Date(a.data))
+
+        const total    = itens.length
         const totalPag = Math.ceil(total / PER_PAGE)
         const page     = getPage(fi)
-        const slice    = sorted.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
+        const slice    = itens.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
+        const nGastos  = (fat.gastos || []).length
+        const nPagtos  = (fat.pagamentos || []).length
 
         return (
           <div key={fi} className={`p-4 ${fi > 0 ? 'border-t border-gray-100' : ''}`}>
@@ -48,7 +55,10 @@ function FaturaDetalhe({ faturas, corHex, fmt }) {
                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
                   {fat._label} · {fat.periodo}
                 </p>
-                <p className="text-[8px] text-gray-400 mt-0.5">{total} compra{total !== 1 ? 's' : ''}</p>
+                <p className="text-[8px] text-gray-400 mt-0.5">
+                  {nGastos} compra{nGastos !== 1 ? 's' : ''}
+                  {nPagtos > 0 ? ` · ${nPagtos} pagamento${nPagtos !== 1 ? 's' : ''}` : ''}
+                </p>
               </div>
               <span className={`text-[7px] font-black px-2 py-0.5 rounded-full uppercase ${
                 fat.pago ? 'bg-emerald-100 text-emerald-700' :
@@ -59,28 +69,32 @@ function FaturaDetalhe({ faturas, corHex, fmt }) {
               </span>
             </div>
 
-            {/* Lista */}
+            {/* Lista misturada: gastos + pagamentos */}
             <div className="space-y-0">
               {slice.map((t, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                  <div className="w-7 h-7 rounded-xl flex-shrink-0 flex items-center justify-center"
-                    style={{ backgroundColor: corHex + '18' }}>
-                    <TrendingDown size={11} style={{ color: corHex }} />
+                  <div className={`w-7 h-7 rounded-xl flex-shrink-0 flex items-center justify-center ${
+                    t._isPagamento ? 'bg-emerald-50' : ''
+                  }`} style={!t._isPagamento ? { backgroundColor: corHex + '18' } : {}}>
+                    {t._isPagamento
+                      ? <Check size={11} className="text-emerald-600" />
+                      : <TrendingDown size={11} style={{ color: corHex }} />
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold text-gray-800 truncate">{t.descricao}</p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase">
                       {new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      {t.categoria ? ` · ${t.categoria}` : ''}
+                      {t._isPagamento ? ' · Pagamento' : t.categoria ? ` · ${t.categoria}` : ''}
                     </p>
                   </div>
-                  <p className="text-[11px] font-black text-rose-600 flex-shrink-0">
-                    -{fmt(Math.abs(Number(t.valor)))}
+                  <p className={`text-[11px] font-black flex-shrink-0 ${t._isPagamento ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {t._isPagamento ? '+' : '-'}{fmt(Math.abs(Number(t.valor)))}
                   </p>
                 </div>
               ))}
               {total === 0 && (
-                <p className="text-[9px] text-gray-300 font-bold py-2">Sem compras neste período</p>
+                <p className="text-[9px] text-gray-300 font-bold py-2">Sem movimentações neste período</p>
               )}
             </div>
 

@@ -162,19 +162,22 @@ export function getFaturasExibicao(cartao, allTransactions, viewDate) {
   const isHojeMes = anoRef === hoje.getFullYear() && mesRef === hoje.getMonth()
   const jáFechou  = isHojeMes && hoje.getDate() >= cartao.fechamento
 
-  if (jáFechou) {
-    // Fatura que fechou hoje/passou: ciclo atual
+  if (jáFechou && isHojeMes) {
+    // Só mostra duas faturas quando o usuário está visualizando o mês atual
     const fatFechada = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
-    // Próxima: ciclo do mês seguinte
     const proxMes = mesRef === 11 ? 0 : mesRef + 1
     const proxAno = mesRef === 11 ? anoRef + 1 : anoRef
     const fatProxima = _calcFaturaParaCicloSemCredito(cartao, allTransactions, proxMes, proxAno)
     return [
-      { ...fatFechada,  _label: 'Fatura em cobrança' },
-      { ...fatProxima,  _label: 'Próxima fatura'     },
+      { ...fatFechada, _label: 'Fatura em cobrança' },
+      { ...fatProxima, _label: 'Próxima fatura'     },
     ]
   }
 
+  // Mês passado, futuro ou antes do fechamento: uma fatura só
   const fat = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
-  return [{ ...fat, _label: 'Fatura' }]
+  const label = fat.status === 'quitada' ? 'Fatura quitada'
+    : fat.status === 'cobrança' ? 'Fatura em cobrança'
+    : 'Fatura'
+  return [{ ...fat, _label: label }]
 }
