@@ -34,6 +34,7 @@ const categorias = [
   "Restaurantes",
   "Saque",
   "Saúde",
+  "Seguros",
   "Telefone/Internet",
   "Transferências diversas",
   "Transporte por app",
