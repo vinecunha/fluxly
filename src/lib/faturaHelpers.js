@@ -35,15 +35,14 @@ function calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno) {
   const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech,     0,  0,  0)
   const fimGastos    = new Date(cicloAno,    cicloMes,    diaFech - 1, 23, 59, 59)
 
-  // Período de COBRANÇA (inclui antecipações):
-  //   início = dia fechamento do ciclo ANTERIOR (= início dos gastos)
-  //             → aceita pagamentos antecipados feitos antes do fechamento
+  // Período de COBRANÇA:
+  //   início = dia fechamento do ciclo atual (quando a fatura fecha e entra em cobrança)
   //   fim    = dia (fechamento - 1) do próximo mês (inclusive)
   const mesCobFim = cicloMes === 11 ? 0  : cicloMes + 1
   const anoCobFim = cicloMes === 11 ? cicloAno + 1 : cicloAno
 
-  const inicioCob = new Date(anoIniGasto, mesIniGasto, diaFech,     0,  0,  0)  // = inicioGastos
-  const fimCob    = new Date(anoCobFim,   mesCobFim,   diaFech - 1, 23, 59, 59)
+  const inicioCob = new Date(cicloAno,  cicloMes,  diaFech,     0,  0,  0)
+  const fimCob    = new Date(anoCobFim, mesCobFim, diaFech - 1, 23, 59, 59)
 
   // Vencimento
   const venc    = new Date(cicloAno, cicloMes, diaVenc)
