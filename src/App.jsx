@@ -185,6 +185,8 @@ export default function App() {
               onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
               onDelete={handleDelete}
               isLoading={loading}
+              cartoes={cartoes}
+              currentDate={currentDate}
             />
           )}
           {activeTab === TABS.ANALYTICS && (
@@ -201,6 +203,8 @@ export default function App() {
               onCriar={criarCartao}
               onEditar={editarCartao}
               onExcluir={excluirCartao}
+              allTransactions={data}
+              currentDate={currentDate}
             />
           )}
           {activeTab === TABS.INTELLIGENCE && (

@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom'
 import {
   CheckCircle2, Circle, Edit3, Trash2, Repeat,
   ArrowUp, ArrowDown, Undo2, Tag, AlertTriangle, Filter,
-  TrendingDown, Clock, CircleDollarSign
+  TrendingDown, Clock, CreditCard
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
+import { getFaturasExibicao } from '../lib/faturaHelpers'
 
 const fmt  = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 const fmtK = (v) => {
@@ -87,6 +88,86 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
 }
 
 const FALLBACK_CATEGORY = { icon: <Tag size={14} />, color: 'bg-gray-100 text-gray-500' }
+
+// ─── Fatura Virtual Item ──────────────────────────────────────────────────────
+function FaturaVirtualItem({ bill, setActionTarget }) {
+  const f       = bill._fatura
+  const pctPago = f.totalGasto > 0 ? Math.min((f.totalPago / f.totalGasto) * 100, 100) : 0
+
+  return (
+    <div className={`bg-slate-50 border rounded-2xl shadow-sm p-4 ${f.pago ? 'border-emerald-100' : 'border-slate-200'}`}>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${
+            f.pago ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-800 text-white'
+          }`}>
+            <CreditCard size={18} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className={`font-bold text-[13px] leading-tight truncate ${f.pago ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                {bill.descricao}
+              </p>
+              <span className="text-[7px] font-black bg-slate-800 text-white px-1.5 py-0.5 rounded-full uppercase">Fatura</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400 uppercase mt-1 flex-wrap">
+              <span>Vence {new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+              {f.periodo && (
+                <>
+                  <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
+                  <span className="text-slate-400">{f.periodo}</span>
+                </>
+              )}
+              {f.qtdGastos > 0 && (
+                <>
+                  <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
+                  <span className="text-rose-400">{f.qtdGastos} compra{f.qtdGastos !== 1 ? 's' : ''}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-end flex-shrink-0">
+          <p className={`font-black text-xs whitespace-nowrap ${f.pago ? 'text-gray-300' : 'text-slate-700'}`}>
+            R$ {Number(f.totalGasto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          {f.totalPago > 0 && !f.pago && (
+            <p className="text-[9px] text-emerald-600 font-bold whitespace-nowrap">
+              pago R$ {Number(f.totalPago).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          )}
+          {f.pago
+            ? <p className="text-[9px] font-black text-emerald-600 mt-0.5">✓ Quitada</p>
+            : f.saldo > 0
+            ? <p className="text-[9px] font-black text-rose-500 mt-0.5">
+                Falta R$ {Number(f.saldo).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            : null
+          }
+        </div>
+      </div>
+
+      {f.totalGasto > 0 && (
+        <div className="space-y-1">
+          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+              style={{ width: `${pctPago}%` }} />
+          </div>
+          <p className="text-[8px] text-gray-400 font-bold text-center">
+            {f.totalPago > 0
+              ? `R$ ${Number(f.totalPago).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pago de R$ ${Number(f.totalGasto).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              : f.qtdGastos > 0 ? 'Nenhum pagamento registrado' : 'Sem gastos neste período'
+            }
+          </p>
+        </div>
+      )}
+
+      {f.totalGasto === 0 && (
+        <p className="text-[9px] text-gray-300 font-bold text-center">Sem gastos neste período</p>
+      )}
+    </div>
+  )
+}
 
 const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget }) => {
   const startXRef = useRef(null)
@@ -282,16 +363,41 @@ function SummaryBar({ pending, paid }) {
   )
 }
 
-export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit, onDelete, isLoading }) => {
+export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit, onDelete, isLoading, cartoes = [], currentDate }) => {
   const [sortBy, setSortBy]             = useState('vencimento')
   const [isReversed, setIsReversed]     = useState(false)
   const [showPaid, setShowPaid]         = useState(false)
   const [actionTarget, setActionTarget] = useState(null)
 
-  const rawBills = useMemo(() =>
-    (transactions || []).filter(t => t.tipo === 'fixa' || t.tipo === 'esporadica'),
-    [transactions]
-  )
+  const faturasBills = useMemo(() => {
+    const bills = []
+    ;(cartoes || []).forEach(c => {
+      const faturas = getFaturasExibicao(c, allTransactions, currentDate)
+      faturas.forEach((f, fi) => {
+        bills.push({
+          id:             `fatura-virtual-${c.id}-${fi}`,
+          _isFatura:      true,
+          _cartaoId:      c.id,
+          _cartaoNome:    c.nome,
+          _fatura:        f,
+          _label:         f._label,
+          tipo:           'pagamento_cartao',
+          descricao:      fi === 0 ? `Fatura ${c.nome}` : `Próx. Fatura ${c.nome}`,
+          valor:          f.saldo,
+          pago:           f.pago,
+          data:           f.vencStr,
+          categoria:      'Cartão',
+          recorrencia_id: null,
+        })
+      })
+    })
+    return bills
+  }, [cartoes, allTransactions, currentDate])
+
+  const rawBills = useMemo(() => {
+    const contas = (transactions || []).filter(t => t.tipo === 'fixa' || t.tipo === 'esporadica')
+    return [...contas, ...faturasBills]
+  }, [transactions, faturasBills])
 
   const recurrenceStatsMap = useMemo(() => {
     if (!allTransactions) return {}
@@ -328,6 +434,9 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   }
 
   const renderBill = (bill) => {
+    if (bill._isFatura) {
+      return <FaturaVirtualItem key={bill.id} bill={bill} onEdit={onEdit} setActionTarget={setActionTarget} />
+    }
     const rawStats = bill.recorrencia_id ? recurrenceStatsMap[bill.recorrencia_id] : null
     const stats = rawStats ? {
       total: rawStats.total, paid: rawStats.paid,

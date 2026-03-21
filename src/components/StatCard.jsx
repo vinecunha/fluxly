@@ -5,66 +5,65 @@ export const StatCard = ({ title, value, valueSemana, valueHoje, color, icon, bg
 
   if (isLoading) {
     return (
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2 min-w-0 animate-pulse">
-        <div className="min-w-0 flex-1">
-          <div className="h-2 w-10 bg-gray-100 rounded-2xl mb-2 ml-0.5" />
-          <div className="h-4 w-20 bg-gray-50 rounded-2xl" />
-        </div>
-        <div className="w-10 h-10 rounded-2xl bg-gray-50 flex-shrink-0" />
+      <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 animate-pulse">
+        <div className="h-2 w-12 bg-gray-100 rounded-full mb-2" />
+        <div className="h-5 w-20 bg-gray-50 rounded-full" />
       </div>
     )
   }
 
   const FILTERS = ['hoje', 'semana', 'geral']
+  const labels  = { hoje: 'Hoje', semana: 'Semana', geral: 'Mês' }
 
-  const handleCycleFilter = (e) => {
+  const handleCycle = (e) => {
     e.stopPropagation()
     setFilterMode(prev => FILTERS[(FILTERS.indexOf(prev) + 1) % FILTERS.length])
   }
 
-  const currentValue = filterMode === 'hoje' ? (valueHoje || 0) : 
-                       filterMode === 'semana' ? (valueSemana || 0) : 
-                       (value || 0)
+  const currentValue = filterMode === 'hoje'   ? (valueHoje   || 0)
+                     : filterMode === 'semana' ? (valueSemana || 0)
+                     : (value || 0)
 
-  const formattedValue = Number(currentValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  const labels = { geral: 'Mês', semana: 'Semana', hoje: 'Hoje' }
+  const formatted = Number(currentValue).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  })
 
-  const getFontSize = (formatted) => {
-    if (formatted.length > 14) return 'text-[11px]'
-    if (formatted.length > 11) return 'text-[13px]'
-    return 'text-base'
-  }
+  const fontSize = formatted.length > 14 ? 'text-[11px]'
+                 : formatted.length > 11 ? 'text-[13px]'
+                 : 'text-[15px]'
 
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-1.5 min-w-0 overflow-hidden relative">
+    <div className="bg-white px-3.5 py-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 min-w-0 overflow-hidden">
+      {/* Ícone */}
+      {icon && (
+        <div className={`w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center ${bgLight} ${color}`}>
+          {React.cloneElement(icon, { size: 15, strokeWidth: 2.5 })}
+        </div>
+      )}
+
+      {/* Texto */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 mb-0.5 ml-0.5">
-          <p className="text-[8px] font-black uppercase text-gray-400 tracking-[0.12em] truncate">
+        <div className="flex items-center gap-1 mb-0.5">
+          <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider truncate leading-none">
             {title}
           </p>
-          <button 
-            onClick={handleCycleFilter}
-            className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase transition-all border ${
+          <button
+            onClick={handleCycle}
+            className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase transition-all flex-shrink-0 ${
               filterMode !== 'geral'
-              ? 'bg-slate-900 text-white border-slate-600 shadow-sm' 
-              : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
+                ? 'bg-slate-900 text-white'
+                : 'bg-gray-100 text-gray-400'
             }`}
+            style={{ minHeight: 18 }}
           >
             {labels[filterMode]}
           </button>
         </div>
-        
-        <p className={`font-black leading-tight transition-all duration-300 ${color} ${getFontSize(currentValue)}`}>
-          <span className="text-[10px] opacity-70 mr-0.5">R$</span>
-          {formattedValue}
+        <p className={`font-black leading-tight ${color} ${fontSize}`}>
+          <span className="text-[9px] opacity-60 mr-0.5">R$</span>
+          {formatted}
         </p>
       </div>
-      
-      {icon && (
-        <div className={`w-9 h-9 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-sm ${bgLight} ${color}`}>
-          {React.cloneElement(icon, { size: 16, strokeWidth: 3 })}
-        </div>
-      )}
     </div>
   )
 }

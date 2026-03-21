@@ -126,7 +126,7 @@ function PrevisaoCard({ previsao, daysInMonth, diaHoje }) {
         {!positivo && previsao.precisaGanharPorDia > 0 && (
           <div className="bg-rose-100 rounded-xl px-3 py-2 text-right flex-shrink-0">
             <p className="text-[8px] font-black text-rose-600 uppercase">Precisa ganhar</p>
-            <p className="text-sm font-black text-rose-700">{fmtK(previsao.precisaGanharPorDia).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}/dia</p>
+            <p className="text-sm font-black text-rose-700">{previsao.precisaGanharPorDia.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}/dia</p>
           </div>
         )}
       </div>

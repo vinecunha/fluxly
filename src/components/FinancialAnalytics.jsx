@@ -1,4 +1,4 @@
-import React, { useState, useMemo, lazy, Suspense, useRef, useEffect } from 'react'
+import React, { useState, useMemo, lazy, Suspense } from 'react'
 import {
   TrendingDown, TrendingUp, Tag, ArrowLeft,
   DollarSign, PiggyBank, Building2, Wallet,
@@ -13,140 +13,120 @@ const MonthlyChart = lazy(() =>
   import('./MonthlyChart').then(m => ({ default: m.MonthlyChart }))
 )
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const fmt  = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtK = (v) => {
   if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
   return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
 }
 
 const PALETTE = [
-  '#1e293b', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
-  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316',
-  '#64748b', '#a78bfa', '#34d399', '#fbbf24', '#fb923c',
+  '#1e293b','#3b82f6','#10b981','#f59e0b','#ef4444',
+  '#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316',
+  '#64748b','#a78bfa','#34d399','#fbbf24','#fb923c',
 ]
 
-// ─── Donut Chart ─────────────────────────────────────────────────────────────
-function DonutChart({ data, total, color, activeIdx, onHover }) {
-  const SIZE   = 160
-  const CX     = SIZE / 2
-  const CY     = SIZE / 2
-  const R      = 58
-  const INNER  = 36
-  const GAP    = 2
+// ─── Donut SVG ────────────────────────────────────────────────────────────────
+function DonutChart({ entries, total, activeIdx, onPress }) {
+  const SIZE  = 200
+  const CX    = SIZE / 2
+  const CY    = SIZE / 2
+  const R     = 78
+  const INNER = 50
+  const GAP   = 1.5
 
   const slices = useMemo(() => {
-    if (!data.length || total <= 0) return []
+    if (!entries.length || total <= 0) return []
     let angle = -90
-    return data.map((d, i) => {
-      const pct   = d.value / total
+    return entries.map((e, i) => {
+      const pct   = e.value / total
       const sweep = pct * 360
-      const start = angle
-      angle += sweep + (sweep > 5 ? GAP : 0)
-      return { ...d, pct, sweep, start, i }
+      const s     = { ...e, pct, sweep, start: angle, i }
+      angle += sweep + (sweep > 3 ? GAP : 0)
+      return s
     })
-  }, [data, total])
+  }, [entries, total])
 
-  const polarToXY = (angleDeg, r) => {
-    const rad = (angleDeg * Math.PI) / 180
-    return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
+  const polar = (deg, r) => {
+    const rad = (deg * Math.PI) / 180
+    return [CX + r * Math.cos(rad), CY + r * Math.sin(rad)]
   }
 
-  const describeArc = (start, sweep, r, inner) => {
+  const arc = (start, sweep, r, inner) => {
     if (sweep >= 359.9) {
-      return [
-        `M ${CX} ${CY - r}`,
-        `A ${r} ${r} 0 1 1 ${CX - 0.01} ${CY - r}`,
-        `Z`,
-        `M ${CX} ${CY - inner}`,
-        `A ${inner} ${inner} 0 1 0 ${CX - 0.01} ${CY - inner}`,
-        `Z`,
-      ].join(' ')
+      return `M${CX} ${CY-r} A${r} ${r} 0 1 1 ${CX-0.01} ${CY-r} Z M${CX} ${CY-inner} A${inner} ${inner} 0 1 0 ${CX-0.01} ${CY-inner} Z`
     }
-    const p1 = polarToXY(start, r)
-    const p2 = polarToXY(start + sweep, r)
-    const p3 = polarToXY(start + sweep, inner)
-    const p4 = polarToXY(start, inner)
-    const large = sweep > 180 ? 1 : 0
-    return [
-      `M ${p1.x} ${p1.y}`,
-      `A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`,
-      `L ${p3.x} ${p3.y}`,
-      `A ${inner} ${inner} 0 ${large} 0 ${p4.x} ${p4.y}`,
-      `Z`,
-    ].join(' ')
+    const adj  = Math.max(sweep - (sweep > 3 ? GAP : 0), 0.3)
+    const [x1,y1] = polar(start, r)
+    const [x2,y2] = polar(start + adj, r)
+    const [x3,y3] = polar(start + adj, inner)
+    const [x4,y4] = polar(start, inner)
+    const lg = sweep > 180 ? 1 : 0
+    return `M${x1} ${y1} A${r} ${r} 0 ${lg} 1 ${x2} ${y2} L${x3} ${y3} A${inner} ${inner} 0 ${lg} 0 ${x4} ${y4}Z`
   }
 
   const active = activeIdx !== null ? slices[activeIdx] : null
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="overflow-visible">
-        {slices.map((s, i) => {
-          const isActive = activeIdx === i
-          const scale    = isActive ? 1.06 : 1
-          return (
-            <path
-              key={i}
-              d={describeArc(s.start, Math.max(s.sweep - (s.sweep > 5 ? GAP : 0), 0.5), R, INNER)}
-              fill={PALETTE[i % PALETTE.length]}
-              opacity={activeIdx === null ? 1 : isActive ? 1 : 0.35}
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: `${CX}px ${CY}px`,
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={() => onHover(i)}
-              onMouseLeave={() => onHover(null)}
-              onTouchStart={() => onHover(i)}
-            />
-          )
-        })}
-        <circle cx={CX} cy={CY} r={INNER - 2} fill="white" />
-        <text x={CX} y={CY - 7} textAnchor="middle" fontSize="10" fontWeight="800" fill="#1e293b">
-          {active ? `${(active.pct * 100).toFixed(0)}%` : fmtK(total)}
-        </text>
-        <text x={CX} y={CY + 8} textAnchor="middle" fontSize="7" fontWeight="700" fill="#94a3b8">
-          {active ? active.label.substring(0, 10) : 'total'}
-        </text>
-      </svg>
-    </div>
-  )
-}
-
-// ─── Category Row ─────────────────────────────────────────────────────────────
-function CategoryRow({ name, value, total, color, catData, rank, isActive, onHover, onClick }) {
-  const pct = total > 0 ? (value / total) * 100 : 0
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={onHover}
-      onMouseLeave={() => {}}
-      className={`flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-all ${
-        isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
-      }`}
+    <svg
+      width="100%" viewBox={`0 0 ${SIZE} ${SIZE}`}
+      style={{ maxWidth: 220, touchAction: 'manipulation' }}
     >
-      <div className="w-5 h-5 rounded-lg flex-shrink-0" style={{ backgroundColor: color }} />
-      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${catData?.color || 'bg-gray-100 text-gray-400'}`}>
-        {catData?.icon || <Tag size={12} />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-[11px] font-bold text-gray-700 truncate">{name}</p>
-          <p className="text-[11px] font-black text-gray-900 ml-2 flex-shrink-0">{fmtK(value)}</p>
-        </div>
-        <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
-        </div>
-      </div>
-      <span className="text-[9px] font-black text-gray-300 w-7 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
-    </div>
+      {slices.map((s, i) => {
+        const isActive = activeIdx === i
+        return (
+          <path
+            key={i}
+            d={arc(s.start, s.sweep, R, INNER)}
+            fill={PALETTE[i % PALETTE.length]}
+            opacity={activeIdx === null ? 1 : isActive ? 1 : 0.3}
+            style={{
+              transform: isActive ? `scale(1.04)` : 'scale(1)',
+              transformOrigin: `${CX}px ${CY}px`,
+              transition: 'all 0.18s ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={() => onPress(i)}
+            onMouseLeave={() => onPress(null)}
+            onClick={() => onPress(activeIdx === i ? null : i)}
+            onTouchStart={(e) => { e.preventDefault(); onPress(activeIdx === i ? null : i) }}
+          />
+        )
+      })}
+
+      {/* Inner circle */}
+      <circle cx={CX} cy={CY} r={INNER - 1} fill="white" />
+
+      {/* Center text */}
+      {active ? (
+        <>
+          <text x={CX} y={CY - 8} textAnchor="middle" fontSize="13" fontWeight="900" fill="#1e293b">
+            {(active.pct * 100).toFixed(0)}%
+          </text>
+          <text x={CX} y={CY + 8} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="#94a3b8">
+            {active.label.length > 11 ? active.label.slice(0, 10) + '…' : active.label}
+          </text>
+          <text x={CX} y={CY + 22} textAnchor="middle" fontSize="8" fontWeight="800" fill="#475569">
+            {fmtK(active.value)}
+          </text>
+        </>
+      ) : (
+        <>
+          <text x={CX} y={CY - 4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#1e293b">
+            {fmtK(total)}
+          </text>
+          <text x={CX} y={CY + 11} textAnchor="middle" fontSize="8" fontWeight="700" fill="#94a3b8">
+            total
+          </text>
+        </>
+      )}
+    </svg>
   )
 }
 
 // ─── Pie Section ─────────────────────────────────────────────────────────────
-function PieSection({ grouped, viewTotal, tab, onDrillDown }) {
-  const [activeIdx, setActiveIdx] = useState(null)
+function PieSection({ grouped, viewTotal, tab }) {
+  const [activeIdx, setActiveIdx]     = useState(null)
+  const [expandedKey, setExpandedKey] = useState(null)
 
   const entries = useMemo(() =>
     Object.entries(grouped)
@@ -154,54 +134,144 @@ function PieSection({ grouped, viewTotal, tab, onDrillDown }) {
       .map(([name, info], i) => ({
         label: name,
         value: info.totalBruto,
-        items: info.items,
         color: PALETTE[i % PALETTE.length],
+        items: info.items || [],
+        subcategorias: info.subcategorias || null,
       })),
     [grouped]
   )
 
   if (entries.length === 0) return null
 
-  const tabColor = tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
+  const handleItemPress = (i) => {
+    const key = entries[i].label
+    setActiveIdx(i)
+    setExpandedKey(prev => prev === key ? null : key)
+  }
+
+  const fmt2 = (v) => `R$ ${Math.abs(Number(v)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 pt-4 pb-1">
         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Distribuição</p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 pb-4">
+      <div className="flex justify-center px-8 py-2">
         <DonutChart
-          data={entries}
+          entries={entries}
           total={viewTotal}
-          color={tab}
           activeIdx={activeIdx}
-          onHover={setActiveIdx}
+          onPress={(i) => i === null ? setActiveIdx(null) : handleItemPress(i)}
         />
-        <div className="flex-1 min-w-0 space-y-0.5 max-h-[160px] overflow-y-auto no-scrollbar">
-          {entries.map((e, i) => {
-            const catData = tab === 'gasto' ? categoryIcons[e.label] : null
-            return (
-              <CategoryRow
-                key={e.label}
-                name={e.label}
-                value={e.value}
-                total={viewTotal}
-                color={e.color}
-                catData={catData}
-                rank={i + 1}
-                isActive={activeIdx === i}
-                onHover={() => setActiveIdx(i)}
-                onClick={() => onDrillDown(e.label)}
-              />
-            )
-          })}
-        </div>
+      </div>
+
+      <div className="px-4 pb-4 space-y-1">
+        {entries.map((e, i) => {
+          const catData    = tab === 'gasto' ? categoryIcons[e.label] : null
+          const pct        = viewTotal > 0 ? (e.value / viewTotal) * 100 : 0
+          const isActive   = activeIdx === i
+          const isExpanded = expandedKey === e.label
+
+          // itens a mostrar no sub-painel
+          const subItems = e.subcategorias
+            ? Object.entries(e.subcategorias)
+                .sort((a, b) => b[1].totalBruto - a[1].totalBruto)
+                .map(([subName, subData]) => ({ label: subName, value: subData.totalBruto, items: subData.items }))
+            : e.items
+                .reduce((acc, t) => {
+                  const k = t.descricao || 'Outros'
+                  const existing = acc.find(x => x.label === k)
+                  if (existing) existing.value += Math.abs(Number(t.valor))
+                  else acc.push({ label: k, value: Math.abs(Number(t.valor)), date: t.data })
+                  return acc
+                }, [])
+                .sort((a, b) => b.value - a.value)
+
+          return (
+            <div key={e.label}>
+              <button
+                onClick={() => handleItemPress(i)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all active:scale-[0.98] ${
+                  isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
+                }`}
+                style={{ minHeight: 44 }}
+              >
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: e.color }} />
+
+                {catData ? (
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${catData.color}`}>
+                    {catData.icon}
+                  </div>
+                ) : (
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    tab === 'investimento' ? 'bg-blue-100 text-blue-600' :
+                    tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {tab === 'investimento' ? <Building2 size={12} /> :
+                     tab === 'renda' ? <DollarSign size={12} /> : <Tag size={12} />}
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[11px] font-bold text-gray-700 truncate leading-none">{e.label}</p>
+                    <p className="text-[11px] font-black text-gray-900 ml-2 flex-shrink-0">{fmtK(e.value)}</p>
+                  </div>
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, backgroundColor: e.color }} />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span className="text-[9px] font-black text-gray-400 w-6 text-right">{pct.toFixed(0)}%</span>
+                  <ChevronRight
+                    size={13}
+                    className={`text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                  />
+                </div>
+              </button>
+
+              {/* Sub-painel inline */}
+              {isExpanded && subItems.length > 0 && (
+                <div className="ml-4 mt-0.5 mb-1 border-l-2 pl-3 space-y-0.5 animate-in slide-in-from-top-1 duration-200"
+                  style={{ borderColor: e.color + '55' }}>
+                  {subItems.slice(0, 8).map((sub, si) => {
+                    const subPct = e.value > 0 ? (sub.value / e.value) * 100 : 0
+                    return (
+                      <div key={si} className="flex items-center gap-2 py-2 px-2 rounded-xl">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-bold text-gray-600 truncate">{sub.label}</p>
+                            <p className="text-[10px] font-black text-gray-700 ml-2 flex-shrink-0">{fmt2(sub.value)}</p>
+                          </div>
+                          <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden mt-1">
+                            <div className="h-full rounded-full" style={{ width: `${subPct}%`, backgroundColor: e.color + 'aa' }} />
+                          </div>
+                        </div>
+                        <span className="text-[8px] font-black text-gray-300 w-5 text-right flex-shrink-0">
+                          {subPct.toFixed(0)}%
+                        </span>
+                      </div>
+                    )
+                  })}
+                  {subItems.length > 8 && (
+                    <p className="text-[8px] text-gray-300 font-bold px-2 pb-1">
+                      +{subItems.length - 8} itens
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export function FinancialAnalytics({ transactions = [], allTransactions = [], currentDate }) {
   const [tab, setTab]                         = useState('gasto')
   const [expandedDestino, setExpandedDestino] = useState(null)
@@ -263,6 +333,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
 
   const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null); setProjectionDays(0) }
 
+  // ── Drill: subcategoria ────────────────────────────────────────────────────
   if (expandedSubcat) {
     const items = tab === 'investimento'
       ? grouped[expandedDestino]?.subcategorias[expandedSubcat]?.items || []
@@ -271,7 +342,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedSubcat(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar
         </button>
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
@@ -305,13 +377,15 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     )
   }
 
+  // ── Drill: destino reserva ─────────────────────────────────────────────────
   if (expandedDestino && tab === 'investimento') {
     const subs = Object.entries(grouped[expandedDestino]?.subcategorias || {})
     const liquidDestino = calculateLiquidValue(grouped[expandedDestino]?.items || [], projectionDays)
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedDestino(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm">
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
@@ -320,13 +394,14 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         </div>
         <div className="space-y-2">
           {subs.sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, data]) => (
-            <div key={name} onClick={() => setExpandedSubcat(name)}
-              className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
+            <button key={name} onClick={() => setExpandedSubcat(name)}
+              className="w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all"
+              style={{ minHeight: 56 }}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
                   <PiggyBank size={16} />
                 </div>
-                <div>
+                <div className="text-left">
                   <p className="text-sm font-bold text-gray-700">{name}</p>
                   <p className="text-[9px] text-gray-400">{data.items.length} lançamento{data.items.length !== 1 ? 's' : ''}</p>
                 </div>
@@ -335,7 +410,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
                 <p className="text-sm font-black text-gray-900">{fmt(calculateLiquidValue(data.items, projectionDays))}</p>
                 <ChevronRight size={14} className="text-gray-300" />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </section>
@@ -347,6 +422,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
 
   return (
     <section className="space-y-4 animate-in fade-in duration-300">
+
+      {/* Sub-tabs */}
       <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
         {[
           { id: 'gasto',        label: 'Gastos',  Icon: TrendingDown, color: 'text-rose-600'    },
@@ -355,19 +432,21 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         ].map(({ id, label, Icon, color }) => (
           <button key={id}
             onClick={() => { setTab(id); resetDrill() }}
-            className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
+            style={{ minHeight: 44 }}
+            className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
               tab === id ? `bg-white shadow-sm ${color}` : 'text-gray-400'
-            }`}
-          >
+            }`}>
             <Icon size={13} /> {label}
           </button>
         ))}
       </div>
 
+      {/* Gráfico mensal */}
       <Suspense fallback={<div className="h-40 bg-gray-50 rounded-2xl animate-pulse" />}>
         <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
+      {/* Total card */}
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex items-end justify-between mb-1">
           <div>
@@ -401,7 +480,8 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
               <div className="flex gap-1">
                 {[0, 30, 60, 90, 365].map(d => (
                   <button key={d} onClick={() => setProjectionDays(d)}
-                    className={`px-2.5 py-1 rounded-2xl text-[8px] font-black transition-all ${
+                    style={{ minHeight: 36 }}
+                    className={`px-2.5 py-1.5 rounded-2xl text-[8px] font-black transition-all ${
                       projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
                     }`}>
                     {d === 0 ? 'HOJE' : d === 365 ? '1A' : `${d}D`}
@@ -425,13 +505,14 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         )}
       </div>
 
+      {/* Pizza */}
       <PieSection
         grouped={grouped}
         viewTotal={viewTotal}
         tab={tab}
-        onDrillDown={(name) => tab === 'investimento' ? setExpandedDestino(name) : setExpandedSubcat(name)}
       />
 
+      {/* Calendário */}
       <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />
     </section>
   )
