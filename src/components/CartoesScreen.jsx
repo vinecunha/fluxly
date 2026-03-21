@@ -21,6 +21,116 @@ const fmtK = (v) => Math.abs(v) >= 1000
   ? `R$${(Math.abs(v) / 1000).toFixed(1)}k`
   : `R$${Number(Math.abs(v)).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
 
+// ─── Fatura Detalhe com paginação ────────────────────────────────────────────
+const PER_PAGE = 8
+
+function FaturaDetalhe({ faturas, corHex, fmt }) {
+  const [pages, setPages] = React.useState({}) // { fi: pageIndex }
+
+  const getPage = (fi) => pages[fi] || 0
+  const setPage = (fi, p) => setPages(prev => ({ ...prev, [fi]: p }))
+
+  return (
+    <div className="bg-white border-x border-b border-gray-100 rounded-b-[1.75rem] animate-in slide-in-from-top-1 duration-200">
+      {faturas.map((fat, fi) => {
+        const sorted   = [...fat.gastos].sort((a, b) => new Date(b.data) - new Date(a.data))
+        const total    = sorted.length
+        const totalPag = Math.ceil(total / PER_PAGE)
+        const page     = getPage(fi)
+        const slice    = sorted.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
+
+        return (
+          <div key={fi} className={`p-4 ${fi > 0 ? 'border-t border-gray-100' : ''}`}>
+
+            {/* Cabeçalho */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                  {fat._label} · {fat.periodo}
+                </p>
+                <p className="text-[8px] text-gray-400 mt-0.5">{total} compra{total !== 1 ? 's' : ''}</p>
+              </div>
+              <span className={`text-[7px] font-black px-2 py-0.5 rounded-full uppercase ${
+                fat.pago ? 'bg-emerald-100 text-emerald-700' :
+                fat.status === 'cobrança' ? 'bg-rose-100 text-rose-700' :
+                'bg-gray-100 text-gray-500'
+              }`}>
+                {fat.pago ? 'Quitada' : fat.status === 'cobrança' ? 'A pagar' : 'Aberta'}
+              </span>
+            </div>
+
+            {/* Lista */}
+            <div className="space-y-0">
+              {slice.map((t, i) => (
+                <div key={i} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                  <div className="w-7 h-7 rounded-xl flex-shrink-0 flex items-center justify-center"
+                    style={{ backgroundColor: corHex + '18' }}>
+                    <TrendingDown size={11} style={{ color: corHex }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-gray-800 truncate">{t.descricao}</p>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">
+                      {new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      {t.categoria ? ` · ${t.categoria}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-[11px] font-black text-rose-600 flex-shrink-0">
+                    -{fmt(Math.abs(Number(t.valor)))}
+                  </p>
+                </div>
+              ))}
+              {total === 0 && (
+                <p className="text-[9px] text-gray-300 font-bold py-2">Sem compras neste período</p>
+              )}
+            </div>
+
+            {/* Paginação */}
+            {totalPag > 1 && (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                <button
+                  onClick={() => setPage(fi, Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="flex items-center gap-1 text-[9px] font-black text-gray-500 uppercase px-2.5 py-1.5 rounded-xl bg-gray-50 disabled:opacity-30 active:scale-95 transition-all"
+                  style={{ minHeight: 36 }}>
+                  ‹ Anterior
+                </button>
+                <span className="text-[9px] font-black text-gray-400">
+                  {page + 1} / {totalPag} · {total} itens
+                </span>
+                <button
+                  onClick={() => setPage(fi, Math.min(totalPag - 1, page + 1))}
+                  disabled={page === totalPag - 1}
+                  className="flex items-center gap-1 text-[9px] font-black text-gray-500 uppercase px-2.5 py-1.5 rounded-xl bg-gray-50 disabled:opacity-30 active:scale-95 transition-all"
+                  style={{ minHeight: 36 }}>
+                  Próxima ›
+                </button>
+              </div>
+            )}
+
+            {/* Resumo */}
+            <div className="space-y-1 mt-3">
+              {fat.totalPago > 0 && (
+                <div className="flex items-center justify-between bg-emerald-50 rounded-xl px-3 py-2">
+                  <span className="text-[9px] font-black text-emerald-600 uppercase">Pago</span>
+                  <span className="text-xs font-black text-emerald-700">{fmt(fat.totalPago)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                <span className="text-[9px] font-black text-gray-500 uppercase">
+                  {fat.saldo > 0 ? 'Saldo' : 'Quitada'}
+                </span>
+                <span className={`text-xs font-black ${fat.saldo > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  {fat.saldo > 0 ? fmt(fat.saldo) : '✓ R$0,00'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function CartoesScreen({ cartoes, onCriar, onEditar, onExcluir, allTransactions = [], currentDate }) {
   const [showForm, setShowForm]             = useState(false)
   const [editando, setEditando]             = useState(null)
@@ -190,66 +300,7 @@ export function CartoesScreen({ cartoes, onCriar, onEditar, onExcluir, allTransa
               </div>
 
               {isExpanded && (
-                <div className="bg-white border-x border-b border-gray-100 rounded-b-[1.75rem] animate-in slide-in-from-top-1 duration-200">
-                  {c.faturas.map((fat, fi) => (
-                    <div key={fi} className={`p-4 ${fi > 0 ? 'border-t border-gray-100' : ''}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                          {fat._label} · {fat.periodo}
-                        </p>
-                        <span className={`text-[7px] font-black px-2 py-0.5 rounded-full uppercase ${
-                          fat.pago ? 'bg-emerald-100 text-emerald-700' :
-                          fat.status === 'cobrança' ? 'bg-rose-100 text-rose-700' :
-                          'bg-gray-100 text-gray-500'
-                        }`}>
-                          {fat.pago ? 'Quitada' : fat.status === 'cobrança' ? 'A pagar' : 'Aberta'}
-                        </span>
-                      </div>
-
-                      {fat.gastos.slice(0, 5).map((t, i) => (
-                        <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                          <div className="w-7 h-7 rounded-xl flex-shrink-0 flex items-center justify-center"
-                            style={{ backgroundColor: corHex(c.cor) + '18' }}>
-                            <TrendingDown size={11} style={{ color: corHex(c.cor) }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold text-gray-800 truncate">{t.descricao}</p>
-                            <p className="text-[9px] text-gray-400 font-bold uppercase">
-                              {new Date(t.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                              {t.categoria ? ` · ${t.categoria}` : ''}
-                            </p>
-                          </div>
-                          <p className="text-[11px] font-black text-rose-600 flex-shrink-0">
-                            -{fmt(Math.abs(Number(t.valor)))}
-                          </p>
-                        </div>
-                      ))}
-                      {fat.gastos.length > 5 && (
-                        <p className="text-[9px] text-gray-300 font-bold text-center py-1">
-                          +{fat.gastos.length - 5} compras não exibidas
-                        </p>
-                      )}
-                      {fat.gastos.length === 0 && (
-                        <p className="text-[9px] text-gray-300 font-bold py-1">Sem compras neste período</p>
-                      )}
-
-                      {fat.totalPago > 0 && (
-                        <div className="flex items-center justify-between bg-emerald-50 rounded-xl px-3 py-2 mt-2">
-                          <span className="text-[9px] font-black text-emerald-600 uppercase">Pago</span>
-                          <span className="text-xs font-black text-emerald-700">{fmt(fat.totalPago)}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 mt-1">
-                        <span className="text-[9px] font-black text-gray-500 uppercase">
-                          {fat.saldo > 0 ? 'Saldo' : 'Quitada'}
-                        </span>
-                        <span className={`text-xs font-black ${fat.saldo > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                          {fat.saldo > 0 ? fmt(fat.saldo) : '✓ R$0,00'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <FaturaDetalhe faturas={c.faturas} corHex={corHex(c.cor)} fmt={fmt} />
               )}
             </div>
           )
@@ -280,7 +331,7 @@ export function CartoesScreen({ cartoes, onCriar, onEditar, onExcluir, allTransa
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-7 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h4 className="text-xl font-black text-gray-800 tracking-tighter">

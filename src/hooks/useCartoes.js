@@ -1,21 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
+// useCartoes apenas gerencia os metadados dos cartões (nome, limite, fechamento, vencimento, cor)
+// O cálculo de fatura é feito no frontend via calcFatura (faturaHelpers.js)
+// usando allTransactions do useFinance — sem depender de views do BD
+
 export function useCartoes(user) {
   const [cartoes, setCartoes] = useState([])
-  const [faturas, setFaturas] = useState([])
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
     setLoading(true)
     try {
-      const [{ data: c }, { data: f }] = await Promise.all([
-        supabase.from('cartoes').select('*').eq('user_id', user.id).eq('ativo', true).order('created_at'),
-        supabase.from('fatura_cartao').select('*').eq('user_id', user.id),
-      ])
+      const { data: c } = await supabase
+        .from('cartoes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('ativo', true)
+        .order('created_at')
       setCartoes(c || [])
-      setFaturas(f || [])
     } finally {
       setLoading(false)
     }
@@ -41,5 +45,5 @@ export function useCartoes(user) {
     await refresh()
   }
 
-  return { cartoes, faturas, loading, refresh, criarCartao, editarCartao, excluirCartao }
+  return { cartoes, faturas: [], loading, refresh, criarCartao, editarCartao, excluirCartao }
 }

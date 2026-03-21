@@ -1,55 +1,60 @@
 /**
- * Lógica real de cartão de crédito.
+ * Lógica real de cartão de crédito Itaú (e maioria dos bancos BR).
  *
- * Para um dado viewDate (mês sendo visualizado):
+ * O fechamento marca o FIM do ciclo anterior e o INÍCIO do novo:
+ *   - Compras feitas NO dia do fechamento já entram na PRÓXIMA fatura
+ *   - Período de gastos: do dia do fechamento (inclusive) do mês anterior
+ *                        até o dia anterior ao fechamento do mês atual
  *
- *   Período de GASTOS do ciclo ref:
- *     início = dia (fechamento + 1) do mês anterior ao viewDate
- *     fim    = dia fechamento do viewDate
+ * Fechamento = 8, Vencimento = 15:
+ *   Fatura março:
+ *     gastos:   08/fev (inclusive) → 07/mar (inclusive)
+ *     vence:    15/mar
+ *     cobrança: 08/mar → 07/abr
  *
- *   Pagamentos são atribuídos ao ciclo cujo período de cobrança os contém:
- *     cobrança começa no dia seguinte ao fechamento do viewDate
- *     e vai até o fechamento do mês seguinte
+ *   Fatura abril:
+ *     gastos:   08/mar (inclusive) → 07/abr (inclusive)
+ *     vence:    15/abr
+ *     cobrança: 08/abr → 07/mai
  *
- *   Regra de qual ciclo mostrar no mês X:
- *     - A fatura cujo VENCIMENTO cai no mês X deve aparecer em março
- *     - Vencimento = dia vencimento do viewDate
+ * Qual ciclo mostrar para um viewDate:
+ *   - Se hoje >= fechamento no mês atual → ciclo do PRÓXIMO mês (fatura aberta acumulando)
+ *   - Caso contrário → ciclo do mês visualizado
  */
-export function calcFatura(cartao, allTransactions, viewDate) {
-  const ref    = viewDate instanceof Date ? viewDate : new Date()
-  const anoRef = ref.getFullYear()
-  const mesRef = ref.getMonth()
 
+function calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno) {
   const diaFech = cartao.fechamento
   const diaVenc = cartao.vencimento
 
-  // Período de GASTOS: fechamento do mês anterior + 1 até fechamento deste mês
-  const mesIni = mesRef === 0 ? 11 : mesRef - 1
-  const anoIni = mesRef === 0 ? anoRef - 1 : anoRef
+  // Período de GASTOS:
+  //   início = dia fechamento do mês anterior (inclusive)
+  //   fim    = dia (fechamento - 1) do mês atual (inclusive)
+  const mesIniGasto = cicloMes === 0 ? 11 : cicloMes - 1
+  const anoIniGasto = cicloMes === 0 ? cicloAno - 1 : cicloAno
 
-  const inicioGastos = new Date(anoIni, mesIni, diaFech + 1, 0, 0, 0)
-  const fimGastos    = new Date(anoRef, mesRef, diaFech, 23, 59, 59)
+  const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech,     0,  0,  0)
+  const fimGastos    = new Date(cicloAno,    cicloMes,    diaFech - 1, 23, 59, 59)
 
-  // Período de COBRANÇA: dia seguinte ao fechamento até fechamento do próximo mês
-  const mesCobFim = mesRef === 11 ? 0 : mesRef + 1
-  const anoCobFim = mesRef === 11 ? anoRef + 1 : anoRef
-  const inicioCob = new Date(anoRef,    mesRef,    diaFech + 1, 0, 0, 0)
-  const fimCob    = new Date(anoCobFim, mesCobFim, diaFech,     23, 59, 59)
+  // Período de COBRANÇA (inclui antecipações):
+  //   início = dia fechamento do ciclo ANTERIOR (= início dos gastos)
+  //             → aceita pagamentos antecipados feitos antes do fechamento
+  //   fim    = dia (fechamento - 1) do próximo mês (inclusive)
+  const mesCobFim = cicloMes === 11 ? 0  : cicloMes + 1
+  const anoCobFim = cicloMes === 11 ? cicloAno + 1 : cicloAno
 
-  // Vencimento cai neste mês
-  const venc    = new Date(anoRef, mesRef, diaVenc)
+  const inicioCob = new Date(anoIniGasto, mesIniGasto, diaFech,     0,  0,  0)  // = inicioGastos
+  const fimCob    = new Date(anoCobFim,   mesCobFim,   diaFech - 1, 23, 59, 59)
+
+  // Vencimento
+  const venc    = new Date(cicloAno, cicloMes, diaVenc)
   const vencStr = venc.toLocaleDateString('en-CA')
 
-  // Gastos dentro do período de gastos deste ciclo
   const gastos = (allTransactions || []).filter(t => {
     if (t.cartao_id !== cartao.id || t.tipo === 'pagamento_cartao') return false
     const d = new Date(t.data + 'T12:00:00')
     return d >= inicioGastos && d <= fimGastos
   })
 
-  // Pagamentos dentro do período de cobrança deste ciclo
-  // Usa t.data (data do lançamento) para evitar que gastos com data_pagamento
-  // no período de cobrança sejam contados erroneamente como pagamentos de fatura
   const pagamentos = (allTransactions || []).filter(t => {
     if (t.cartao_id !== cartao.id || t.tipo !== 'pagamento_cartao') return false
     if (!t.pago) return false
@@ -65,10 +70,9 @@ export function calcFatura(cartao, allTransactions, viewDate) {
   const periodo = `${inicioGastos.getDate()} ${nomeMes(inicioGastos)} – ${fimGastos.getDate()} ${nomeMes(fimGastos)}`
   const pago    = totalGasto > 0 && saldo <= 0
 
-  // Status baseado em hoje vs período de cobrança
-  const hoje = new Date(); hoje.setHours(0,0,0,0)
-  const status = pago ? 'quitada'
-    : hoje >= inicioCob ? 'cobrança'
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+  const status = pago           ? 'quitada'
+    : hoje >= inicioCob         ? 'cobrança'
     : 'aberta'
 
   return {
@@ -77,16 +81,53 @@ export function calcFatura(cartao, allTransactions, viewDate) {
     periodo, vencStr, pago, status,
     gastos, pagamentos,
     inicioGastos, fimGastos, inicioCob, fimCob, venc,
+    cicloMes, cicloAno,
   }
 }
 
-/**
- * Para o BillsList e CartoesScreen:
- * Sempre retorna UMA fatura por cartão — a do mês visualizado.
- * O vencimento cai no próprio mês do viewDate, então em março
- * aparecem as faturas que vencem em março.
- */
+export function calcFatura(cartao, allTransactions, viewDate) {
+  const ref    = viewDate instanceof Date ? viewDate : new Date()
+  const anoRef = ref.getFullYear()
+  const mesRef = ref.getMonth()
+
+  const hoje      = new Date(); hoje.setHours(0, 0, 0, 0)
+  const isHojeMes = anoRef === hoje.getFullYear() && mesRef === hoje.getMonth()
+  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.fechamento
+
+  let cicloMes, cicloAno
+  if (jáFechou) {
+    cicloMes = mesRef === 11 ? 0 : mesRef + 1
+    cicloAno = mesRef === 11 ? anoRef + 1 : anoRef
+  } else {
+    cicloMes = mesRef
+    cicloAno = anoRef
+  }
+
+  return calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno)
+}
+
 export function getFaturasExibicao(cartao, allTransactions, viewDate) {
-  const f = calcFatura(cartao, allTransactions, viewDate)
-  return [{ ...f, _label: 'Fatura' }]
+  const ref    = viewDate instanceof Date ? viewDate : new Date()
+  const anoRef = ref.getFullYear()
+  const mesRef = ref.getMonth()
+
+  const hoje      = new Date(); hoje.setHours(0, 0, 0, 0)
+  const isHojeMes = anoRef === hoje.getFullYear() && mesRef === hoje.getMonth()
+  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.fechamento
+
+  if (jáFechou) {
+    // Fatura que fechou hoje/passou: ciclo atual
+    const fatFechada = calcFaturaParaCiclo(cartao, allTransactions, mesRef, anoRef)
+    // Próxima: ciclo do mês seguinte
+    const proxMes = mesRef === 11 ? 0 : mesRef + 1
+    const proxAno = mesRef === 11 ? anoRef + 1 : anoRef
+    const fatProxima = calcFaturaParaCiclo(cartao, allTransactions, proxMes, proxAno)
+    return [
+      { ...fatFechada,  _label: 'Fatura em cobrança' },
+      { ...fatProxima,  _label: 'Próxima fatura'     },
+    ]
+  }
+
+  const fat = calcFaturaParaCiclo(cartao, allTransactions, mesRef, anoRef)
+  return [{ ...fat, _label: 'Fatura' }]
 }
