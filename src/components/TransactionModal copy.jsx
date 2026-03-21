@@ -29,7 +29,6 @@ const categorias = [
   "Mercado",
   "Mesma titularidade",
   "Outros gastos",
-  "Pagamento de fatura",
   "Pets",
   "Restaurantes",
   "Saque",
@@ -204,7 +203,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
             {!['renda', 'reserva', 'pagamento_cartao'].includes(form.tipo) && (
               <div className="space-y-2 animate-in fade-in duration-300">
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Categoria</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1 no-scrollbar border-y border-gray-50">
                   {categorias.map(cat => (
                     <button key={cat} type="button"
                       onClick={() => setForm(f => ({ ...f, categoria: cat, subcategoria: cat === 'Aplicativos' ? 'Uber' : '' }))}

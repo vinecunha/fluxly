@@ -22,7 +22,7 @@
  *   - Caso contrário → ciclo do mês visualizado
  */
 
-function calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno) {
+function _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, cicloAno) {
   const diaFech = cartao.fechamento
   const diaVenc = cartao.vencimento
 
@@ -63,25 +63,73 @@ function calcFaturaParaCiclo(cartao, allTransactions, cicloMes, cicloAno) {
 
   const totalGasto = gastos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
   const totalPago  = pagamentos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
-  const saldo      = Math.max(totalGasto - totalPago, 0)
+
+  // Crédito = overpayment desta fatura (passa para a próxima)
+  const credito = totalPago > totalGasto
+    ? Math.round((totalPago - totalGasto) * 100) / 100
+    : 0
+
+  // Buscar crédito da fatura anterior e aplicar aqui
+  const antMes = cicloMes === 0 ? 11 : cicloMes - 1
+  const antAno = cicloMes === 0 ? cicloAno - 1 : cicloAno
+  const ant    = _calcBase(cartao, allTransactions, antMes, antAno)
+  const creditoAnt = ant ? (ant.credito || 0) : 0
+
+  const totalPagoEfetivo = totalPago + creditoAnt
+  const saldo  = Math.max(totalGasto - totalPagoEfetivo, 0)
+  const creditoFinal = totalPagoEfetivo > totalGasto
+    ? Math.round((totalPagoEfetivo - totalGasto) * 100) / 100
+    : 0
 
   const nomeMes = (d) => d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
   const periodo = `${inicioGastos.getDate()} ${nomeMes(inicioGastos)} – ${fimGastos.getDate()} ${nomeMes(fimGastos)}`
   const pago    = totalGasto > 0 && saldo <= 0
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
-  const status = pago           ? 'quitada'
-    : hoje >= inicioCob         ? 'cobrança'
-    : 'aberta'
+  const status = pago ? 'quitada' : hoje >= inicioCob ? 'cobrança' : 'aberta'
 
   return {
-    totalGasto, totalPago, saldo,
+    totalGasto, totalPago, totalPagoEfetivo, saldo,
+    credito: creditoFinal, creditoAnt,
     qtdGastos: gastos.length,
     periodo, vencStr, pago, status,
     gastos, pagamentos,
     inicioGastos, fimGastos, inicioCob, fimCob, venc,
     cicloMes, cicloAno,
   }
+}
+
+// Versão base sem crédito anterior (evita recursão infinita)
+function _calcBase(cartao, allTransactions, cicloMes, cicloAno) {
+  const diaFech = cartao.fechamento
+  const diaVenc = cartao.vencimento
+  const mesIniGasto = cicloMes === 0 ? 11 : cicloMes - 1
+  const anoIniGasto = cicloMes === 0 ? cicloAno - 1 : cicloAno
+  const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech, 0, 0, 0)
+  const fimGastos    = new Date(cicloAno, cicloMes, diaFech - 1, 23, 59, 59)
+  const mesCobFim    = cicloMes === 11 ? 0 : cicloMes + 1
+  const anoCobFim    = cicloMes === 11 ? cicloAno + 1 : cicloAno
+  const inicioCob    = new Date(cicloAno, cicloMes, diaFech, 0, 0, 0)
+  const fimCob       = new Date(anoCobFim, mesCobFim, diaFech - 1, 23, 59, 59)
+
+  const gastos = (allTransactions || []).filter(t => {
+    if (t.cartao_id !== cartao.id || t.tipo === 'pagamento_cartao') return false
+    const d = new Date(t.data + 'T12:00:00')
+    return d >= inicioGastos && d <= fimGastos
+  })
+  const pagamentos = (allTransactions || []).filter(t => {
+    if (t.cartao_id !== cartao.id || t.tipo !== 'pagamento_cartao') return false
+    if (!t.pago) return false
+    const d = new Date(t.data + 'T12:00:00')
+    return d >= inicioCob && d <= fimCob
+  })
+
+  const totalGasto = gastos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
+  const totalPago  = pagamentos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
+  const credito    = totalPago > totalGasto
+    ? Math.round((totalPago - totalGasto) * 100) / 100
+    : 0
+  return { totalGasto, totalPago, credito }
 }
 
 export function calcFatura(cartao, allTransactions, viewDate) {
