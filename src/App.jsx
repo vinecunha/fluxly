@@ -20,6 +20,8 @@ import { useSaldoProjetado } from './hooks/useSaldoProjetado'
 import { StatCard } from './components/StatCard'
 import { TabBar, BottomNav } from './components/TabBar'
 import { AlertBanner } from './components/AlertBanner'
+import { PainelAlertas } from './components/PainelAlertas'
+import { useAlertas } from './hooks/useAlertas'
 import { SavingSplash } from './components/SavingSplash'
 import { Toast } from './components/Toast'
 import { UndoToast } from './components/UndoToast'
@@ -80,6 +82,7 @@ export default function App() {
     faturas ? Object.values(faturas).flat() : [],
     currentDate
   )
+  const alertas = useAlertas(data, saldo, currentDate)
   const { zerarCaixinha }            = useCaixinhas(user, mesStr)
   const filteredData = useFilteredData(data, currentDate)
   const totals       = useTotals(filteredData, currentDate)
@@ -149,17 +152,11 @@ export default function App() {
       <div className="px-4 pt-3 space-y-3">
         <NotificationPrompt />
 
-        {(overdueCount > 0 || todayCount > 0) && (
-          <AlertBanner
-            overdueCount={overdueCount}
-            todayCount={todayCount}
-            showAlerts={showAlerts}
-            dispatch={dispatch}
-            onQuickPay={handleQuickPay}
-            transactions={data}
-            isSaving={isSaving}
-          />
-        )}
+        <PainelAlertas
+          alertas={alertas}
+          overdueCount={overdueCount}
+          todayCount={todayCount}
+        />
 
 
 

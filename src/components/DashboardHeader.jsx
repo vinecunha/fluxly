@@ -91,7 +91,7 @@ export const DashboardHeader = ({
           {/* Seletor de mês */}
           <div className="flex items-center bg-white/10 rounded-2xl border border-white/10 flex-1 mx-1">
             <button onClick={() => onMonthChange(-1)}
-              className="px-2 text-white/50 active:text-white hover:text-white transition-colors"
+              className="px-4 text-white/50 active:text-white hover:text-white transition-colors"
               style={{ minHeight: 40 }}>
               <ChevronLeft size={14} />
             </button>
@@ -113,7 +113,7 @@ export const DashboardHeader = ({
               />
             </div>
             <button onClick={() => onMonthChange(1)}
-              className="px-2 text-white/50 active:text-white hover:text-white transition-colors"
+              className="px-4 text-white/50 active:text-white hover:text-white transition-colors"
               style={{ minHeight: 40 }}>
               <ChevronRight size={14} />
             </button>
@@ -170,7 +170,7 @@ export const DashboardHeader = ({
                 de {fmtFull(totalDespesas)} em despesas
               </p>
             </div>
-            <span className={`text-[8px] font-black px-2.5 py-1 rounded-full uppercase shrink-0 mt-1 ${
+            <span className={`text-[8px] font-black px-4.5 py-1 rounded-full uppercase shrink-0 mt-1 ${
               isCoberto ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
             }`}>
               {isCoberto ? 'Finalizado' : 'Em curso'}

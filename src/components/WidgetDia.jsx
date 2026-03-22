@@ -41,7 +41,7 @@ export const WidgetDia = ({ saldo, totals, userName, onVerDetalhes, isLoading })
 
   if (isLoading) {
     return (
-      <div className="px-4 sm:px-6 pt-3">
+      <div className="px-4 pt-3">
         <div className="max-w-2xl mx-auto bg-white  rounded-2xl shadow-sm border border-gray-100  p-4 animate-pulse">
           <div className="h-4 w-32 bg-gray-100  rounded mb-3"/>
           <div className="grid grid-cols-2 gap-2">
@@ -77,7 +77,7 @@ export const WidgetDia = ({ saldo, totals, userName, onVerDetalhes, isLoading })
   const IconTrend = saldoDia > 0 ? TrendingUp : saldoDia < 0 ? TrendingDown : Minus
 
   return (
-    <div className="px-4 sm:px-6 pt-3">
+    <div className="px-4  pt-3">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white  rounded-2xl shadow-sm border border-gray-100  overflow-hidden">
 

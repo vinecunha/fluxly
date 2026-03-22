@@ -559,6 +559,19 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   const pending = useMemo(() => sorted.filter(b => !b.pago), [sorted])
   const paid    = useMemo(() => sorted.filter(b => b.pago),  [sorted])
 
+  // Separar dívidas (empréstimos/financiamentos) das contas normais
+  const isDivida = (b) => {
+    const cat = (b.categoria || '').toLowerCase()
+    const desc = (b.descricao || '').toLowerCase()
+    return cat.includes('empr') || cat.includes('financ') || cat.includes('dívida') ||
+           desc.includes('empr') || desc.includes('financ') || desc.includes('parcel') ||
+           desc.includes('itau') || desc.includes('shopee') || desc.includes('mercado pago') ||
+           desc.includes('bradesco') || desc.includes('sonia') || desc.includes('dasmei')
+  }
+  const pendingDividas = useMemo(() => pending.filter(isDivida),  [pending])
+  const pendingContas  = useMemo(() => pending.filter(b => !isDivida(b) && !b._isFatura), [pending])
+  const pendingFaturas = useMemo(() => pending.filter(b => b._isFatura), [pending])
+
   const handleConfirmAction = (allSeries) => {
     if (!actionTarget) return
     const { bill, type } = actionTarget
@@ -616,19 +629,64 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
           <SummaryBar pending={pending} paid={paid} />
 
           <div className="space-y-5">
-            {pending.length === 0 ? (
-              <div className="text-center py-10 bg-white  rounded-2xl border-2 border-dashed border-gray-100  italic text-gray-400  text-[10px]">
-                Nenhuma conta pendente 🎉
+
+            {/* ── Faturas de cartão ──────────────────────────────── */}
+            {pendingFaturas.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"/>
+                  <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">
+                    Faturas · {pendingFaturas.length}
+                  </span>
+                </div>
+                <div className="space-y-2.5">{pendingFaturas.map(renderBill)}</div>
               </div>
-            ) : (
-              <div className="space-y-2.5">{pending.map(renderBill)}</div>
             )}
 
+            {/* ── Contas do mês ──────────────────────────────────── */}
+            {pendingContas.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400"/>
+                  <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
+                    Contas · {pendingContas.length}
+                  </span>
+                </div>
+                <div className="space-y-2.5">{pendingContas.map(renderBill)}</div>
+              </div>
+            )}
+
+            {/* ── Dívidas / Empréstimos ──────────────────────────── */}
+            {pendingDividas.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500"/>
+                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">
+                      Dívidas · {pendingDividas.length}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-black text-rose-500">
+                    R$ {pendingDividas.reduce((s,b)=>s+(parseFloat(b.valor)||0),0)
+                          .toLocaleString('pt-BR',{minimumFractionDigits:2})}
+                  </span>
+                </div>
+                <div className="space-y-2.5">{pendingDividas.map(renderBill)}</div>
+              </div>
+            )}
+
+            {pending.length === 0 && (
+              <div className="text-center py-10 bg-white rounded-2xl border-2 border-dashed border-gray-100 italic text-gray-400 text-[10px]">
+                Nenhuma conta pendente 🎉
+              </div>
+            )}
+
+            {/* ── Pagas ─────────────────────────────────────────── */}
             {paid.length > 0 && (
               <div className="space-y-2">
                 <button onClick={() => setShowPaid(p => !p)} className="flex items-center justify-between w-full px-2">
-                  <span className="text-[9px] font-black text-gray-400  uppercase tracking-widest">Pagas ({paid.length})</span>
-                  {showPaid ? <ArrowUp size={12} className="text-gray-400 " /> : <ArrowDown size={12} className="text-gray-400 " />}
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Pagas ({paid.length})</span>
+                  {showPaid ? <ArrowUp size={12} className="text-gray-400" /> : <ArrowDown size={12} className="text-gray-400" />}
                 </button>
                 {showPaid && <div className="space-y-2.5 animate-in slide-in-from-top-2">{paid.map(renderBill)}</div>}
               </div>
