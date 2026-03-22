@@ -15,6 +15,8 @@ import { useCaixinhas } from './hooks/useCaixinhas'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
+import { WidgetDia } from './components/WidgetDia'
+import { useSaldoProjetado } from './hooks/useSaldoProjetado'
 import { StatCard } from './components/StatCard'
 import { TabBar, BottomNav } from './components/TabBar'
 import { AlertBanner } from './components/AlertBanner'
@@ -48,6 +50,7 @@ export default function App() {
 
   const [uiState, dispatch] = useReducer(uiReducer, initialUIState)
   const { isModalOpen, editingTransaction, isSaving, savingMessage, toast, showAlerts, undo } = uiState
+  const [fabPrefill, setFabPrefill] = useState(null)
 
   useServiceWorker()
   const isOffline = useOffline()
@@ -72,6 +75,11 @@ export default function App() {
 
   const { data, loading, refresh }   = useFinance(user)
   const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
+  const saldo = useSaldoProjetado(
+    data,
+    faturas ? Object.values(faturas).flat() : [],
+    currentDate
+  )
   const { zerarCaixinha }            = useCaixinhas(user, mesStr)
   const filteredData = useFilteredData(data, currentDate)
   const totals       = useTotals(filteredData, currentDate)
@@ -127,6 +135,15 @@ export default function App() {
         onRefresh={refresh}
         isRefreshing={isRefreshing}
         onOpenAnalytics={() => setActiveTab(TABS.ANALYTICS)}
+        saldoProjetado={saldo?.saldoProjetado}
+      />
+
+      <WidgetDia
+        saldo={saldo}
+        totals={totals}
+        userName={user?.email}
+        onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
+        isLoading={loading}
       />
 
       <div className="px-4 pt-3 space-y-3">
@@ -144,28 +161,7 @@ export default function App() {
           />
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            title="Renda"
-            value={totals.renda}
-            valueHoje={totals.rendaHoje}
-            valueSemana={totals.rendaSemana}
-            color="text-emerald-600"
-            bgLight="bg-emerald-50"
-            icon={<TrendingUp />}
-            isLoading={loading}
-          />
-          <StatCard
-            title="Despesas"
-            value={totals.gastosTotal}
-            valueHoje={totals.gastosHoje}
-            valueSemana={totals.gastosSemana}
-            color="text-rose-600"
-            bgLight="bg-rose-50"
-            icon={<TrendingDown />}
-            isLoading={loading}
-          />
-        </div>
+
 
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
 
@@ -220,9 +216,9 @@ export default function App() {
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}
-          onClose={() => dispatch({ type: UI_ACTIONS.CLOSE_MODAL })}
-          onSave={handleSave}
-          initialData={editingTransaction}
+          onClose={() => { dispatch({ type: UI_ACTIONS.CLOSE_MODAL }); setFabPrefill(null) }}
+          onSave={(form, all) => { setFabPrefill(null); handleSave(form, all) }}
+          initialData={editingTransaction || fabPrefill || null}
           transactions={data}
           cartoes={cartoes}
         />
@@ -236,7 +232,11 @@ export default function App() {
       <BottomNav
         activeTab={activeTab}
         onChangeTab={setActiveTab}
-        onAddNew={() => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })}
+        transactions={data}
+        onAddNew={(prefill) => {
+          setFabPrefill(prefill || null)
+          dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })
+        }}
       />
     </div>
   )

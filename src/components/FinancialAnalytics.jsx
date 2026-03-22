@@ -206,7 +206,7 @@ function PieSection({ grouped, viewTotal, tab }) {
                 ) : (
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     tab === 'investimento' ? 'bg-blue-100 text-blue-600' :
-                    tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'
+                    tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100  text-gray-500 '
                   }`}>
                     {tab === 'investimento' ? <Building2 size={12} /> :
                      tab === 'renda' ? <DollarSign size={12} /> : <Tag size={12} />}
@@ -215,10 +215,10 @@ function PieSection({ grouped, viewTotal, tab }) {
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-bold text-gray-700 truncate leading-none">{e.label}</p>
+                    <p className="text-[11px] font-bold text-gray-700  truncate leading-none">{e.label}</p>
                     <p className="text-[11px] font-black text-gray-900 ml-2 flex-shrink-0">{fmtK(e.value)}</p>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-gray-100  rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${pct}%`, backgroundColor: e.color }} />
                   </div>
@@ -228,7 +228,7 @@ function PieSection({ grouped, viewTotal, tab }) {
                   <span className="text-[9px] font-black text-gray-400 w-6 text-right">{pct.toFixed(0)}%</span>
                   <ChevronRight
                     size={13}
-                    className={`text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`text-gray-300  transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                   />
                 </div>
               </button>
@@ -243,21 +243,21 @@ function PieSection({ grouped, viewTotal, tab }) {
                       <div key={si} className="flex items-center gap-2 py-2 px-2 rounded-xl">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold text-gray-600 truncate">{sub.label}</p>
-                            <p className="text-[10px] font-black text-gray-700 ml-2 flex-shrink-0">{fmt2(sub.value)}</p>
+                            <p className="text-[10px] font-bold text-gray-600  truncate">{sub.label}</p>
+                            <p className="text-[10px] font-black text-gray-700  ml-2 flex-shrink-0">{fmt2(sub.value)}</p>
                           </div>
-                          <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden mt-1">
+                          <div className="h-1 w-full bg-gray-100  rounded-full overflow-hidden mt-1">
                             <div className="h-full rounded-full" style={{ width: `${subPct}%`, backgroundColor: e.color + 'aa' }} />
                           </div>
                         </div>
-                        <span className="text-[8px] font-black text-gray-300 w-5 text-right flex-shrink-0">
+                        <span className="text-[8px] font-black text-gray-300  w-5 text-right flex-shrink-0">
                           {subPct.toFixed(0)}%
                         </span>
                       </div>
                     )
                   })}
                   {subItems.length > 8 && (
-                    <p className="text-[8px] text-gray-300 font-bold px-2 pb-1">
+                    <p className="text-[8px] text-gray-300  font-bold px-2 pb-1">
                       +{subItems.length - 8} itens
                     </p>
                   )}
@@ -266,6 +266,228 @@ function PieSection({ grouped, viewTotal, tab }) {
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+
+// ─── Gráfico de barras mês a mês ─────────────────────────────────────────────
+function BarChartMensal({ allTransactions, tab, currentDate }) {
+  const meses = useMemo(() => {
+    const result = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      const m = d.getMonth()
+      const y = d.getFullYear()
+      const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.','').toUpperCase()
+
+      const txs = (allTransactions || []).filter(t => {
+        const td = new Date(t.data + 'T12:00:00')
+        return td.getMonth() === m && td.getFullYear() === y
+      })
+
+      let valor = 0
+      if (tab === 'renda') {
+        valor = txs.filter(t => t.tipo === 'renda').reduce((s,t) => s + (parseFloat(t.valor)||0), 0)
+      } else {
+        valor = txs.filter(t => t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && (t.tipo === 'gasto_diario' || t.pago))
+                   .reduce((s,t) => s + (parseFloat(t.valor)||0), 0)
+      }
+      result.push({ label, valor, mes: m, ano: y })
+    }
+    return result
+  }, [allTransactions, tab, currentDate])
+
+  const max = Math.max(...meses.map(m => m.valor), 1)
+  const cor = tab === 'renda' ? '#10b981' : '#ef4444'
+  const corLight = tab === 'renda' ? '#d1fae5' : '#fee2e2'
+  const isCurrentMes = (m) => m.mes === currentDate.getMonth() && m.ano === currentDate.getFullYear()
+
+  const fmtBar = (v) => {
+    if (v >= 1000) return `R$${(v/1000).toFixed(1)}k`
+    return `R$${v.toLocaleString('pt-BR',{minimumFractionDigits:0})}`
+  }
+
+  // Variação mês a mês
+  const ultimo   = meses[meses.length - 1]?.valor || 0
+  const anterior = meses[meses.length - 2]?.valor || 0
+  const delta    = anterior > 0 ? ((ultimo - anterior) / anterior) * 100 : 0
+
+  return (
+    <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+            Últimos 6 meses
+          </p>
+          <p className="text-sm font-black text-gray-800 ">
+            {tab === 'renda' ? 'Evolução da Renda' : 'Evolução dos Gastos'}
+          </p>
+        </div>
+        {Math.abs(delta) >= 1 && (
+          <span className={`text-[10px] font-black px-2 py-1 rounded-full ${
+            tab === 'renda'
+              ? delta > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+              : delta > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
+          }`}>
+            {delta > 0 ? '↑' : '↓'} {Math.abs(delta).toFixed(0)}% vs mês ant.
+          </span>
+        )}
+      </div>
+
+      {/* Barras */}
+      <div className="flex items-end gap-2 h-28">
+        {meses.map((m, i) => {
+          const pct     = max > 0 ? (m.valor / max) * 100 : 0
+          const isCur   = isCurrentMes(m)
+          const prevVal = i > 0 ? meses[i-1].valor : null
+          const diffPct = prevVal && prevVal > 0 ? ((m.valor - prevVal) / prevVal) * 100 : null
+
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              {/* Valor no topo */}
+              <p className="text-[8px] font-black text-gray-400 leading-none">
+                {m.valor > 0 ? fmtBar(m.valor) : '—'}
+              </p>
+              {/* Barra */}
+              <div className="w-full flex items-end" style={{ height: 72 }}>
+                <div
+                  className="w-full rounded-t-lg transition-all duration-700"
+                  style={{
+                    height: `${Math.max(pct, m.valor > 0 ? 4 : 0)}%`,
+                    backgroundColor: isCur ? cor : corLight,
+                    opacity: isCur ? 1 : 0.6,
+                  }}
+                />
+              </div>
+              {/* Label mês */}
+              <p className={`text-[8px] font-black leading-none ${isCur ? 'text-gray-800 ' : 'text-gray-400'}`}>
+                {m.label}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Ranking de categorias com delta vs mês anterior ─────────────────────────
+function ComparativoCategoria({ allTransactions, tab, currentDate }) {
+  const dados = useMemo(() => {
+    const build = (mes, ano) => {
+      const txs = (allTransactions || []).filter(t => {
+        const td = new Date(t.data + 'T12:00:00')
+        return td.getMonth() === mes && td.getFullYear() === ano
+      })
+      const filtradas = tab === 'renda'
+        ? txs.filter(t => t.tipo === 'renda')
+        : txs.filter(t => t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && (t.tipo === 'gasto_diario' || t.pago))
+
+      return filtradas.reduce((acc, t) => {
+        const cat = (tab === 'renda' ? (t.subcategoria || t.descricao) : t.categoria) || 'Outros'
+        acc[cat] = (acc[cat] || 0) + (parseFloat(t.valor) || 0)
+        return acc
+      }, {})
+    }
+
+    const mesAtual = currentDate.getMonth()
+    const anoAtual = currentDate.getFullYear()
+    const mesAnt   = mesAtual === 0 ? 11 : mesAtual - 1
+    const anoAnt   = mesAtual === 0 ? anoAtual - 1 : anoAtual
+
+    const atual    = build(mesAtual, anoAtual)
+    const anterior = build(mesAnt, anoAnt)
+
+    const todas = [...new Set([...Object.keys(atual), ...Object.keys(anterior)])]
+    return todas
+      .map(cat => ({
+        cat,
+        atual:    atual[cat] || 0,
+        anterior: anterior[cat] || 0,
+        delta:    anterior[cat] > 0
+          ? ((( atual[cat]||0) - anterior[cat]) / anterior[cat]) * 100
+          : atual[cat] > 0 ? 100 : 0,
+      }))
+      .filter(r => r.atual > 0 || r.anterior > 0)
+      .sort((a, b) => b.atual - a.atual)
+      .slice(0, 8)
+  }, [allTransactions, tab, currentDate])
+
+  const mesNome = (offset) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1)
+    return d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.','').toUpperCase()
+  }
+
+  const maxVal = Math.max(...dados.map(d => Math.max(d.atual, d.anterior)), 1)
+  const corAtual = tab === 'renda' ? '#10b981' : '#ef4444'
+  const corAnt   = tab === 'renda' ? '#d1fae5' : '#fee2e2'
+
+  if (!dados.length) return null
+
+  return (
+    <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+            Comparativo por categoria
+          </p>
+          <p className="text-sm font-black text-gray-800 ">
+            {mesNome(-1)} vs {mesNome(0)}
+          </p>
+        </div>
+        {/* Legenda */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: corAnt }}/>
+            <span className="text-[8px] font-black text-gray-400">{mesNome(-1)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: corAtual }}/>
+            <span className="text-[8px] font-black text-gray-400">{mesNome(0)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {dados.map((row, i) => (
+          <div key={i}>
+            {/* Label + delta */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black text-gray-700  truncate max-w-[55%]">
+                {row.cat}
+              </span>
+              <div className="flex items-center gap-2">
+                {Math.abs(row.delta) >= 1 && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                    tab === 'renda'
+                      ? row.delta > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      : row.delta > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
+                  }`}>
+                    {row.delta > 0 ? '↑' : '↓'}{Math.abs(row.delta).toFixed(0)}%
+                  </span>
+                )}
+                <span className="text-[10px] font-black text-gray-500 ">
+                  {row.atual >= 1000 ? `R$${(row.atual/1000).toFixed(1)}k` : `R$${row.atual.toFixed(0)}`}
+                </span>
+              </div>
+            </div>
+            {/* Barras duplas */}
+            <div className="space-y-0.5">
+              {/* Anterior */}
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${(row.anterior/maxVal)*100}%`, backgroundColor: corAnt, opacity:0.8 }}/>
+              </div>
+              {/* Atual */}
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${(row.atual/maxVal)*100}%`, backgroundColor: corAtual }}/>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -342,11 +564,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedSubcat(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white  px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
           style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar
         </button>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+        <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Detalhes</p>
             <p className="text-xl font-black text-gray-900">{expandedSubcat}</p>
@@ -359,13 +581,13 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         </div>
         <div className="space-y-2">
           {items.sort((a, b) => new Date(b.data) - new Date(a.data)).map((t, i) => (
-            <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
+            <div key={i} className="bg-white  p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-gray-50  text-gray-400 flex items-center justify-center flex-shrink-0">
                   <Tag size={14} />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-gray-800">{t.descricao}</p>
+                  <p className="font-bold text-sm text-gray-800 ">{t.descricao}</p>
                   <p className="text-[9px] text-gray-400 font-bold uppercase">{t.data.split('-').reverse().join('/')}</p>
                 </div>
               </div>
@@ -384,31 +606,31 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedDestino(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white  px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
           style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Saldo Líquido em {expandedDestino}</p>
           <p className="text-3xl font-black text-blue-600">{fmt(liquidDestino)}</p>
         </div>
         <div className="space-y-2">
           {subs.sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, data]) => (
             <button key={name} onClick={() => setExpandedSubcat(name)}
-              className="w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all"
+              className="w-full bg-white  p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all"
               style={{ minHeight: 56 }}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
                   <PiggyBank size={16} />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-gray-700">{name}</p>
+                  <p className="text-sm font-bold text-gray-700 ">{name}</p>
                   <p className="text-[9px] text-gray-400">{data.items.length} lançamento{data.items.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-black text-gray-900">{fmt(calculateLiquidValue(data.items, projectionDays))}</p>
-                <ChevronRight size={14} className="text-gray-300" />
+                <ChevronRight size={14} className="text-gray-300 " />
               </div>
             </button>
           ))}
@@ -424,7 +646,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     <section className="space-y-4 animate-in fade-in duration-300">
 
       {/* Sub-tabs */}
-      <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
+      <div className="flex gap-1.5 p-1 bg-gray-100  rounded-2xl">
         {[
           { id: 'gasto',        label: 'Gastos',  Icon: TrendingDown, color: 'text-rose-600'    },
           { id: 'investimento', label: 'Reservas', Icon: PiggyBank,   color: 'text-blue-600'    },
@@ -434,7 +656,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
             onClick={() => { setTab(id); resetDrill() }}
             style={{ minHeight: 44 }}
             className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-              tab === id ? `bg-white shadow-sm ${color}` : 'text-gray-400'
+              tab === id ? `bg-white  shadow-sm ${color}` : 'text-gray-400'
             }`}>
             <Icon size={13} /> {label}
           </button>
@@ -442,12 +664,12 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
       </div>
 
       {/* Gráfico mensal */}
-      <Suspense fallback={<div className="h-40 bg-gray-50 rounded-2xl animate-pulse" />}>
+      <Suspense fallback={<div className="h-40 bg-gray-50  rounded-2xl animate-pulse" />}>
         <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
       {/* Total card */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex items-end justify-between mb-1">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
@@ -464,14 +686,14 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
           </div>
           {avgTotal > 0 && (
             <div className="text-right">
-              <p className="text-[8px] font-black text-gray-300 uppercase">Média 3m</p>
+              <p className="text-[8px] font-black text-gray-300  uppercase">Média 3m</p>
               <p className="text-xs font-black text-gray-400">{fmtK(avgTotal)}</p>
             </div>
           )}
         </div>
 
         {tab === 'investimento' && (
-          <div className="mt-4 pt-4 border-t border-gray-50">
+          <div className="mt-4 pt-4 border-t border-gray-50 ">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
                 <Zap size={10} className="text-blue-400 fill-purple-400" />
@@ -482,7 +704,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
                   <button key={d} onClick={() => setProjectionDays(d)}
                     style={{ minHeight: 36 }}
                     className={`px-2.5 py-1.5 rounded-2xl text-[8px] font-black transition-all ${
-                      projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
+                      projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50  text-gray-400'
                     }`}>
                     {d === 0 ? 'HOJE' : d === 365 ? '1A' : `${d}D`}
                   </button>
@@ -511,6 +733,24 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         viewTotal={viewTotal}
         tab={tab}
       />
+
+      {/* Gráfico mensal */}
+      {(tab === 'gasto' || tab === 'renda') && (
+        <BarChartMensal
+          allTransactions={allTransactions}
+          tab={tab}
+          currentDate={currentDate}
+        />
+      )}
+
+      {/* Comparativo por categoria */}
+      {(tab === 'gasto' || tab === 'renda') && (
+        <ComparativoCategoria
+          allTransactions={allTransactions}
+          tab={tab}
+          currentDate={currentDate}
+        />
+      )}
 
       {/* Calendário */}
       <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />

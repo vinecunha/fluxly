@@ -11,6 +11,7 @@ export const DashboardHeader = ({
   renda, totalDespesas, despesasPagas, reservaTotal,
   currentDate, onMonthChange, onLogout, isLoading, userEmail,
   onRefresh, isRefreshing, onOpenAnalytics,
+  saldoProjetado,
 }) => {
   const metrics = useMemo(() => {
     const now = new Date()
@@ -148,7 +149,7 @@ export const DashboardHeader = ({
       </header>
 
       {/* Card — sem -mt, flui normalmente abaixo do spacer */}
-      <div className="px-4 sm:px-6 pt-3">
+      <div className="px-4 pt-3">
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
 
           {/* Valor + badge */}
@@ -227,7 +228,7 @@ export const DashboardHeader = ({
             {[
               { label: 'Gastos',  value: fmtK(totalDespesas),                          color: 'text-rose-600',    bg: 'bg-rose-50'    },
               { label: 'Reserva', value: fmtK(reservaTotal),                            color: 'text-blue-600',    bg: 'bg-blue-50'    },
-              { label: 'Sobra',   value: fmtK(Math.max(renda - totalDespesas, 0)),      color: renda >= totalDespesas ? 'text-emerald-600' : 'text-rose-600', bg: renda >= totalDespesas ? 'bg-emerald-50' : 'bg-rose-50' },
+              { label: 'Projetado', value: saldoProjetado != null ? fmtK(saldoProjetado) : fmtK(Math.max(renda - totalDespesas, 0)), color: (saldoProjetado ?? (renda - totalDespesas)) >= 0 ? 'text-emerald-600' : 'text-rose-600', bg: (saldoProjetado ?? (renda - totalDespesas)) >= 0 ? 'bg-emerald-50' : 'bg-rose-50' },
               { label: isCurrentMonth ? 'Dias' : 'Prog.', value: isCurrentMonth ? `${metrics.diasRestantes}d` : `${metrics.progresso.toFixed(0)}%`, color: 'text-slate-600', bg: 'bg-slate-50' },
             ].map((m, i) => (
               <div key={i} className={`${m.bg} rounded-xl p-2 text-center`}>
