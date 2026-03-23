@@ -28,7 +28,7 @@ const CATS = [
   {label:'Mesma Titularidade',emoji:'🔄'},{label:'Pagamento de Fatura',emoji:'💳'},
   {label:'Outros Gastos',emoji:'📦'},
 ]
-const ORIGENS  = ['Uber','99','Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
+const ORIGENS  = ['Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
 const APPS     = ['Uber','99','iFood','Outros']
 const BANCOS   = ['Nubank','Inter','CDB','Poupança','Outros']
 const DEF = { descricao:'', valor:'', tipo:'renda', categoria:'Renda', subcategoria:'',
