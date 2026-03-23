@@ -28,11 +28,11 @@ const CATS = [
   {label:'Mesma Titularidade',emoji:'🔄'},{label:'Pagamento de Fatura',emoji:'💳'},
   {label:'Outros Gastos',emoji:'📦'},
 ]
-const ORIGENS  = ['Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
+const ORIGENS  = ['Uber','99','Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
 const APPS     = ['Uber','99','iFood','Outros']
 const BANCOS   = ['Nubank','Inter','CDB','Poupança','Outros']
 const DEF = { descricao:'', valor:'', tipo:'renda', categoria:'Renda', subcategoria:'',
-              destino_reserva:'', data:getToday(), repetir:'nao', recorrencia_limite:'', cartao_id:null }
+              destino_reserva:'', data:getToday(), repetir:'nao', recorrencia_limite:'', cartao_id:null, _reservaOp:'deposito' }
 
 export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transactions=[], cartoes=[] }) => {
   const [form, setForm]   = useState(DEF)
@@ -54,7 +54,8 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
         categoria:initialData.categoria||(initialData.tipo==='renda'?'Renda':initialData.tipo==='reserva'?'Reserva':'Outros'),
         subcategoria:initialData.subcategoria||'', destino_reserva:initialData.destino_reserva||'',
         data:initialData.data||getToday(), repetir:initialData.repetir||'nao',
-        recorrencia_limite:initialData.recorrencia_limite||'', cartao_id:initialData.cartao_id||null })
+        recorrencia_limite:initialData.recorrencia_limite||'', cartao_id:initialData.cartao_id||null,
+        _reservaOp: initialData.tipo==='reserva' && Number(initialData.valor)<0 ? 'retirada' : 'deposito' })
       // Edição real → step 2 (valor). Prefill FAB → step 1 (pula escolha de tipo)
       setStep(isEdit ? 2 : isPrefill ? 1 : 2)
     } else { setForm({...DEF, data:getToday()}) }
@@ -88,8 +89,15 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
 
   const submit = () => {
     if (!canGo) return
-    if (initialData?.recorrencia_id) setConfirmTarget({bill:initialData,type:'edit'})
-    else onSave(form, false)
+    // Aplicar sinal negativo para retiradas de reserva
+    const formFinal = isReserva && (form._reservaOp||'deposito')==='retirada'
+      ? { ...form, valor: -Math.abs(parseFloat(String(form.valor).replace(',','.')) || 0) }
+      : form
+    if (initialData?.recorrencia_id) {
+      setConfirmTarget({bill:initialData,type:'edit'})
+    } else {
+      onSave(formFinal, false)
+    }
   }
 
   const AUTO = ['tipo','categoria','cartao','banco','origem']
@@ -223,8 +231,30 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
           {/* VALOR + DESCRIÇÃO */}
           {cur==='valor' && (
             <div className="space-y-5">
+
+              {/* Toggle depósito/retirada — só para reserva */}
+              {isReserva && (
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    {label:'Depósito', emoji:'➕', val:'deposito', cor:'#3b82f6', bg:'#dbeafe'},
+                    {label:'Retirada', emoji:'➖', val:'retirada', cor:'#ef4444', bg:'#fee2e2'},
+                  ].map(op=>(
+                    <button key={op.val} type="button"
+                      onClick={()=>sf('_reservaOp', op.val)}
+                      className="flex items-center gap-2 p-3 rounded-2xl border-2 transition-all active:scale-95"
+                      style={{
+                        borderColor:(form._reservaOp||'deposito')===op.val?op.cor:'transparent',
+                        backgroundColor:op.bg,
+                      }}>
+                      <span className="text-lg">{op.emoji}</span>
+                      <span className="text-[13px] font-black text-gray-700">{op.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-gray-400  mb-2">Valor</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Valor</p>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400 ">R$</span>
                   <input type="text" inputMode="decimal" placeholder="0,00"
@@ -232,7 +262,12 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
                     value={form.valor}
                     onChange={e=>sf('valor', e.target.value.replace(/[^0-9.,-]/g,''))}/>
                 </div>
-                {valorNum>0 && <p className="text-center text-[11px] text-gray-400  mt-1.5">{fmt(valorNum)}</p>}
+                {valorNum>0 && (
+                  <p className="text-center text-[11px] mt-1.5 font-black"
+                    style={{color: isReserva&&(form._reservaOp||'deposito')==='retirada'?'#ef4444':'#3b82f6'}}>
+                    {isReserva&&(form._reservaOp||'deposito')==='retirada'?'-':'+'}{fmt(valorNum)}
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-[11px] font-black uppercase tracking-widest text-gray-400  mb-2">
