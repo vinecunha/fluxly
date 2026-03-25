@@ -30,9 +30,10 @@ const CATS = [
 ]
 const ORIGENS  = ['Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
 const APPS     = ['Uber','99','iFood','Outros']
-const BANCOS   = ['Nubank','Inter','CDB','Poupança','Outros']
+const BANCOS   = ['Nubank','Inter','Mercado Pago','CDB','Poupança','Outros']
 const DEF = { descricao:'', valor:'', tipo:'renda', categoria:'Renda', subcategoria:'',
-              destino_reserva:'', data:getToday(), repetir:'nao', recorrencia_limite:'', cartao_id:null, _reservaOp:'deposito' }
+              destino_reserva:'', data:getToday(), repetir:'nao', recorrencia_limite:'', cartao_id:null,
+              _reservaOp:'deposito', _cdiPct:'100', _cdiCarencia:'0' }
 
 export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transactions=[], cartoes=[] }) => {
   const [form, setForm]   = useState(DEF)
@@ -55,7 +56,9 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
         subcategoria:initialData.subcategoria||'', destino_reserva:initialData.destino_reserva||'',
         data:initialData.data||getToday(), repetir:initialData.repetir||'nao',
         recorrencia_limite:initialData.recorrencia_limite||'', cartao_id:initialData.cartao_id||null,
-        _reservaOp: initialData.tipo==='reserva' && Number(initialData.valor)<0 ? 'retirada' : 'deposito' })
+        _reservaOp: initialData.tipo==='reserva' && Number(initialData.valor)<0 ? 'retirada' : 'deposito',
+        _cdiPct: initialData._cdiPct || '100',
+        _cdiCarencia: initialData._cdiCarencia || '0' })
       // Edição real → step 2 (valor). Prefill FAB → step 1 (pula escolha de tipo)
       setStep(isEdit ? 2 : isPrefill ? 1 : 2)
     } else { setForm({...DEF, data:getToday()}) }
@@ -70,10 +73,13 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   const isReserva  = form.tipo==='reserva'
   const showCartao = (isGasto||isPag) && cartoes.length>0
 
-  const steps = isPag             ? ['tipo','cartao','valor','data']
-              : isReserva         ? ['tipo','banco','valor','data']
-              : isRenda           ? ['tipo','origem','valor','data']
-              : isGasto&&showCartao ? ['tipo','categoria','cartao','valor','data']
+  const showApps = isGasto && form.categoria === 'Aplicativos'
+  const steps = isPag                      ? ['tipo','cartao','valor','data']
+              : isReserva                  ? ['tipo','banco','valor','data']
+              : isRenda                    ? ['tipo','origem','valor','data']
+              : isGasto&&showCartao&&showApps ? ['tipo','categoria','apps','cartao','valor','data']
+              : isGasto&&showCartao         ? ['tipo','categoria','cartao','valor','data']
+              : isGasto&&showApps           ? ['tipo','categoria','apps','valor','data']
               : ['tipo','categoria','valor','data']
 
   const cur      = steps[Math.min(step, steps.length-1)]
@@ -81,9 +87,21 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   const valorNum = parseFloat(String(form.valor).replace(',','.'))||0
   const canGo    = cur==='valor' ? (valorNum>0 && (isPag||form.descricao.trim())) : true
 
-  const advance = (nextStep) => {
+  const advance = (namedOrNum) => {
     setDir(1)
-    setTimeout(()=>{ setStep(nextStep ?? (s=>s+1)); setDir(0) }, 10)
+    setTimeout(()=>{
+      if (typeof namedOrNum === 'string') {
+        // jump to named step
+        const idx = steps.indexOf(namedOrNum)
+        if (idx !== -1) setStep(idx)
+        else setStep(s => s + 1)
+      } else if (typeof namedOrNum === 'number') {
+        setStep(namedOrNum)
+      } else {
+        setStep(s => s + 1)
+      }
+      setDir(0)
+    }, 10)
   }
   const back = () => { setDir(-1); setTimeout(()=>{ setStep(s=>s-1); setDir(0) },10) }
 
@@ -100,7 +118,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
     }
   }
 
-  const AUTO = ['tipo','categoria','cartao','banco','origem']
+  const AUTO = ['tipo','categoria','apps','cartao','banco','origem']
   const showBtn = !AUTO.includes(cur)
 
   return (
@@ -161,7 +179,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
               <div className="grid grid-cols-2 gap-2 max-h-[52vh] overflow-y-auto pr-1 no-scrollbar">
                 {CATS.map(cat=>(
                   <button key={cat.label} type="button"
-                    onClick={()=>{ setForm(f=>({...f,categoria:cat.label,subcategoria:cat.label==='Aplicativos'?'Uber':''})); advance() }}
+                    onClick={()=>{ setForm(f=>({...f,categoria:cat.label,subcategoria:''})); if(cat.label==='Aplicativos') advance('apps'); else advance() }}
                     className={`flex items-center gap-2 py-3 px-3 rounded-2xl font-bold text-[12px] transition-all active:scale-95 border-2 text-left ${form.categoria===cat.label?'border-slate-700 bg-slate-50 text-slate-800':'border-gray-100  bg-white  text-gray-600 '}`}>
                     <span className="text-base flex-shrink-0">{cat.emoji}</span>
                     <span className="leading-tight">{cat.label}</span>
@@ -228,28 +246,92 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
             </div>
           )}
 
+          {/* APPS (subcategoria de Aplicativos) */}
+          {cur==='apps' && (
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-4">Qual aplicativo?</p>
+              <div className="grid grid-cols-2 gap-2">
+                {APPS.map(app=>(
+                  <button key={app} type="button" onClick={()=>{ sf('subcategoria',app); advance() }}
+                    className={`py-4 rounded-2xl font-black text-[13px] transition-all active:scale-95 border-2 ${form.subcategoria===app?'border-slate-700 bg-slate-50 text-slate-800':'border-gray-100 bg-white text-gray-600'}`}>
+                    {app}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* VALOR + DESCRIÇÃO */}
           {cur==='valor' && (
             <div className="space-y-5">
 
               {/* Toggle depósito/retirada — só para reserva */}
               {isReserva && (
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    {label:'Depósito', emoji:'➕', val:'deposito', cor:'#3b82f6', bg:'#dbeafe'},
-                    {label:'Retirada', emoji:'➖', val:'retirada', cor:'#ef4444', bg:'#fee2e2'},
-                  ].map(op=>(
-                    <button key={op.val} type="button"
-                      onClick={()=>sf('_reservaOp', op.val)}
-                      className="flex items-center gap-2 p-3 rounded-2xl border-2 transition-all active:scale-95"
-                      style={{
-                        borderColor:(form._reservaOp||'deposito')===op.val?op.cor:'transparent',
-                        backgroundColor:op.bg,
-                      }}>
-                      <span className="text-lg">{op.emoji}</span>
-                      <span className="text-[13px] font-black text-gray-700">{op.label}</span>
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      {label:'Depósito', emoji:'➕', val:'deposito', cor:'#3b82f6', bg:'#dbeafe'},
+                      {label:'Retirada', emoji:'➖', val:'retirada', cor:'#ef4444', bg:'#fee2e2'},
+                    ].map(op=>(
+                      <button key={op.val} type="button"
+                        onClick={()=>sf('_reservaOp', op.val)}
+                        className="flex items-center gap-2 p-3 rounded-2xl border-2 transition-all active:scale-95"
+                        style={{
+                          borderColor:(form._reservaOp||'deposito')===op.val?op.cor:'transparent',
+                          backgroundColor:op.bg,
+                        }}>
+                        <span className="text-lg">{op.emoji}</span>
+                        <span className="text-[13px] font-black text-gray-700">{op.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* CDI — só para depósito */}
+                  {(form._reservaOp||'deposito')==='deposito' && (
+                    <div className="p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 space-y-3 animate-in fade-in duration-200">
+                      <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Rendimento</p>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-500 mb-1.5">% do CDI que rende</p>
+                          <div className="flex gap-2">
+                            {['100','110','120','Outro'].map(pct=>(
+                              <button key={pct} type="button"
+                                onClick={()=>sf('_cdiPct', pct==='Outro'?form._cdiPct:pct)}
+                                className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all border-2 ${
+                                  (form._cdiPct===pct||(pct==='Outro'&&!['100','110','120'].includes(form._cdiPct)))
+                                  ?'border-blue-500 bg-white text-blue-700'
+                                  :'border-transparent bg-white text-gray-500'
+                                }`}>
+                                {pct==='Outro'?'Outro':pct+'%'}
+                              </button>
+                            ))}
+                          </div>
+                          {!['100','110','120'].includes(form._cdiPct) && (
+                            <input type="text" inputMode="decimal" placeholder="Ex: 105"
+                              className="mt-2 w-full p-2.5 rounded-xl bg-white border-2 border-blue-200 focus:border-blue-500 outline-none text-sm font-bold text-gray-800"
+                              value={form._cdiPct}
+                              onChange={e=>sf('_cdiPct', e.target.value.replace(/[^0-9.]/g,''))}/>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-500 mb-1.5">Carência (dias para resgatar)</p>
+                          <div className="flex gap-2">
+                            {['0','30','60','90'].map(d=>(
+                              <button key={d} type="button"
+                                onClick={()=>sf('_cdiCarencia', d)}
+                                className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all border-2 ${
+                                  form._cdiCarencia===d
+                                  ?'border-blue-500 bg-white text-blue-700'
+                                  :'border-transparent bg-white text-gray-500'
+                                }`}>
+                                {d==='0'?'D+0':d+'d'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
