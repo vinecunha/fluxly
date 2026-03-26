@@ -36,7 +36,9 @@ export function useIntelligence(allTransactions = [], currentDate) {
 
   const enriquecerComSaldo = (saldoPorConta = {}) => {
     return contasPendentes.map(c => {
-      const guardado   = saldoPorConta[c.id] || 0
+      const entrada    = saldoPorConta[c.id]
+      // Compatível com formato antigo (número) e novo (objeto {total, rendimento, original})
+      const guardado   = entrada && typeof entrada === 'object' ? entrada.total : (entrada || 0)
       const falta      = Math.max(c.valor - guardado, 0)
       const porDia     = falta > 0 ? falta / Math.max(c.diasUtil, 1) : 0
       const urgente    = c.diasAteVencimento <= 2

@@ -206,7 +206,7 @@ function PieSection({ grouped, viewTotal, tab }) {
                 ) : (
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     tab === 'investimento' ? 'bg-blue-100 text-blue-600' :
-                    tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100  text-gray-500 '
+                    tab === 'renda' ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'
                   }`}>
                     {tab === 'investimento' ? <Building2 size={12} /> :
                      tab === 'renda' ? <DollarSign size={12} /> : <Tag size={12} />}
@@ -215,10 +215,10 @@ function PieSection({ grouped, viewTotal, tab }) {
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-bold text-gray-700  truncate leading-none">{e.label}</p>
+                    <p className="text-[11px] font-bold text-gray-700 truncate leading-none">{e.label}</p>
                     <p className="text-[11px] font-black text-gray-900 ml-2 flex-shrink-0">{fmtK(e.value)}</p>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-100  rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${pct}%`, backgroundColor: e.color }} />
                   </div>
@@ -228,7 +228,7 @@ function PieSection({ grouped, viewTotal, tab }) {
                   <span className="text-[9px] font-black text-gray-400 w-6 text-right">{pct.toFixed(0)}%</span>
                   <ChevronRight
                     size={13}
-                    className={`text-gray-300  transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                   />
                 </div>
               </button>
@@ -243,21 +243,21 @@ function PieSection({ grouped, viewTotal, tab }) {
                       <div key={si} className="flex items-center gap-2 py-2 px-2 rounded-xl">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold text-gray-600  truncate">{sub.label}</p>
-                            <p className="text-[10px] font-black text-gray-700  ml-2 flex-shrink-0">{fmt2(sub.value)}</p>
+                            <p className="text-[10px] font-bold text-gray-600 truncate">{sub.label}</p>
+                            <p className="text-[10px] font-black text-gray-700 ml-2 flex-shrink-0">{fmt2(sub.value)}</p>
                           </div>
-                          <div className="h-1 w-full bg-gray-100  rounded-full overflow-hidden mt-1">
+                          <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden mt-1">
                             <div className="h-full rounded-full" style={{ width: `${subPct}%`, backgroundColor: e.color + 'aa' }} />
                           </div>
                         </div>
-                        <span className="text-[8px] font-black text-gray-300  w-5 text-right flex-shrink-0">
+                        <span className="text-[8px] font-black text-gray-300 w-5 text-right flex-shrink-0">
                           {subPct.toFixed(0)}%
                         </span>
                       </div>
                     )
                   })}
                   {subItems.length > 8 && (
-                    <p className="text-[8px] text-gray-300  font-bold px-2 pb-1">
+                    <p className="text-[8px] text-gray-300 font-bold px-2 pb-1">
                       +{subItems.length - 8} itens
                     </p>
                   )}
@@ -315,13 +315,13 @@ function BarChartMensal({ allTransactions, tab, currentDate }) {
   const delta    = anterior > 0 ? ((ultimo - anterior) / anterior) * 100 : 0
 
   return (
-    <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
             Últimos 6 meses
           </p>
-          <p className="text-sm font-black text-gray-800 ">
+          <p className="text-sm font-black text-gray-800">
             {tab === 'renda' ? 'Evolução da Renda' : 'Evolução dos Gastos'}
           </p>
         </div>
@@ -362,7 +362,7 @@ function BarChartMensal({ allTransactions, tab, currentDate }) {
                 />
               </div>
               {/* Label mês */}
-              <p className={`text-[8px] font-black leading-none ${isCur ? 'text-gray-800 ' : 'text-gray-400'}`}>
+              <p className={`text-[8px] font-black leading-none ${isCur ? 'text-gray-800' : 'text-gray-400'}`}>
                 {m.label}
               </p>
             </div>
@@ -427,13 +427,13 @@ function ComparativoCategoria({ allTransactions, tab, currentDate }) {
   if (!dados.length) return null
 
   return (
-    <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
             Comparativo por categoria
           </p>
-          <p className="text-sm font-black text-gray-800 ">
+          <p className="text-sm font-black text-gray-800">
             {mesNome(-1)} vs {mesNome(0)}
           </p>
         </div>
@@ -455,7 +455,7 @@ function ComparativoCategoria({ allTransactions, tab, currentDate }) {
           <div key={i}>
             {/* Label + delta */}
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black text-gray-700  truncate max-w-[55%]">
+              <span className="text-[10px] font-black text-gray-700 truncate max-w-[55%]">
                 {row.cat}
               </span>
               <div className="flex items-center gap-2">
@@ -468,7 +468,7 @@ function ComparativoCategoria({ allTransactions, tab, currentDate }) {
                     {row.delta > 0 ? '↑' : '↓'}{Math.abs(row.delta).toFixed(0)}%
                   </span>
                 )}
-                <span className="text-[10px] font-black text-gray-500 ">
+                <span className="text-[10px] font-black text-gray-500">
                   {row.atual >= 1000 ? `R$${(row.atual/1000).toFixed(1)}k` : `R$${row.atual.toFixed(0)}`}
                 </span>
               </div>
@@ -499,6 +499,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
   const [expandedDestino, setExpandedDestino] = useState(null)
   const [expandedSubcat, setExpandedSubcat]   = useState(null)
   const [projectionDays, setProjectionDays]   = useState(0)
+  const [selectedDate, setSelectedDate]       = useState(null) // 'YYYY-MM-DD' ou null
 
   const { averageRenda, averageDespesas } = useMonthlyAverages(allTransactions, 3)
   const { taxaAnual: cdiReal } = useCDI()
@@ -523,10 +524,21 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
   }
 
   const filtered = useMemo(() => (transactions || []).filter(t => {
-    if (tab === 'renda')        return t.tipo === 'renda'
-    if (tab === 'investimento') return t.tipo === 'reserva'
-    return t.tipo !== 'renda' && t.tipo !== 'reserva' && (t.tipo === 'gasto_diario' || t.pago === true)
-  }), [transactions, tab])
+    // Filtro de tab
+    let ok = false
+    if (tab === 'renda')        ok = t.tipo === 'renda'
+    else if (tab === 'investimento') ok = t.tipo === 'reserva'
+    else ok = t.tipo !== 'renda' && t.tipo !== 'reserva' && (t.tipo === 'gasto_diario' || t.pago === true)
+    if (!ok) return false
+    // Filtro de dia selecionado no calendário
+    if (selectedDate) {
+      const ref = (t.data_pagamento
+        ? new Date(t.data_pagamento).toLocaleDateString('en-CA')
+        : t.data) || ''
+      return ref === selectedDate
+    }
+    return true
+  }), [transactions, tab, selectedDate])
 
   const grouped = useMemo(() => filtered.reduce((acc, t) => {
     const v = parseFloat(t.valor) || 0
@@ -553,7 +565,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return Object.values(grouped).reduce((s, d) => s + d.totalBruto, 0)
   }, [grouped, tab, filtered, projectionDays, cdiReal])
 
-  const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null); setProjectionDays(0) }
+  const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null); setProjectionDays(0); setSelectedDate(null) }
 
   // ── Drill: subcategoria ────────────────────────────────────────────────────
   if (expandedSubcat) {
@@ -564,11 +576,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedSubcat(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white  px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
           style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar
         </button>
-        <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Detalhes</p>
             <p className="text-xl font-black text-gray-900">{expandedSubcat}</p>
@@ -581,13 +593,13 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         </div>
         <div className="space-y-2">
           {items.sort((a, b) => new Date(b.data) - new Date(a.data)).map((t, i) => (
-            <div key={i} className="bg-white  p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
+            <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-gray-50  text-gray-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0">
                   <Tag size={14} />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-gray-800 ">{t.descricao}</p>
+                  <p className="font-bold text-sm text-gray-800">{t.descricao}</p>
                   <p className="text-[9px] text-gray-400 font-bold uppercase">{t.data.split('-').reverse().join('/')}</p>
                 </div>
               </div>
@@ -606,31 +618,31 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return (
       <section className="space-y-4 animate-in slide-in-from-right duration-300">
         <button onClick={() => setExpandedDestino(null)}
-          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white  px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
+          className="flex items-center gap-2 text-slate-600 font-black text-[10px] uppercase tracking-widest bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all"
           style={{ minHeight: 44 }}>
           <ArrowLeft size={13} /> Voltar para Destinos
         </button>
-        <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Saldo Líquido em {expandedDestino}</p>
           <p className="text-3xl font-black text-blue-600">{fmt(liquidDestino)}</p>
         </div>
         <div className="space-y-2">
           {subs.sort((a, b) => b[1].totalBruto - a[1].totalBruto).map(([name, data]) => (
             <button key={name} onClick={() => setExpandedSubcat(name)}
-              className="w-full bg-white  p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all"
+              className="w-full bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all"
               style={{ minHeight: 56 }}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
                   <PiggyBank size={16} />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-gray-700 ">{name}</p>
+                  <p className="text-sm font-bold text-gray-700">{name}</p>
                   <p className="text-[9px] text-gray-400">{data.items.length} lançamento{data.items.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-black text-gray-900">{fmt(calculateLiquidValue(data.items, projectionDays))}</p>
-                <ChevronRight size={14} className="text-gray-300 " />
+                <ChevronRight size={14} className="text-gray-300" />
               </div>
             </button>
           ))}
@@ -645,8 +657,24 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
   return (
     <section className="space-y-4 animate-in fade-in duration-300">
 
+      {/* Badge dia selecionado */}
+      {selectedDate && (
+        <div className="flex items-center justify-between px-1 py-2 bg-slate-50 rounded-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-2 ml-2">
+            <div className="w-2 h-2 rounded-full bg-slate-700"/>
+            <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
+              Filtrado: {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}
+            </span>
+          </div>
+          <button onClick={() => setSelectedDate(null)}
+            className="mr-2 text-[9px] font-black uppercase text-slate-500 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 active:scale-95 transition-all">
+            Limpar ✕
+          </button>
+        </div>
+      )}
+
       {/* Sub-tabs */}
-      <div className="flex gap-1.5 p-1 bg-gray-100  rounded-2xl">
+      <div className="flex gap-1.5 p-1 bg-gray-100 rounded-2xl">
         {[
           { id: 'gasto',        label: 'Gastos',  Icon: TrendingDown, color: 'text-rose-600'    },
           { id: 'investimento', label: 'Reservas', Icon: PiggyBank,   color: 'text-blue-600'    },
@@ -656,7 +684,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
             onClick={() => { setTab(id); resetDrill() }}
             style={{ minHeight: 44 }}
             className={`flex-1 py-2.5 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-              tab === id ? `bg-white  shadow-sm ${color}` : 'text-gray-400'
+              tab === id ? `bg-white shadow-sm ${color}` : 'text-gray-400'
             }`}>
             <Icon size={13} /> {label}
           </button>
@@ -664,12 +692,12 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
       </div>
 
       {/* Gráfico mensal */}
-      <Suspense fallback={<div className="h-40 bg-gray-50  rounded-2xl animate-pulse" />}>
+      <Suspense fallback={<div className="h-40 bg-gray-50 rounded-2xl animate-pulse" />}>
         <MonthlyChart allTransactions={allTransactions} activeTab={tab} />
       </Suspense>
 
       {/* Total card */}
-      <div className="bg-white  p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex items-end justify-between mb-1">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
@@ -686,14 +714,14 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
           </div>
           {avgTotal > 0 && (
             <div className="text-right">
-              <p className="text-[8px] font-black text-gray-300  uppercase">Média 3m</p>
+              <p className="text-[8px] font-black text-gray-300 uppercase">Média 3m</p>
               <p className="text-xs font-black text-gray-400">{fmtK(avgTotal)}</p>
             </div>
           )}
         </div>
 
         {tab === 'investimento' && (
-          <div className="mt-4 pt-4 border-t border-gray-50 ">
+          <div className="mt-4 pt-4 border-t border-gray-50">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
                 <Zap size={10} className="text-blue-400 fill-purple-400" />
@@ -704,7 +732,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
                   <button key={d} onClick={() => setProjectionDays(d)}
                     style={{ minHeight: 36 }}
                     className={`px-2.5 py-1.5 rounded-2xl text-[8px] font-black transition-all ${
-                      projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50  text-gray-400'
+                      projectionDays === d ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'
                     }`}>
                     {d === 0 ? 'HOJE' : d === 365 ? '1A' : `${d}D`}
                   </button>
@@ -727,13 +755,6 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         )}
       </div>
 
-      {/* Pizza */}
-      <PieSection
-        grouped={grouped}
-        viewTotal={viewTotal}
-        tab={tab}
-      />
-
       {/* Gráfico mensal */}
       {(tab === 'gasto' || tab === 'renda') && (
         <BarChartMensal
@@ -752,8 +773,15 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         />
       )}
 
+      {/* Pizza */}
+      <PieSection
+        grouped={grouped}
+        viewTotal={viewTotal}
+        tab={tab}
+      />
+
       {/* Calendário */}
-      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} />
+      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} onDaySelect={setSelectedDate} />
     </section>
   )
 }

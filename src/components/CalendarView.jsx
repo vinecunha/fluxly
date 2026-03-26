@@ -16,7 +16,7 @@ const TAB_CONFIG = {
   investimento: { color: 'text-blue-500',    bg: 'bg-blue-50',    bar: 'bg-blue-400',    label: 'Reserva', prefix: '',  Icon: PiggyBank    },
 }
 
-export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate }) {
+export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate, onDaySelect }) {
   const today    = new Date()
   const viewDate = currentDate instanceof Date ? currentDate : new Date()
   const year     = viewDate.getFullYear()
@@ -161,10 +161,20 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
               <button
                 key={i}
                 disabled={!isValid}
-                onClick={() => isValid && setSelectedDay(prev => prev === dayNum ? null : dayNum)}
+                onClick={() => {
+                  if (!isValid) return
+                  const next = selectedDay === dayNum ? null : dayNum
+                  setSelectedDay(next)
+                  if (onDaySelect) {
+                    const key = next
+                      ? `${year}-${String(month+1).padStart(2,'0')}-${String(next).padStart(2,'0')}`
+                      : null
+                    onDaySelect(key)
+                  }
+                }}
                 style={{ minHeight: 60 }}
                 className={`p-1 border-b border-r border-gray-50 flex flex-col items-center justify-start transition-colors ${
-                  !isValid   ? 'bg-gray-50/30' :
+                  !isValid   ? 'bg-gray-50' :
                   isSelected ? cfg.bg           :
                   'hover:bg-gray-50 active:bg-gray-100'
                 }`}

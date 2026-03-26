@@ -44,20 +44,19 @@ export function useCaixinhas(user, mesRef) {
   }, [])
 
   const fetchData = useCallback(async () => {
-    if (!user || !mesRef) return
+    if (!user) return
     setLoading(true)
 
-    // Buscar caixinhas do mês
+    // Buscar TODAS as caixinhas do usuário (saldo é acumulado, não só do mês)
     const { data: caixinhasData } = await supabase
       .from('caixinhas')
       .select('*')
       .eq('user_id', user.id)
-      .eq('mes_ref', mesRef)
       .order('created_at', { ascending: false })
 
     setCaixinhas(caixinhasData || [])
     setLoading(false)
-  }, [user, mesRef])
+  }, [user])
 
   useEffect(() => { fetchData() }, [fetchData])
 
