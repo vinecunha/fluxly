@@ -249,7 +249,9 @@ export const DashboardHeader = ({
               <div className="min-w-0 text-left">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Patrimônio</p>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base font-black text-white leading-none">{fmtFull(reservaTotal)}</span>
+                  <span className="text-base font-black text-white leading-none">
+                    {fmtFull(Math.abs(reservaTotal) < 0.01 ? 0 : reservaTotal)}
+                  </span>
                   <Zap size={8} className="text-amber-300 fill-amber-300 shrink-0" />
                 </div>
               </div>

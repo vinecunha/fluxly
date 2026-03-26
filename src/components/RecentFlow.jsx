@@ -143,7 +143,6 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
     { key: 'gastos',   label: 'Gastos',   value: totals.gastos,   Icon: TrendingDown, active: 'bg-rose-500 text-white',    idle: 'bg-rose-50',    text: 'text-rose-700',    icon: 'text-rose-500'   },
     { key: 'reserva',  label: 'Reserva',  value: totals.reserva,  Icon: PiggyBank,    active: 'bg-blue-500 text-white',    idle: 'bg-blue-50',    text: 'text-blue-700',    icon: 'text-blue-500'   },
     { key: 'retirada', label: 'Retirada', value: totals.retirada, Icon: PiggyBank,    active: 'bg-orange-500 text-white',  idle: 'bg-orange-50',  text: 'text-orange-700',  icon: 'text-orange-500' },
-    { key: 'fatura',   label: 'Fatura',   value: totals.fatura,   Icon: CreditCard,   active: 'bg-slate-700 text-white',   idle: 'bg-slate-50',   text: 'text-slate-700',   icon: 'text-slate-500'  },
   ].filter(c => c.value > 0)
 
   return (
@@ -244,7 +243,7 @@ export function RecentFlow({ transactions = [], onEdit, onDelete }) {
 
         {/* Totais clicáveis */}
         {TOTAL_CARDS.length > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-1.5">
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-1.5">
             {TOTAL_CARDS.map(({ key, label, value, Icon, active, idle, text, icon }) => {
               const isActive = filterTotal === key
               return (
