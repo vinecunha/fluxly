@@ -16,7 +16,7 @@ const TAB_CONFIG = {
   investimento: { color: 'text-blue-500',    bg: 'bg-blue-50',    bar: 'bg-blue-400',    label: 'Reserva', prefix: '',  Icon: PiggyBank    },
 }
 
-export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate, onDaySelect }) {
+export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate, onDaySelect, filteredCategory }) {
   const today    = new Date()
   const viewDate = currentDate instanceof Date ? currentDate : new Date()
   const year     = viewDate.getFullYear()
@@ -51,6 +51,16 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
         add(refDate, t, v, Number(t.valor) >= 0)
       } else if (activeTab === 'gasto' && t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && t.pago) {
         add(refDate, t, v, false)
+      }
+      // Guardar categorias do dia para filtro
+      if (map[refDate]) {
+        if (!map[refDate].cats) map[refDate].cats = new Set()
+        const cat = activeTab === 'renda'
+          ? (t.subcategoria || t.descricao)
+          : activeTab === 'investimento'
+          ? (t.destino_reserva || 'Outros')
+          : t.categoria
+        if (cat) map[refDate].cats.add(cat)
       }
     })
     return map
@@ -89,7 +99,7 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
         <div className={`flex items-center justify-center gap-1.5 py-2.5 border-b border-gray-50 rounded-t-2xl ${cfg.bg}`}>
           <cfg.Icon size={11} className={cfg.color} />
           <span className={`text-[9px] font-black uppercase ${cfg.color}`}>
-            {cfg.label} — {MONTHS[month]} {year}
+            {filteredCategory ? filteredCategory : cfg.label} — {MONTHS[month]} {year}
           </span>
         </div>
 
@@ -173,10 +183,13 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
                   }
                 }}
                 style={{ minHeight: 60 }}
-                className={`p-1 border-b border-r border-gray-50 flex flex-col items-center justify-start transition-colors ${
-                  !isValid   ? 'bg-gray-50' :
-                  isSelected ? cfg.bg           :
-                  'hover:bg-gray-50 active:bg-gray-100'
+                className={`p-1 border-b border-r border-gray-50 flex flex-col items-center justify-start transition-all ${
+                  !isValid ? 'bg-gray-50/30'
+                  : isSelected ? cfg.bg
+                  : filteredCategory && data?.cats?.has(filteredCategory) ? cfg.bg
+                  : filteredCategory && data && !data.cats?.has(filteredCategory) ? 'opacity-20'
+                  : filteredCategory && !data ? 'opacity-10'
+                  : 'hover:bg-gray-50 active:bg-gray-100'
                 }`}
               >
                 {isValid && (

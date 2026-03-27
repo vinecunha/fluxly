@@ -124,7 +124,7 @@ function DonutChart({ entries, total, activeIdx, onPress }) {
 }
 
 // ─── Pie Section ─────────────────────────────────────────────────────────────
-function PieSection({ grouped, viewTotal, tab }) {
+function PieSection({ grouped, viewTotal, tab, selectedCategory, onCategorySelect }) {
   const [activeIdx, setActiveIdx]     = useState(null)
   const [expandedKey, setExpandedKey] = useState(null)
 
@@ -145,8 +145,9 @@ function PieSection({ grouped, viewTotal, tab }) {
 
   const handleItemPress = (i) => {
     const key = entries[i].label
-    setActiveIdx(i)
+    setActiveIdx(prev => prev === i ? null : i)
     setExpandedKey(prev => prev === key ? null : key)
+    onCategorySelect?.(key)
   }
 
   const fmt2 = (v) => `R$ ${Math.abs(Number(v)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -193,7 +194,9 @@ function PieSection({ grouped, viewTotal, tab }) {
               <button
                 onClick={() => handleItemPress(i)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all active:scale-[0.98] ${
-                  isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
+                  selectedCategory === e.label
+                    ? 'bg-slate-900 ring-1 ring-slate-700'
+                    : isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
                 }`}
                 style={{ minHeight: 44 }}
               >
@@ -225,7 +228,7 @@ function PieSection({ grouped, viewTotal, tab }) {
                 </div>
 
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-[9px] font-black text-gray-400 w-6 text-right">{pct.toFixed(0)}%</span>
+                  <span className={`text-[9px] font-black w-6 text-right ${selectedCategory === e.label ? 'text-white/70' : 'text-gray-400'}`}>{pct.toFixed(0)}%</span>
                   <ChevronRight
                     size={13}
                     className={`text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
@@ -500,6 +503,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
   const [expandedSubcat, setExpandedSubcat]   = useState(null)
   const [projectionDays, setProjectionDays]   = useState(0)
   const [selectedDate, setSelectedDate]       = useState(null) // 'YYYY-MM-DD' ou null
+  const [selectedCategory, setSelectedCategory] = useState(null) // string ou null
 
   const { averageRenda, averageDespesas } = useMonthlyAverages(allTransactions, 3)
   const { taxaAnual: cdiReal } = useCDI()
@@ -530,15 +534,24 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     else if (tab === 'investimento') ok = t.tipo === 'reserva'
     else ok = t.tipo !== 'renda' && t.tipo !== 'reserva' && (t.tipo === 'gasto_diario' || t.pago === true)
     if (!ok) return false
-    // Filtro de dia selecionado no calendário
+    // Filtro por dia
     if (selectedDate) {
       const ref = (t.data_pagamento
         ? new Date(t.data_pagamento).toLocaleDateString('en-CA')
         : t.data) || ''
       return ref === selectedDate
     }
+    // Filtro por categoria
+    if (selectedCategory) {
+      const catField = tab === 'renda'
+        ? (t.subcategoria || t.descricao)
+        : tab === 'investimento'
+        ? (t.destino_reserva || 'Outros')
+        : t.categoria
+      return catField === selectedCategory
+    }
     return true
-  }), [transactions, tab, selectedDate])
+  }), [transactions, tab, selectedDate, selectedCategory])
 
   const grouped = useMemo(() => filtered.reduce((acc, t) => {
     const v = parseFloat(t.valor) || 0
@@ -565,7 +578,20 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     return Object.values(grouped).reduce((s, d) => s + d.totalBruto, 0)
   }, [grouped, tab, filtered, projectionDays, cdiReal])
 
-  const resetDrill = () => { setExpandedDestino(null); setExpandedSubcat(null); setProjectionDays(0); setSelectedDate(null) }
+  const resetDrill = () => {
+    setExpandedDestino(null); setExpandedSubcat(null)
+    setProjectionDays(0); setSelectedDate(null); setSelectedCategory(null)
+  }
+
+  const handleDaySelect = (dateStr) => {
+    setSelectedDate(dateStr)
+    if (dateStr) setSelectedCategory(null) // limpa categoria ao filtrar por dia
+  }
+
+  const handleCategorySelect = (cat) => {
+    setSelectedCategory(prev => prev === cat ? null : cat)
+    if (cat) setSelectedDate(null) // limpa dia ao filtrar por categoria
+  }
 
   // ── Drill: subcategoria ────────────────────────────────────────────────────
   if (expandedSubcat) {
@@ -657,17 +683,20 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
   return (
     <section className="space-y-4 animate-in fade-in duration-300">
 
-      {/* Badge dia selecionado */}
-      {selectedDate && (
-        <div className="flex items-center justify-between px-1 py-2 bg-slate-50 rounded-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-          <div className="flex items-center gap-2 ml-2">
+      {/* Badges de filtro ativo */}
+      {(selectedDate || selectedCategory) && (
+        <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50 rounded-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-slate-700"/>
             <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
-              Filtrado: {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}
+              {selectedDate
+                ? `Dia: ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}`
+                : `Cat: ${selectedCategory}`}
             </span>
           </div>
-          <button onClick={() => setSelectedDate(null)}
-            className="mr-2 text-[9px] font-black uppercase text-slate-500 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 active:scale-95 transition-all">
+          <button
+            onClick={() => { setSelectedDate(null); setSelectedCategory(null) }}
+            className="text-[9px] font-black uppercase text-slate-500 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 active:scale-95 transition-all">
             Limpar ✕
           </button>
         </div>
@@ -772,16 +801,18 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
           currentDate={currentDate}
         />
       )}
-
+      
       {/* Pizza */}
       <PieSection
         grouped={grouped}
         viewTotal={viewTotal}
         tab={tab}
+        selectedCategory={selectedCategory}
+        onCategorySelect={handleCategorySelect}
       />
 
       {/* Calendário */}
-      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} onDaySelect={setSelectedDate} />
+      <CalendarView transactions={allTransactions} activeTab={tab} currentDate={currentDate} onDaySelect={handleDaySelect} filteredCategory={selectedCategory} />
     </section>
   )
 }
