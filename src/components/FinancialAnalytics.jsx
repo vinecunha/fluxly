@@ -195,7 +195,7 @@ function PieSection({ grouped, viewTotal, tab, selectedCategory, onCategorySelec
                 onClick={() => handleItemPress(i)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all active:scale-[0.98] ${
                   selectedCategory === e.label
-                    ? 'bg-slate-900 ring-1 ring-slate-700'
+                    ? 'bg-slate-50 ring-1 ring-slate-200'
                     : isActive ? 'bg-slate-50 ring-1 ring-slate-200' : 'hover:bg-gray-50'
                 }`}
                 style={{ minHeight: 44 }}
@@ -737,7 +737,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
             <div className="flex items-end gap-2">
               <p className={`text-3xl font-black ${
                 tab === 'investimento' ? 'text-blue-600' : tab === 'renda' ? 'text-emerald-600' : 'text-rose-600'
-              }`}>{fmt(viewTotal)}</p>
+              }`}>{fmt(Math.abs(viewTotal) < 0.01 ? 0 : viewTotal)}</p>
               {trendDiff !== null && <TrendBadge diff={trendDiff} invertGood={tab === 'gasto'} />}
             </div>
           </div>

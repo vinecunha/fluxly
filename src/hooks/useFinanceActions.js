@@ -7,8 +7,11 @@ const UNDO_TIMEOUT = 5000
 export function useFinanceActions({ user, data, refresh, dispatch, editingTransaction, onSessionExpired }) {
 
   const handleQuickPay = useCallback(async (id, alterarTodaSerie = false, recorrencia_id = null, valorFinal = null) => {
+    if (!user?.id) return   // <-- guard: sem sessão, não age
     const transaction = data.find(t => t.id === id)
     if (!transaction) return
+    // Verifica que a transação pertence ao usuário logado
+    if (transaction.user_id !== user.id) return
 
     dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Atualizando...' })
 
@@ -21,8 +24,8 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
 
       let query = supabase.from('transacoes').update({ pago: novoStatus, data_pagamento: dataPagamento })
       query = alterarTodaSerie && recorrencia_id
-        ? query.eq('recorrencia_id', recorrencia_id)
-        : query.eq('id', id)
+        ? query.eq('recorrencia_id', recorrencia_id).eq('user_id', user.id)
+        : query.eq('id', id).eq('user_id', user.id)
 
       const { error: mainError } = await query
       if (mainError) throw mainError
@@ -33,7 +36,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
           descricao: `Juros/Encargos: ${transaction.descricao}`,
           valor: diferencaJuros,
           tipo: 'gasto_diario',
-          categoria: 'Outros',
+          categoria: 'Outros gastos',
           pago: true,
           data: new Date().toLocaleDateString('en-CA'),
           data_pagamento: new Date().toISOString(),
@@ -67,9 +70,10 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
   }, [data, user, refresh, dispatch, onSessionExpired])
 
   const handleDelete = useCallback(async (id, deleteSeries = false, recorrencia_id = null) => {
+    if (!user?.id) return   // <-- guard: sem sessão, não age
     const snapshot = deleteSeries && recorrencia_id
-      ? data.filter(t => t.recorrencia_id === recorrencia_id)
-      : data.filter(t => t.id === id)
+      ? data.filter(t => t.recorrencia_id === recorrencia_id && t.user_id === user.id)
+      : data.filter(t => t.id === id && t.user_id === user.id)
 
     if (snapshot.length === 0) return
 
@@ -77,7 +81,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       dispatch({ type: UI_ACTIONS.CLEAR_UNDO })
       dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Removendo...' })
       try {
-        let query = supabase.from('transacoes').delete()
+        let query = supabase.from('transacoes').delete().eq('user_id', user.id)
         query = deleteSeries && recorrencia_id
           ? query.eq('recorrencia_id', recorrencia_id)
           : query.eq('id', id)
@@ -107,11 +111,17 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
         },
       },
     })
-  }, [data, refresh, dispatch, onSessionExpired])
+  }, [data, user, refresh, dispatch, onSessionExpired])
 
   const handleSave = useCallback(async (formData, alterarTodaSerie = false) => {
+    if (!user?.id) return   // <-- guard: sem sessão, não age
+
     const valorNumerico = parseFloat(String(formData.valor).replace(',', '.'))
-    if (isNaN(valorNumerico)) return
+    if (isNaN(valorNumerico) || valorNumerico <= 0) return  // valor obrigatório e positivo
+
+    // Sanitização de campos de texto
+    const descricaoSafe = String(formData.descricao || '').trim().slice(0, 200)
+    if (!descricaoSafe && formData.tipo !== 'pagamento_cartao') return
 
     dispatch({
       type: UI_ACTIONS.START_SAVING,
@@ -128,12 +138,12 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     const devePagar = isAutoPaid || (formData.tipo === 'esporadica' && isDataPassadaOuHoje)
 
     const transactionPayload = {
-      user_id: user.id,
-      descricao: formData.descricao,
+      user_id: user.id,           // sempre forçado pelo usuário logado
+      descricao: descricaoSafe,
       valor: valorNumerico,
       tipo: formData.tipo,
       categoria: formData.categoria,
-      subcategoria: formData.tipo === 'reserva' ? formData.descricao : (formData.subcategoria || null),
+      subcategoria: formData.tipo === 'reserva' ? descricaoSafe : (formData.subcategoria || null),
       destino_reserva: formData.destino_reserva || null,
       cartao_id: formData.cartao_id || null,
       pago: devePagar ? true : (formData.pago ?? false),
@@ -148,7 +158,9 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
 
     try {
       if (editingTransaction) {
-        await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie)
+        // Verifica que a transação sendo editada pertence ao usuário
+        if (editingTransaction.user_id !== user.id) throw new Error('Acesso negado')
+        await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie, user.id)
       } else {
         await _insertTransaction(transactionPayload, formData, devePagar)
       }
@@ -183,7 +195,7 @@ function sendLocalNotification(title, body) {
   }
 }
 
-async function _updateTransaction(payload, editingTransaction, alterarTodaSerie) {
+async function _updateTransaction(payload, editingTransaction, alterarTodaSerie, userId) {
   if (editingTransaction.recorrencia_id && alterarTodaSerie) {
     const { error } = await supabase.from('transacoes').update({
       descricao: payload.descricao,
@@ -193,11 +205,16 @@ async function _updateTransaction(payload, editingTransaction, alterarTodaSerie)
       destino_reserva: payload.destino_reserva,
       cartao_id: payload.cartao_id,
       tipo: payload.tipo,
-    }).eq('recorrencia_id', editingTransaction.recorrencia_id)
+    })
+      .eq('recorrencia_id', editingTransaction.recorrencia_id)
+      .eq('user_id', userId)   // <-- garante que só altera registros do próprio usuário
     if (error) throw error
   } else {
     const { repetir, recorrencia_limite, ...updateData } = payload
-    const { error } = await supabase.from('transacoes').update(updateData).eq('id', editingTransaction.id)
+    const { error } = await supabase.from('transacoes')
+      .update(updateData)
+      .eq('id', editingTransaction.id)
+      .eq('user_id', userId)   // <-- garante que só altera registros do próprio usuário
     if (error) throw error
   }
 }
