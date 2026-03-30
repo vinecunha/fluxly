@@ -83,9 +83,9 @@ export const DashboardHeader = ({
           <div className="flex items-center gap-2 flex-shrink-0">
             <h1 className="text-xl font-black tracking-tighter text-white leading-none">Fluxly</h1>
             <div className="h-3.5 w-px bg-white/20" />
-            <span className="text-[10px] font-bold text-slate-500 lowercase truncate max-w-[55px] sm:max-w-none">
+            {/* <span className="text-[10px] font-bold text-slate-500 lowercase truncate max-w-[55px] sm:max-w-none">
               {userEmail?.split('@')[0]}
-            </span>
+            </span> */}
           </div>
 
           {/* Seletor de mês */}
