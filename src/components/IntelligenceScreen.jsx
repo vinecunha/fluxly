@@ -461,8 +461,15 @@ function ContaCard({ conta, onGuardar, saving }) {
   )
 }
 
-// ─── Principal ───────────────────────────────────────────────────────────────
-export function IntelligenceScreen({ allTransactions = [], currentDate, user }) {
+// ─── Principal (com props de IA) ────────────────────────────────────────────
+export function IntelligenceScreen({ 
+  allTransactions = [], 
+  currentDate, 
+  user,
+  insights = null,           // ✅ NOVA PROP
+  onGerarInsights = null,    // ✅ NOVA PROP
+  loadingInsights = false     // ✅ NOVA PROP
+}) {
   const { rendaHoje, mesStr, contasPendentes, enriquecerComSaldo, calcularDistribuicao } =
     useIntelligence(allTransactions, currentDate)
 
@@ -523,17 +530,43 @@ export function IntelligenceScreen({ allTransactions = [], currentDate, user }) 
         }`}>{toast.msg}</div>
       )}
 
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-slate-900 rounded-2xl flex items-center justify-center flex-shrink-0">
-          <Brain size={16} className="text-white" />
+      {/* ✅ CABEÇALHO COM BOTÃO DE IA */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-slate-900 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <Brain size={16} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-gray-800">Inteligência Financeira</h3>
+            <p className="text-[10px] text-gray-400 font-bold">
+              {mesStr} · {contas.length} conta{contas.length !== 1 ? 's' : ''} pendente{contas.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-black text-gray-800">Inteligência Financeira</h3>
-          <p className="text-[10px] text-gray-400 font-bold">
-            {mesStr} · {contas.length} conta{contas.length !== 1 ? 's' : ''} pendente{contas.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+
+        {/* ✅ BOTÃO DE INSIGHTS IA */}
+        {onGerarInsights && (
+          <button
+            onClick={onGerarInsights}
+            disabled={loadingInsights}
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-black uppercase px-3 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+          >
+            <Sparkles size={12} />
+            {loadingInsights ? 'Gerando...' : 'Insights IA'}
+          </button>
+        )}
       </div>
+
+      {/* ✅ CARD DE INSIGHTS IA */}
+      {insights && (
+        <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 rounded-2xl p-4 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={14} className="text-violet-600" />
+            <p className="text-[9px] font-black text-violet-700 uppercase tracking-widest">IA Insights</p>
+          </div>
+          <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{insights.mensagem || insights}</p>
+        </div>
+      )}
 
       <SaudeCard saude={saude} />
       <PrevisaoCard previsao={previsao} daysInMonth={daysInMonth} diaHoje={diaHoje} />

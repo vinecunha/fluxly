@@ -2,11 +2,12 @@ export const AUTO_PAID_TYPES = ['gasto_diario', 'renda', 'reserva', 'retirada', 
 
 export const TABS = {
   DASHBOARD: 'dashboard',
-  BILLS:     'bills',
-  FLOW:      'flow',
+  BILLS: 'bills',
+  FLOW: 'flow',
   ANALYTICS: 'analytics',
-  CARTOES:   'cartoes',
+  CARTOES: 'cartoes',
   INTELLIGENCE: 'intelligence',
+  METAS: 'metas',  // ✅ NOVA ABA
 }
 
 export const TRANSACTION_TYPES = [
@@ -19,13 +20,13 @@ export const TRANSACTION_TYPES = [
 ]
 
 export const UI_ACTIONS = {
-  OPEN_MODAL:   'OPEN_MODAL',
-  CLOSE_MODAL:  'CLOSE_MODAL',
+  OPEN_MODAL: 'OPEN_MODAL',
+  CLOSE_MODAL: 'CLOSE_MODAL',
   START_SAVING: 'START_SAVING',
-  STOP_SAVING:  'STOP_SAVING',
-  SHOW_TOAST:   'SHOW_TOAST',
-  CLEAR_TOAST:  'CLEAR_TOAST',
-  TOGGLE_ALERTS:'TOGGLE_ALERTS',
-  SET_UNDO:     'SET_UNDO',
-  CLEAR_UNDO:   'CLEAR_UNDO',
+  STOP_SAVING: 'STOP_SAVING',
+  SHOW_TOAST: 'SHOW_TOAST',
+  CLEAR_TOAST: 'CLEAR_TOAST',
+  TOGGLE_ALERTS: 'TOGGLE_ALERTS',
+  SET_UNDO: 'SET_UNDO',
+  CLEAR_UNDO: 'CLEAR_UNDO',
 }

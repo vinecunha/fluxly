@@ -12,6 +12,8 @@ import { useOffline } from './hooks/useOffline'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useCartoes } from './hooks/useCartoes'
 import { useCaixinhas } from './hooks/useCaixinhas'
+import { useAIInsights } from './hooks/useAIInsights'
+import { useMetas } from './hooks/useMetas'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 import { AuthScreen } from './components/AuthScreen'
@@ -30,10 +32,13 @@ import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { CartoesScreen } from './components/CartoesScreen'
 import { IntelligenceScreen } from './components/IntelligenceScreen'
+import { CashFlowTimeline } from './components/CashFlowTimeline'
+import { ImportExtrato } from './components/ImportExtrato'
 
 const BillsList = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
 const RecentFlow = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
 const FinancialAnalytics = lazy(() => import('./components/FinancialAnalytics').then(m => ({ default: m.FinancialAnalytics })))
+const MetasScreen = lazy(() => import('./components/MetasScreen').then(m => ({ default: m.MetasScreen })))
 
 const TAB_FALLBACK = (
   <div className="flex items-center justify-center py-20">
@@ -84,11 +89,14 @@ export default function App() {
   const alertas = useAlertas(data, saldo, currentDate)
   const { zerarCaixinha } = useCaixinhas(user, mesStr)
   
-  // ✅ CORRETO - Hooks chamados diretamente no topo
   const filteredData = useFilteredData(data, currentDate)
   const totals = useTotals(filteredData, currentDate)
   
   const { overdueCount, todayCount } = useAlerts(data)
+
+  // ✅ NOVOS HOOKS - IA Insights e Metas
+  const { insights, loadingInsights, gerarInsights } = useAIInsights(user, data, saldo, currentDate)
+  const { metas, criarMeta, atualizarProgresso, excluirMeta, loading: loadingMetas } = useMetas(user)
 
   const { handleSave, handleDelete, handleQuickPay: _handleQuickPay } = useFinanceActions({
     user, data, refresh, dispatch, editingTransaction,
@@ -102,6 +110,38 @@ export default function App() {
       await zerarCaixinha(id)
     }
   }, [_handleQuickPay, data, zerarCaixinha])
+
+  // ✅ NOVA FUNÇÃO - Importação de Extratos
+  const handleImportTransactions = useCallback(async (transacoes) => {
+    if (!user?.id) return
+    
+    dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Importando...' })
+    
+    try {
+      const transacoesComUser = transacoes.map(t => ({
+        ...t,
+        user_id: user.id,
+        data: t.data || new Date().toLocaleDateString('en-CA')
+      }))
+      
+      const { error } = await supabase.from('transacoes').insert(transacoesComUser)
+      if (error) throw error
+      
+      await refresh()
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: `${transacoes.length} transações importadas!`, type: 'success' } 
+      })
+    } catch (error) {
+      console.error('Erro na importação:', error)
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: 'Erro ao importar', type: 'error' } 
+      })
+    } finally {
+      dispatch({ type: UI_ACTIONS.STOP_SAVING })
+    }
+  }, [user, refresh, dispatch])
 
   const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(refresh)
 
@@ -155,6 +195,18 @@ export default function App() {
         <div className="px-4 pt-3 space-y-3">
           <NotificationPrompt />
 
+          {/* ✅ NOVO COMPONENTE - Timeline de Fluxo de Caixa */}
+          <CashFlowTimeline 
+            transactions={filteredData}
+            currentDate={currentDate}
+          />
+
+          {/* ✅ NOVO COMPONENTE - Importação de Extratos */}
+          <ImportExtrato 
+            onImport={handleImportTransactions}
+            user={user}
+          />
+
           <PainelAlertas
             alertas={alertas}
             overdueCount={overdueCount}
@@ -206,6 +258,20 @@ export default function App() {
                 allTransactions={data}
                 currentDate={currentDate}
                 user={user}
+                insights={insights}
+                onGerarInsights={gerarInsights}
+                loadingInsights={loadingInsights}
+              />
+            )}
+            {/* ✅ NOVA ABA - Metas Financeiras */}
+            {activeTab === TABS.METAS && (
+              <MetasScreen
+                metas={metas}
+                onCreate={criarMeta}
+                onUpdate={atualizarProgresso}
+                onDelete={excluirMeta}
+                transactions={data}
+                loading={loadingMetas}
               />
             )}
           </Suspense>
