@@ -12,13 +12,13 @@ import { useOffline } from './hooks/useOffline'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useCartoes } from './hooks/useCartoes'
 import { useCaixinhas } from './hooks/useCaixinhas'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
 import { WidgetDia } from './components/WidgetDia'
 import { useSaldoProjetado } from './hooks/useSaldoProjetado'
 import { TabBar, BottomNav } from './components/TabBar'
-import { AlertBanner } from './components/AlertBanner'
 import { PainelAlertas } from './components/PainelAlertas'
 import { useAlertas } from './hooks/useAlertas'
 import { SavingSplash } from './components/SavingSplash'
@@ -84,13 +84,9 @@ export default function App() {
   const alertas = useAlertas(data, saldo, currentDate)
   const { zerarCaixinha } = useCaixinhas(user, mesStr)
   
-  const filteredData = useMemo(() => {
-    return useFilteredData(data, currentDate)
-  }, [data, currentDate])
-  
-  const totals = useMemo(() => {
-    return useTotals(filteredData, currentDate)
-  }, [filteredData, currentDate])
+  // ✅ CORRETO - Hooks chamados diretamente no topo
+  const filteredData = useFilteredData(data, currentDate)
+  const totals = useTotals(filteredData, currentDate)
   
   const { overdueCount, todayCount } = useAlerts(data)
 
@@ -121,124 +117,126 @@ export default function App() {
   if (!user) return <AuthScreen />
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 max-w-2xl mx-auto relative">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[#F8FAFC] pb-24 max-w-2xl mx-auto relative">
 
-      <PullToRefreshIndicator
-        pullDistance={pullDistance}
-        isPulling={isPulling}
-        isRefreshing={isRefreshing}
-      />
-
-      {isOffline && <OfflineBanner />}
-
-      <DashboardHeader
-        renda={totals.renda}
-        totalDespesas={totals.gastosTotal}
-        despesasPagas={totals.gastosPagos}
-        reservaTotal={totals.reservaTotal}
-        currentDate={currentDate}
-        onMonthChange={changeMonth}
-        onLogout={() => supabase.auth.signOut()}
-        isLoading={loading}
-        userEmail={user?.email ?? ''}
-        onRefresh={refresh}
-        isRefreshing={isRefreshing}
-        onOpenAnalytics={() => setActiveTab(TABS.ANALYTICS)}
-        saldoProjetado={saldo?.saldoProjetado}
-      />
-
-      <WidgetDia
-        saldo={saldo}
-        totals={totals}
-        userName={user?.email}
-        onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
-        isLoading={loading}
-      />
-
-      <div className="px-4 pt-3 space-y-3">
-        <NotificationPrompt />
-
-        <PainelAlertas
-          alertas={alertas}
-          overdueCount={overdueCount}
-          todayCount={todayCount}
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isPulling={isPulling}
+          isRefreshing={isRefreshing}
         />
 
-        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+        {isOffline && <OfflineBanner />}
 
-        <Suspense fallback={TAB_FALLBACK}>
-          {activeTab === TABS.DASHBOARD && (
-            <RecentFlow
-              transactions={filteredData}
-              onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
-              onDelete={handleDelete}
-            />
-          )}
-          {activeTab === TABS.BILLS && (
-            <BillsList
-              transactions={filteredData}
-              allTransactions={data}
-              onTogglePaid={handleQuickPay}
-              onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
-              onDelete={handleDelete}
-              isLoading={loading}
-              cartoes={cartoes}
-              currentDate={currentDate}
-            />
-          )}
-          {activeTab === TABS.ANALYTICS && (
-            <FinancialAnalytics
-              transactions={filteredData}
-              allTransactions={data}
-              currentDate={currentDate}
-            />
-          )}
-          {activeTab === TABS.CARTOES && (
-            <CartoesScreen
-              cartoes={cartoes}
-              faturas={faturas}
-              onCriar={criarCartao}
-              onEditar={editarCartao}
-              onExcluir={excluirCartao}
-              allTransactions={data}
-              currentDate={currentDate}
-            />
-          )}
-          {activeTab === TABS.INTELLIGENCE && (
-            <IntelligenceScreen
-              allTransactions={data}
-              currentDate={currentDate}
-              user={user}
-            />
-          )}
-        </Suspense>
-      </div>
+        <DashboardHeader
+          renda={totals.renda}
+          totalDespesas={totals.gastosTotal}
+          despesasPagas={totals.gastosPagos}
+          reservaTotal={totals.reservaTotal}
+          currentDate={currentDate}
+          onMonthChange={changeMonth}
+          onLogout={() => supabase.auth.signOut()}
+          isLoading={loading}
+          userEmail={user?.email ?? ''}
+          onRefresh={refresh}
+          isRefreshing={isRefreshing}
+          onOpenAnalytics={() => setActiveTab(TABS.ANALYTICS)}
+          saldoProjetado={saldo?.saldoProjetado}
+        />
 
-      {isModalOpen && (
-        <TransactionModal
-          isOpen={isModalOpen}
-          onClose={() => { dispatch({ type: UI_ACTIONS.CLOSE_MODAL }); setFabPrefill(null) }}
-          onSave={(form, all) => { setFabPrefill(null); handleSave(form, all) }}
-          initialData={editingTransaction || fabPrefill || null}
+        <WidgetDia
+          saldo={saldo}
+          totals={totals}
+          userName={user?.email}
+          onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
+          isLoading={loading}
+        />
+
+        <div className="px-4 pt-3 space-y-3">
+          <NotificationPrompt />
+
+          <PainelAlertas
+            alertas={alertas}
+            overdueCount={overdueCount}
+            todayCount={todayCount}
+          />
+
+          <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+
+          <Suspense fallback={TAB_FALLBACK}>
+            {activeTab === TABS.DASHBOARD && (
+              <RecentFlow
+                transactions={filteredData}
+                onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
+                onDelete={handleDelete}
+              />
+            )}
+            {activeTab === TABS.BILLS && (
+              <BillsList
+                transactions={filteredData}
+                allTransactions={data}
+                onTogglePaid={handleQuickPay}
+                onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
+                onDelete={handleDelete}
+                isLoading={loading}
+                cartoes={cartoes}
+                currentDate={currentDate}
+              />
+            )}
+            {activeTab === TABS.ANALYTICS && (
+              <FinancialAnalytics
+                transactions={filteredData}
+                allTransactions={data}
+                currentDate={currentDate}
+              />
+            )}
+            {activeTab === TABS.CARTOES && (
+              <CartoesScreen
+                cartoes={cartoes}
+                faturas={faturas}
+                onCriar={criarCartao}
+                onEditar={editarCartao}
+                onExcluir={excluirCartao}
+                allTransactions={data}
+                currentDate={currentDate}
+              />
+            )}
+            {activeTab === TABS.INTELLIGENCE && (
+              <IntelligenceScreen
+                allTransactions={data}
+                currentDate={currentDate}
+                user={user}
+              />
+            )}
+          </Suspense>
+        </div>
+
+        {isModalOpen && (
+          <TransactionModal
+            isOpen={isModalOpen}
+            onClose={() => { dispatch({ type: UI_ACTIONS.CLOSE_MODAL }); setFabPrefill(null) }}
+            onSave={(form, all) => { setFabPrefill(null); handleSave(form, all) }}
+            initialData={editingTransaction || fabPrefill || null}
+            transactions={data}
+            cartoes={cartoes}
+          />
+        )}
+
+        {isSaving && <SavingSplash message={savingMessage} />}
+
+        <Toast message={toast?.message} type={toast?.type} dispatch={dispatch} />
+        <UndoToast undo={undo} dispatch={dispatch} />
+
+        <BottomNav
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
           transactions={data}
-          cartoes={cartoes}
+          onAddNew={(prefill) => {
+            setFabPrefill(prefill || null)
+            dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })
+          }}
         />
-      )}
-
-      {isSaving && <SavingSplash message={savingMessage} />}
-
-      <Toast message={toast?.message} type={toast?.type} dispatch={dispatch} />
-      <UndoToast undo={undo} dispatch={dispatch} />
-
-      <BottomNav
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
-        transactions={data}
-        onAddNew={(prefill) => {
-          setFabPrefill(prefill || null)
-          dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: null })
-        }}
-      />
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

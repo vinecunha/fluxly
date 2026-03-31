@@ -87,7 +87,7 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   )
 }
 
-const FALLBACK_CATEGORY = { icon: <Tag size={14} />, color: 'bg-gray-100  text-gray-500 ' }
+const FALLBACK_CATEGORY = { icon: <Tag size={14} />, color: 'bg-gray-100 text-gray-500' }
 
 // ─── Fatura Virtual Item ──────────────────────────────────────────────────────
 function FaturaVirtualItem({ bill }) {
@@ -582,17 +582,31 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   }
 
   const renderBill = (bill) => {
+    // Garantir que bill existe antes de renderizar
+    if (!bill) return null
+    
     if (bill._isFatura) {
       return <FaturaVirtualItem key={bill.id} bill={bill} onEdit={onEdit} setActionTarget={setActionTarget} />
     }
     const rawStats = bill.recorrencia_id ? recurrenceStatsMap[bill.recorrencia_id] : null
     const stats = rawStats ? {
-      total: rawStats.total, paid: rawStats.paid,
+      total: rawStats.total, 
+      paid: rawStats.paid,
       percent: Math.round((rawStats.paid / rawStats.total) * 100),
     } : null
+    
+    // Garantir que categoryIcons existe e tem a categoria
+    const categoryInfo = categoryIcons && bill.categoria ? categoryIcons[bill.categoria] : FALLBACK_CATEGORY
+    
     return (
-      <SwipeableBillItem key={bill.id} bill={bill} stats={stats}
-        categoryInfo={categoryIcons[bill.categoria]} onEdit={onEdit} setActionTarget={setActionTarget} />
+      <SwipeableBillItem 
+        key={bill.id} 
+        bill={bill} 
+        stats={stats}
+        categoryInfo={categoryInfo || FALLBACK_CATEGORY} 
+        onEdit={onEdit} 
+        setActionTarget={setActionTarget} 
+      />
     )
   }
 
