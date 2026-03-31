@@ -21,7 +21,6 @@ import { DashboardHeader } from './components/DashboardHeader'
 import { WidgetDia } from './components/WidgetDia'
 import { useSaldoProjetado } from './hooks/useSaldoProjetado'
 import { TabBar, BottomNav } from './components/TabBar'
-import { PainelAlertas } from './components/PainelAlertas'
 import { useAlertas } from './hooks/useAlertas'
 import { SavingSplash } from './components/SavingSplash'
 import { Toast } from './components/Toast'
@@ -32,8 +31,8 @@ import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { CartoesScreen } from './components/CartoesScreen'
 import { IntelligenceScreen } from './components/IntelligenceScreen'
-import { CashFlowTimeline } from './components/CashFlowTimeline'
-import { ImportExtrato } from './components/ImportExtrato'
+import { DashboardCards } from './components/DashboardCards'
+import { AlertPriorityList } from './components/AlertPriorityList'
 
 const BillsList = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
 const RecentFlow = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
@@ -94,7 +93,7 @@ export default function App() {
   
   const { overdueCount, todayCount } = useAlerts(data)
 
-  // ✅ NOVOS HOOKS - IA Insights e Metas
+  // NOVOS HOOKS - IA Insights e Metas
   const { insights, loadingInsights, gerarInsights } = useAIInsights(user, data, saldo, currentDate)
   const { metas, criarMeta, atualizarProgresso, excluirMeta, loading: loadingMetas } = useMetas(user)
 
@@ -111,7 +110,7 @@ export default function App() {
     }
   }, [_handleQuickPay, data, zerarCaixinha])
 
-  // ✅ NOVA FUNÇÃO - Importação de Extratos
+  // NOVA FUNÇÃO - Importação de Extratos
   const handleImportTransactions = useCallback(async (transacoes) => {
     if (!user?.id) return
     
@@ -153,6 +152,11 @@ export default function App() {
     })
   }, [])
 
+  // Calcular saldo atual
+  const saldoAtual = useMemo(() => {
+    return (totals.renda || 0) - (totals.gastosPagos || 0)
+  }, [totals.renda, totals.gastosPagos])
+
   if (!authChecked) return null
   if (!user) return <AuthScreen />
 
@@ -171,46 +175,33 @@ export default function App() {
         <DashboardHeader
           renda={totals.renda}
           totalDespesas={totals.gastosTotal}
-          despesasPagas={totals.gastosPagos}
           reservaTotal={totals.reservaTotal}
           currentDate={currentDate}
           onMonthChange={changeMonth}
           onLogout={() => supabase.auth.signOut()}
           isLoading={loading}
-          userEmail={user?.email ?? ''}
           onRefresh={refresh}
           isRefreshing={isRefreshing}
           onOpenAnalytics={() => setActiveTab(TABS.ANALYTICS)}
           saldoProjetado={saldo?.saldoProjetado}
+          alertas={alertas}
+          onQuickPay={handleQuickPay}
+          isSaving={isSaving}
         />
 
-        <WidgetDia
-          saldo={saldo}
-          totals={totals}
-          userName={user?.email}
-          onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
-          isLoading={loading}
-        />
-
-        <div className="px-4 pt-3 space-y-3">
+        <div className="px-4 pt-3 space-y-4">
           <NotificationPrompt />
 
-          {/* ✅ NOVO COMPONENTE - Timeline de Fluxo de Caixa */}
-          <CashFlowTimeline 
-            transactions={filteredData}
-            currentDate={currentDate}
-          />
-
-          {/* ✅ NOVO COMPONENTE - Importação de Extratos */}
-          <ImportExtrato 
-            onImport={handleImportTransactions}
-            user={user}
-          />
-
-          <PainelAlertas
-            alertas={alertas}
-            overdueCount={overdueCount}
-            todayCount={todayCount}
+          <DashboardCards 
+            renda={totals.renda}
+            gastos={totals.gastosTotal}
+            reserva={totals.reservaTotal}
+            saldoProjetado={saldo?.saldoProjetado}
+            saldoAtual={saldoAtual}
+            saldo={saldo}
+            totals={totals}
+            onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
+            isLoading={loading}
           />
 
           <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
@@ -263,7 +254,6 @@ export default function App() {
                 loadingInsights={loadingInsights}
               />
             )}
-            {/* ✅ NOVA ABA - Metas Financeiras */}
             {activeTab === TABS.METAS && (
               <MetasScreen
                 metas={metas}

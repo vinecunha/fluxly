@@ -195,17 +195,31 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     }
 
     const valorNumerico = parseFloat(String(formData.valor).replace(',', '.'))
-    if (isNaN(valorNumerico) || valorNumerico <= 0) {
-      dispatch({ 
-        type: UI_ACTIONS.SHOW_TOAST, 
-        payload: { message: 'Valor inválido. Digite um número positivo.', type: 'error' } 
-      })
-      return
+    
+    // ✅ CORREÇÃO: Reserva aceita valor negativo (retirada) ou positivo (depósito)
+    if (formData.tipo === 'reserva') {
+      // Reserva: aceita qualquer valor diferente de zero
+      if (isNaN(valorNumerico) || valorNumerico === 0) {
+        dispatch({ 
+          type: UI_ACTIONS.SHOW_TOAST, 
+          payload: { message: 'Digite um valor válido (positivo para depósito, negativo para retirada).', type: 'error' } 
+        })
+        return
+      }
+    } else {
+      // Outros tipos: apenas positivo
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        dispatch({ 
+          type: UI_ACTIONS.SHOW_TOAST, 
+          payload: { message: 'Valor inválido. Digite um número positivo.', type: 'error' } 
+        })
+        return
+      }
     }
 
     // Sanitização de campos de texto
     const descricaoSafe = String(formData.descricao || '').trim().slice(0, 200)
-    if (!descricaoSafe && formData.tipo !== 'pagamento_cartao') {
+    if (!descricaoSafe && formData.tipo !== 'pagamento_cartao' && formData.tipo !== 'reserva') {
       dispatch({ 
         type: UI_ACTIONS.SHOW_TOAST, 
         payload: { message: 'Descrição é obrigatória.', type: 'error' } 
@@ -230,7 +244,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     const transactionPayload = {
       user_id: user.id,
       descricao: descricaoSafe,
-      valor: valorNumerico,
+      valor: valorNumerico, // ✅ Mantém o sinal original (positivo para depósito, negativo para retirada)
       tipo: formData.tipo,
       categoria: formData.categoria,
       subcategoria: formData.tipo === 'reserva' ? descricaoSafe : (formData.subcategoria || null),

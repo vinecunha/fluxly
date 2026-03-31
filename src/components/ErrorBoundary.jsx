@@ -38,13 +38,13 @@ export class ErrorBoundary extends React.Component {
             <div className="space-y-2">
               <button
                 onClick={this.handleReload}
-                className="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+                className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
               >
                 Recarregar página
               </button>
               <button
                 onClick={this.handleReset}
-                className="w-full px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors"
+                className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors"
               >
                 Tentar novamente
               </button>
