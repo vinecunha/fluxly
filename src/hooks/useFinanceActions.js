@@ -1,17 +1,54 @@
 import { useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { AUTO_PAID_TYPES, UI_ACTIONS } from '../lib/constants'
+import { logger } from '../lib/logger'
 
 const UNDO_TIMEOUT = 5000
+const MAX_RECORRENCIAS = 120
+
+// Sanitização de texto para notificações
+function sanitizeText(text) {
+  if (!text) return ''
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.textContent
+}
+
+function sendLocalNotification(title, body) {
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      const sanitizedTitle = sanitizeText(title)
+      const sanitizedBody = sanitizeText(body)
+      new Notification(sanitizedTitle, { 
+        body: sanitizedBody, 
+        icon: '/icon-192.png' 
+      })
+    }
+  } catch (error) {
+    logger.warn('Notificação falhou:', error)
+  }
+}
+
+function _isSessionError(error) {
+  return error?.message?.includes('JWT') || error?.status === 401
+}
 
 export function useFinanceActions({ user, data, refresh, dispatch, editingTransaction, onSessionExpired }) {
 
   const handleQuickPay = useCallback(async (id, alterarTodaSerie = false, recorrencia_id = null, valorFinal = null) => {
-    if (!user?.id) return   // <-- guard: sem sessão, não age
+    if (!user?.id) {
+      logger.warn('Tentativa de pagamento sem sessão')
+      return
+    }
+    
     const transaction = data.find(t => t.id === id)
     if (!transaction) return
+    
     // Verifica que a transação pertence ao usuário logado
-    if (transaction.user_id !== user.id) return
+    if (transaction.user_id !== user.id) {
+      logger.warn(`Tentativa de acesso a transação de outro usuário: ${id}`)
+      return
+    }
 
     dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Atualizando...' })
 
@@ -22,16 +59,26 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       const valorEfetivo = valorFinal || valorOriginal
       const diferencaJuros = valorEfetivo - valorOriginal
 
-      let query = supabase.from('transacoes').update({ pago: novoStatus, data_pagamento: dataPagamento })
-      query = alterarTodaSerie && recorrencia_id
-        ? query.eq('recorrencia_id', recorrencia_id).eq('user_id', user.id)
-        : query.eq('id', id).eq('user_id', user.id)
+      let query = supabase.from('transacoes').update({ 
+        pago: novoStatus, 
+        data_pagamento: dataPagamento 
+      })
+      
+      if (alterarTodaSerie && recorrencia_id) {
+        query = query
+          .eq('recorrencia_id', recorrencia_id)
+          .eq('user_id', user.id)
+      } else {
+        query = query
+          .eq('id', id)
+          .eq('user_id', user.id)
+      }
 
       const { error: mainError } = await query
       if (mainError) throw mainError
 
       if (novoStatus && diferencaJuros > 0) {
-        await supabase.from('transacoes').insert([{
+        const { error: jurosError } = await supabase.from('transacoes').insert([{
           user_id: user.id,
           descricao: `Juros/Encargos: ${transaction.descricao}`,
           valor: diferencaJuros,
@@ -42,6 +89,8 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
           data_pagamento: new Date().toISOString(),
           recorrencia_id: null,
         }])
+        
+        if (jurosError) logger.error('Erro ao registrar juros:', jurosError)
       }
 
       if (novoStatus) {
@@ -61,8 +110,15 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
 
       await refresh()
     } catch (error) {
-      if (_isSessionError(error)) { onSessionExpired?.(); return }
-      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao atualizar pagamento.', type: 'error' } })
+      if (_isSessionError(error)) { 
+        onSessionExpired?.()
+        return 
+      }
+      logger.error('Erro ao atualizar pagamento:', error)
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: 'Erro ao atualizar pagamento.', type: 'error' } 
+      })
       refresh()
     } finally {
       dispatch({ type: UI_ACTIONS.STOP_SAVING })
@@ -70,7 +126,11 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
   }, [data, user, refresh, dispatch, onSessionExpired])
 
   const handleDelete = useCallback(async (id, deleteSeries = false, recorrencia_id = null) => {
-    if (!user?.id) return   // <-- guard: sem sessão, não age
+    if (!user?.id) {
+      logger.warn('Tentativa de exclusão sem sessão')
+      return
+    }
+    
     const snapshot = deleteSeries && recorrencia_id
       ? data.filter(t => t.recorrencia_id === recorrencia_id && t.user_id === user.id)
       : data.filter(t => t.id === id && t.user_id === user.id)
@@ -82,15 +142,26 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       dispatch({ type: UI_ACTIONS.START_SAVING, payload: 'Removendo...' })
       try {
         let query = supabase.from('transacoes').delete().eq('user_id', user.id)
-        query = deleteSeries && recorrencia_id
-          ? query.eq('recorrencia_id', recorrencia_id)
-          : query.eq('id', id)
+        
+        if (deleteSeries && recorrencia_id) {
+          query = query.eq('recorrencia_id', recorrencia_id)
+        } else {
+          query = query.eq('id', id)
+        }
+        
         const { error } = await query
         if (error) throw error
         await refresh()
       } catch (error) {
-        if (_isSessionError(error)) { onSessionExpired?.(); return }
-        dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao remover transação.', type: 'error' } })
+        if (_isSessionError(error)) { 
+          onSessionExpired?.()
+          return 
+        }
+        logger.error('Erro ao remover transação:', error)
+        dispatch({ 
+          type: UI_ACTIONS.SHOW_TOAST, 
+          payload: { message: 'Erro ao remover transação.', type: 'error' } 
+        })
         refresh()
       } finally {
         dispatch({ type: UI_ACTIONS.STOP_SAVING })
@@ -114,14 +185,33 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
   }, [data, user, refresh, dispatch, onSessionExpired])
 
   const handleSave = useCallback(async (formData, alterarTodaSerie = false) => {
-    if (!user?.id) return   // <-- guard: sem sessão, não age
+    if (!user?.id) {
+      logger.warn('Tentativa de salvar sem sessão')
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } 
+      })
+      return
+    }
 
     const valorNumerico = parseFloat(String(formData.valor).replace(',', '.'))
-    if (isNaN(valorNumerico) || valorNumerico <= 0) return  // valor obrigatório e positivo
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: 'Valor inválido. Digite um número positivo.', type: 'error' } 
+      })
+      return
+    }
 
     // Sanitização de campos de texto
     const descricaoSafe = String(formData.descricao || '').trim().slice(0, 200)
-    if (!descricaoSafe && formData.tipo !== 'pagamento_cartao') return
+    if (!descricaoSafe && formData.tipo !== 'pagamento_cartao') {
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: 'Descrição é obrigatória.', type: 'error' } 
+      })
+      return
+    }
 
     dispatch({
       type: UI_ACTIONS.START_SAVING,
@@ -138,7 +228,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     const devePagar = isAutoPaid || (formData.tipo === 'esporadica' && isDataPassadaOuHoje)
 
     const transactionPayload = {
-      user_id: user.id,           // sempre forçado pelo usuário logado
+      user_id: user.id,
       descricao: descricaoSafe,
       valor: valorNumerico,
       tipo: formData.tipo,
@@ -159,10 +249,12 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
     try {
       if (editingTransaction) {
         // Verifica que a transação sendo editada pertence ao usuário
-        if (editingTransaction.user_id !== user.id) throw new Error('Acesso negado')
+        if (editingTransaction.user_id !== user.id) {
+          throw new Error('Acesso negado: você não pode editar esta transação')
+        }
         await _updateTransaction(transactionPayload, editingTransaction, alterarTodaSerie, user.id)
       } else {
-        await _insertTransaction(transactionPayload, formData, devePagar)
+        await _insertTransaction(transactionPayload, formData, devePagar, user.id)
       }
 
       dispatch({
@@ -175,8 +267,15 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       await refresh()
       dispatch({ type: UI_ACTIONS.CLOSE_MODAL })
     } catch (error) {
-      if (_isSessionError(error)) { onSessionExpired?.(); return }
-      dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Erro ao salvar transação.', type: 'error' } })
+      if (_isSessionError(error)) { 
+        onSessionExpired?.()
+        return 
+      }
+      logger.error('Erro ao salvar transação:', error)
+      dispatch({ 
+        type: UI_ACTIONS.SHOW_TOAST, 
+        payload: { message: error.message || 'Erro ao salvar transação.', type: 'error' } 
+      })
     } finally {
       dispatch({ type: UI_ACTIONS.STOP_SAVING })
     }
@@ -185,17 +284,9 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
   return { handleQuickPay, handleDelete, handleSave }
 }
 
-function _isSessionError(error) {
-  return error?.message?.includes('JWT') || error?.status === 401
-}
-
-function sendLocalNotification(title, body) {
-  if (Notification.permission === 'granted') {
-    new Notification(title, { body, icon: '/icon-192.png' })
-  }
-}
-
 async function _updateTransaction(payload, editingTransaction, alterarTodaSerie, userId) {
+  if (!userId) throw new Error('Usuário não autenticado')
+  
   if (editingTransaction.recorrencia_id && alterarTodaSerie) {
     const { error } = await supabase.from('transacoes').update({
       descricao: payload.descricao,
@@ -207,26 +298,29 @@ async function _updateTransaction(payload, editingTransaction, alterarTodaSerie,
       tipo: payload.tipo,
     })
       .eq('recorrencia_id', editingTransaction.recorrencia_id)
-      .eq('user_id', userId)   // <-- garante que só altera registros do próprio usuário
+      .eq('user_id', userId)
     if (error) throw error
   } else {
     const { repetir, recorrencia_limite, ...updateData } = payload
     const { error } = await supabase.from('transacoes')
       .update(updateData)
       .eq('id', editingTransaction.id)
-      .eq('user_id', userId)   // <-- garante que só altera registros do próprio usuário
+      .eq('user_id', userId)
     if (error) throw error
   }
 }
 
-async function _insertTransaction(payload, formData, devePagar) {
+async function _insertTransaction(payload, formData, devePagar, userId) {
+  if (!userId) throw new Error('Usuário não autenticado')
+  
   if (formData.repetir !== 'nao' && formData.recorrencia_limite) {
     const groupID = crypto.randomUUID()
     const transactions = []
     let dataAtual = new Date(formData.data + 'T12:00:00')
     const dataLimite = new Date(formData.recorrencia_limite + 'T12:00:00')
 
-    while (dataAtual <= dataLimite) {
+    let recCount = 0
+    while (dataAtual <= dataLimite && recCount < MAX_RECORRENCIAS) {
       transactions.push({
         ...payload,
         data: dataAtual.toISOString().split('T')[0],
@@ -240,6 +334,7 @@ async function _insertTransaction(payload, formData, devePagar) {
       } else if (formData.repetir === 'semanal') {
         dataAtual.setDate(dataAtual.getDate() + 7)
       }
+      recCount++
     }
 
     const { error } = await supabase.from('transacoes').insert(transactions)

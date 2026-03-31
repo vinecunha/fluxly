@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useReducer, useCallback, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useReducer, useCallback, lazy, Suspense, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import { TABS, UI_ACTIONS } from './lib/constants'
 import { uiReducer, initialUIState } from './reducers/uiReducer'
@@ -17,7 +17,6 @@ import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
 import { WidgetDia } from './components/WidgetDia'
 import { useSaldoProjetado } from './hooks/useSaldoProjetado'
-import { StatCard } from './components/StatCard'
 import { TabBar, BottomNav } from './components/TabBar'
 import { AlertBanner } from './components/AlertBanner'
 import { PainelAlertas } from './components/PainelAlertas'
@@ -32,10 +31,8 @@ import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { CartoesScreen } from './components/CartoesScreen'
 import { IntelligenceScreen } from './components/IntelligenceScreen'
 
-import { TrendingUp, TrendingDown } from 'lucide-react'
-
-const BillsList          = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
-const RecentFlow         = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
+const BillsList = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
+const RecentFlow = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
 const FinancialAnalytics = lazy(() => import('./components/FinancialAnalytics').then(m => ({ default: m.FinancialAnalytics })))
 
 const TAB_FALLBACK = (
@@ -45,9 +42,9 @@ const TAB_FALLBACK = (
 )
 
 export default function App() {
-  const [user, setUser]               = useState(null)
+  const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
-  const [activeTab, setActiveTab]     = useState(TABS.DASHBOARD)
+  const [activeTab, setActiveTab] = useState(TABS.DASHBOARD)
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const [uiState, dispatch] = useReducer(uiReducer, initialUIState)
@@ -73,9 +70,11 @@ export default function App() {
     dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
   }, [])
 
-  const mesStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+  const mesStr = useMemo(() => {
+    return `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+  }, [currentDate])
 
-  const { data, loading, refresh }   = useFinance(user)
+  const { data, loading, refresh } = useFinance(user)
   const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
   const saldo = useSaldoProjetado(
     data,
@@ -83,9 +82,16 @@ export default function App() {
     currentDate
   )
   const alertas = useAlertas(data, saldo, currentDate)
-  const { zerarCaixinha }            = useCaixinhas(user, mesStr)
-  const filteredData = useFilteredData(data, currentDate)
-  const totals       = useTotals(filteredData, currentDate)
+  const { zerarCaixinha } = useCaixinhas(user, mesStr)
+  
+  const filteredData = useMemo(() => {
+    return useFilteredData(data, currentDate)
+  }, [data, currentDate])
+  
+  const totals = useMemo(() => {
+    return useTotals(filteredData, currentDate)
+  }, [filteredData, currentDate])
+  
   const { overdueCount, todayCount } = useAlerts(data)
 
   const { handleSave, handleDelete, handleQuickPay: _handleQuickPay } = useFinanceActions({
@@ -157,8 +163,6 @@ export default function App() {
           overdueCount={overdueCount}
           todayCount={todayCount}
         />
-
-
 
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
 

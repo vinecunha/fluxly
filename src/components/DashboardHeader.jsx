@@ -59,6 +59,23 @@ export const DashboardHeader = ({
   const formatMonth = () =>
     currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase()
 
+  // Função auxiliar para navegar para um mês específico
+  const navigateToMonth = (year, month) => {
+    // Calcula a diferença em meses entre a data alvo e a data atual
+    const targetDate = new Date(year, month, 1)
+    const diffMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 + 
+                       (targetDate.getMonth() - currentDate.getMonth())
+    if (diffMonths !== 0) {
+      onMonthChange(diffMonths)
+    }
+  }
+
+  // Função para voltar ao mês atual
+  const goToCurrentMonth = () => {
+    const now = new Date()
+    navigateToMonth(now.getFullYear(), now.getMonth())
+  }
+
   if (isLoading) {
     return (
       <>
@@ -83,14 +100,12 @@ export const DashboardHeader = ({
           <div className="flex items-center gap-2 flex-shrink-0">
             <h1 className="text-xl font-black tracking-tighter text-white leading-none">Fluxly</h1>
             <div className="h-3.5 w-px bg-white/20" />
-            {/* <span className="text-[10px] font-bold text-slate-500 lowercase truncate max-w-[55px] sm:max-w-none">
-              {userEmail?.split('@')[0]}
-            </span> */}
           </div>
 
           {/* Seletor de mês */}
           <div className="flex items-center bg-white/10 rounded-2xl border border-white/10 flex-1 mx-1">
-            <button onClick={() => onMonthChange(-1)}
+            <button 
+              onClick={() => onMonthChange(-1)}
               className="px-4 text-white/50 active:text-white hover:text-white transition-colors"
               style={{ minHeight: 40 }}>
               <ChevronLeft size={14} />
@@ -104,15 +119,13 @@ export const DashboardHeader = ({
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
                 onChange={(e) => {
-                  const [y, m] = e.target.value.split('-')
-                  onMonthChange(
-                    (parseInt(y) - currentDate.getFullYear()) * 12 +
-                    (parseInt(m) - 1 - currentDate.getMonth())
-                  )
+                  const [year, month] = e.target.value.split('-')
+                  navigateToMonth(parseInt(year), parseInt(month) - 1)
                 }}
               />
             </div>
-            <button onClick={() => onMonthChange(1)}
+            <button 
+              onClick={() => onMonthChange(1)}
               className="px-4 text-white/50 active:text-white hover:text-white transition-colors"
               style={{ minHeight: 40 }}>
               <ChevronRight size={14} />
@@ -123,10 +136,7 @@ export const DashboardHeader = ({
           <div className="flex items-center gap-1 flex-shrink-0">
             {!isCurrentMonth && (
               <button
-                onClick={() => onMonthChange(
-                  (now.getFullYear() - currentDate.getFullYear()) * 12 +
-                  (now.getMonth() - currentDate.getMonth())
-                )}
+                onClick={goToCurrentMonth}
                 className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all"
                 style={{ minHeight: 36, minWidth: 36 }}>
                 <CalendarDays className="w-3.5 h-3.5 text-white" />

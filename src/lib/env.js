@@ -19,8 +19,8 @@ function optionalEnv(key, fallback = '') {
   return value?.trim() || fallback
 }
 
-const supabaseUrl  = requireEnv('VITE_SUPABASE_URL')
-const supabaseKey  = requireEnv('VITE_SUPABASE_ANON_KEY')
+const supabaseUrl = requireEnv('VITE_SUPABASE_URL')
+const supabaseKey = requireEnv('VITE_SUPABASE_ANON_KEY')
 
 // Validações de formato em tempo de inicialização
 if (!supabaseUrl.startsWith('https://')) {
@@ -31,14 +31,14 @@ if (supabaseKey.length < 100) {
 }
 
 export const env = {
-  SUPABASE_URL:      supabaseUrl,
+  SUPABASE_URL: supabaseUrl,
   SUPABASE_ANON_KEY: supabaseKey,
 
   // Opcional: chave pública do VAPID para Web Push
   VAPID_PUBLIC_KEY: optionalEnv('VITE_VAPID_PUBLIC_KEY'),
 
   // Conveniências
-  IS_DEV:   import.meta.env.DEV,
-  IS_PROD:  import.meta.env.PROD,
+  IS_DEV: import.meta.env.DEV,
+  IS_PROD: import.meta.env.PROD,
   BASE_URL: import.meta.env.BASE_URL || '/',
 }
