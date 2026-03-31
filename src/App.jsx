@@ -195,6 +195,7 @@ export default function App() {
           <DashboardCards 
             renda={totals.renda}
             gastos={totals.gastosTotal}
+            despesasPagas={totals.gastosPagos}  // ✅ NOVA PROP
             reserva={totals.reservaTotal}
             saldoProjetado={saldo?.saldoProjetado}
             saldoAtual={saldoAtual}
