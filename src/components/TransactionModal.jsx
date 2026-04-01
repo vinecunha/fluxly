@@ -1,9 +1,114 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { X, ChevronRight, ChevronLeft, Check, Repeat, CreditCard } from 'lucide-react'
 import { ActionConfirmationModal } from './BillsList'
 
 const getToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 const fmt = (v) => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})
+
+// ✅ Função para formatar valor monetário automaticamente
+const formatCurrencyInput = (value) => {
+  // Remove tudo que não é número
+  let numericValue = value.replace(/\D/g, '')
+  
+  if (numericValue === '') return ''
+  
+  // Converte para centavos (divide por 100)
+  const numeric = parseInt(numericValue, 10) / 100
+  return numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+// ✅ Função para converter valor formatado para número
+const parseCurrencyValue = (formattedValue) => {
+  if (!formattedValue) return 0
+  // Remove R$ e espaços, substitui vírgula por ponto
+  const numeric = formattedValue
+    .replace(/[^\d,]/g, '')
+    .replace(',', '.')
+  return parseFloat(numeric) || 0
+}
+
+// ✅ Componente de input de valor com formatação automática
+function CurrencyInput({ value, onChange, onClear, placeholder = "0,00" }) {
+  const inputRef = useRef(null)
+  const [displayValue, setDisplayValue] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
+
+  // Atualiza o display quando o valor externo muda
+  useEffect(() => {
+    if (value !== undefined && value !== null && !isFocused) {
+      const numValue = typeof value === 'number' ? value : parseFloat(String(value).replace(',', '.'))
+      if (!isNaN(numValue) && numValue > 0) {
+        setDisplayValue(numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+      } else {
+        setDisplayValue('')
+      }
+    }
+  }, [value, isFocused])
+
+  const handleChange = (e) => {
+    const rawValue = e.target.value
+    const formatted = formatCurrencyInput(rawValue)
+    setDisplayValue(formatted)
+    setIsFocused(true)
+    
+    // Converte o valor formatado para número e chama o onChange
+    const numericValue = parseCurrencyValue(formatted)
+    onChange(numericValue)
+  }
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    if (displayValue === '') {
+      onChange(0)
+    } else {
+      // Garante que o valor está formatado corretamente
+      const numericValue = parseCurrencyValue(displayValue)
+      setDisplayValue(numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+      onChange(numericValue)
+    }
+  }
+
+  const handleFocus = () => {
+    setIsFocused(true)
+  }
+
+  const handleClear = (e) => {
+    e.stopPropagation()
+    setDisplayValue('')
+    onChange(0)
+    inputRef.current?.focus()
+  }
+
+  return (
+    <div className="relative">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">R$</span>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder}
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="w-full pl-12 pr-10 py-5 rounded-2xl bg-gray-50 border-2 border-gray-100 focus:border-slate-500 outline-none text-3xl font-black text-gray-800 transition-all"
+      />
+      {displayValue && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600"
+          aria-label="Limpar valor"
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+  )
+}
 
 const TIPOS = [
   { id:'renda',            label:'Receita', emoji:'💰', cor:'#10b981', bg:'#d1fae5' },
@@ -31,7 +136,7 @@ const CATS = [
 const ORIGENS  = ['Aplicativos','Salário','Freelance','Particular','Vendas','Gorjeta']
 const APPS     = ['Uber','99','iFood','Outros']
 const BANCOS   = ['Nubank','Inter','Mercado Pago','CDB','Poupança','Outros']
-const DEF = { descricao:'', valor:'', tipo:'renda', categoria:'Renda', subcategoria:'',
+const DEF = { descricao:'', valor:0, tipo:'renda', categoria:'Renda', subcategoria:'',
               destino_reserva:'', data:getToday(), repetir:'nao', recorrencia_limite:'', cartao_id:null,
               _reservaOp:'deposito', _cdiPct:'100', _cdiCarencia:'0' }
 
@@ -50,17 +155,27 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
     if (initialData) {
       const isEdit    = !!initialData.id
       const isPrefill = !isEdit && !!(initialData.tipo || initialData.categoria)
-      setForm({ descricao:initialData.descricao||'', valor:String(initialData.valor||''),
-        tipo:initialData.tipo||'renda',
-        categoria:initialData.categoria||(initialData.tipo==='renda'?'Renda':initialData.tipo==='reserva'?'Reserva':'Outros'),
-        subcategoria:initialData.subcategoria||'', destino_reserva:initialData.destino_reserva||'',
-        data:initialData.data||getToday(), repetir:initialData.repetir||'nao',
-        recorrencia_limite:initialData.recorrencia_limite||'', cartao_id:initialData.cartao_id||null,
-        _reservaOp: initialData.tipo==='reserva' && Number(initialData.valor)<0 ? 'retirada' : 'deposito',
+      setForm({ 
+        descricao: initialData.descricao || '', 
+        valor: initialData.valor !== undefined && initialData.valor !== null 
+          ? Math.abs(Number(initialData.valor)) 
+          : 0,
+        tipo: initialData.tipo || 'renda',
+        categoria: initialData.categoria || (initialData.tipo === 'renda' ? 'Renda' : initialData.tipo === 'reserva' ? 'Reserva' : 'Outros'),
+        subcategoria: initialData.subcategoria || '', 
+        destino_reserva: initialData.destino_reserva || '',
+        data: initialData.data || getToday(), 
+        repetir: initialData.repetir || 'nao',
+        recorrencia_limite: initialData.recorrencia_limite || '', 
+        cartao_id: initialData.cartao_id || null,
+        _reservaOp: initialData.tipo === 'reserva' && Number(initialData.valor) < 0 ? 'retirada' : 'deposito',
         _cdiPct: initialData._cdiPct || '100',
-        _cdiCarencia: initialData._cdiCarencia || '0' })
+        _cdiCarencia: initialData._cdiCarencia || '0' 
+      })
       setStep(isEdit ? 2 : isPrefill ? 1 : 2)
-    } else { setForm({...DEF, data:getToday()}) }
+    } else { 
+      setForm({...DEF, data: getToday(), valor: 0 }) 
+    }
   }, [isOpen, initialData])
 
   if (!isOpen) return null
@@ -84,9 +199,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   const cur      = steps[Math.min(step, steps.length-1)]
   const isLast   = step===steps.length-1
   
-  // CORREÇÃO: Para reserva, aceita valor positivo (depósito) ou negativo (retirada)
-  // Para outros tipos, aceita apenas positivo
-  const valorNum = parseFloat(String(form.valor).replace(',','.'))||0
+  const valorNum = form.valor || 0
   let canGo = true
   
   if (cur === 'valor') {
@@ -119,18 +232,13 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   const submit = () => {
     if (!canGo) return
     
-    // Para reserva, manter o sinal (positivo para depósito, negativo para retirada)
-    // Para outros tipos, garantir valor positivo
     let formFinal = { ...form }
     
     if (isReserva) {
-      // Reserva: mantém o valor como está (já tem o sinal correto pelo toggle)
-      const valorFinal = parseFloat(String(form.valor).replace(',','.')) || 0
       const isRetirada = form._reservaOp === 'retirada'
-      formFinal.valor = isRetirada ? -Math.abs(valorFinal) : Math.abs(valorFinal)
+      formFinal.valor = isRetirada ? -Math.abs(valorNum) : Math.abs(valorNum)
     } else {
-      // Outros tipos: garantir positivo
-      formFinal.valor = Math.abs(parseFloat(String(form.valor).replace(',','.')) || 0)
+      formFinal.valor = Math.abs(valorNum)
     }
     
     if (initialData?.recorrencia_id) {
@@ -143,9 +251,13 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
   const AUTO = ['tipo','categoria','apps','cartao','banco','origem']
   const showBtn = !AUTO.includes(cur)
 
-  // Mensagem de erro para valor inválido
   const valorInvalido = cur === 'valor' && !canGo && valorNum !== 0
   const valorZeroMsg = cur === 'valor' && valorNum === 0
+
+  // Handler para atualizar o valor
+  const handleValorChange = (numericValue) => {
+    sf('valor', numericValue)
+  }
 
   return (
     <>
@@ -363,13 +475,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialData, transac
 
               <div>
                 <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Valor</p>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">R$</span>
-                  <input type="text" inputMode="decimal" placeholder="0,00"
-                    className="w-full pl-12 pr-4 py-5 rounded-2xl bg-gray-50 border-2 border-gray-100 focus:border-slate-500 outline-none text-3xl font-black text-gray-800 transition-all"
-                    value={form.valor}
-                    onChange={e=>sf('valor', e.target.value.replace(/[^0-9.,-]/g,''))}/>
-                </div>
+                <CurrencyInput 
+                  value={form.valor}
+                  onChange={handleValorChange}
+                  placeholder="0,00"
+                />
                 
                 {/* Mensagens de erro/aviso */}
                 {valorZeroMsg && (

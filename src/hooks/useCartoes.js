@@ -28,8 +28,13 @@ export function useCartoes(user) {
   useEffect(() => { refresh() }, [refresh])
 
   const criarCartao = async (dados) => {
+    console.log('🔵 criarCartao chamado com:', dados) // ✅ LOG
     const { error } = await supabase.from('cartoes').insert([{ ...dados, user_id: user.id }])
-    if (error) throw error
+    if (error) {
+      console.error('🔴 Erro ao criar cartão:', error)
+      throw error
+    }
+    console.log('✅ Cartão criado com sucesso')
     await refresh()
   }
 

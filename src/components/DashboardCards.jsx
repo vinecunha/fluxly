@@ -18,7 +18,7 @@ export function DashboardCards({ renda, gastos, despesasPagas, reserva, saldoPro
   const temProjecao = saldoProjetado !== null
 
   return (
-    <div className="space-y-4 mt-14">
+    <div className="space-y-4 mt-16">
       {/* Card principal - Balanço */}
       <div className={`rounded-2xl p-5 ${
         saldoAtual >= 0 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600' : 'bg-gradient-to-br from-rose-500 to-rose-600'
@@ -50,7 +50,7 @@ export function DashboardCards({ renda, gastos, despesasPagas, reserva, saldoPro
               <span>Por que está negativo?</span>
             </div>
             <p className="leading-relaxed opacity-80">
-              Você pagou <span className="font-black">R$ {fmt(Math.abs(saldoAtual))}</span> a mais do que entrou.
+              Você pagou <span className="font-black">{fmt(Math.abs(saldoAtual))}</span> a mais do que entrou.
               Isso pode ser por gastos extras, compras parceladas ou uso do cartão de crédito.
             </p>
             <p className="text-[8px] opacity-60 mt-1">

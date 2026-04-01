@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { logger } from '../lib/logger'
 
-export function useCaixinhas(user, mesStr) {
+export function useCaixinhas(user, mesStr, onGuardarMeta = null) {
   const [saldoPorConta, setSaldoPorConta] = useState({})
   const [loading, setLoading] = useState(true)
 
@@ -15,7 +15,6 @@ export function useCaixinhas(user, mesStr) {
 
     setLoading(true)
     try {
-      // Buscar caixinhas
       const { data: caixinhas, error } = await supabase
         .from('caixinhas')
         .select('*')
@@ -24,7 +23,6 @@ export function useCaixinhas(user, mesStr) {
 
       if (error) throw error
 
-      // Agrupar por transacao_id
       const agrupado = {}
       ;(caixinhas || []).forEach(c => {
         const txId = c.transacao_id
@@ -62,12 +60,19 @@ export function useCaixinhas(user, mesStr) {
       if (error) throw error
 
       await fetchData()
+
+      // ✅ SE TIVER CALLBACK DE META, CHAMAR
+      if (onGuardarMeta) {
+        const metaResult = await onGuardarMeta(transacaoId, Number(valor), descricao)
+        return { ok: true, data, meta: metaResult }
+      }
+
       return { ok: true, data }
     } catch (error) {
       logger.error('Erro ao guardar na caixinha:', error)
       return { error: error.message }
     }
-  }, [user?.id, fetchData])
+  }, [user?.id, fetchData, onGuardarMeta])
 
   const zerarCaixinha = useCallback(async (transacaoId) => {
     if (!user?.id) return

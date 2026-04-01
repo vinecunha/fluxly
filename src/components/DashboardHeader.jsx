@@ -296,7 +296,7 @@ export const DashboardHeader = ({
             </div>
 
             {/* Barra de progresso */}
-            <div className="relative h-4 flex items-center">
+            <div className="relative h-6 mt-3 flex items-center">
               <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor()}`}
                   style={{ width: `${progresso}%` }} />

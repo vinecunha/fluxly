@@ -12,7 +12,6 @@ import { useOffline } from './hooks/useOffline'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useCartoes } from './hooks/useCartoes'
 import { useCaixinhas } from './hooks/useCaixinhas'
-import { useAIInsights } from './hooks/useAIInsights'
 import { useMetas } from './hooks/useMetas'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -29,7 +28,6 @@ import { OfflineBanner } from './components/OfflineBanner'
 import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
-import { CartoesScreen } from './components/CartoesScreen'
 import { IntelligenceScreen } from './components/IntelligenceScreen'
 import { DashboardCards } from './components/DashboardCards'
 import { AlertPriorityList } from './components/AlertPriorityList'
@@ -93,9 +91,18 @@ export default function App() {
   
   const { overdueCount, todayCount } = useAlerts(data)
 
-  // NOVOS HOOKS - IA Insights e Metas
-  const { insights, loadingInsights, gerarInsights } = useAIInsights(user, data, saldo, currentDate)
-  const { metas, criarMeta, atualizarProgresso, excluirMeta, loading: loadingMetas } = useMetas(user)
+  const { 
+    metas, 
+    criarMeta, 
+    depositarNaMeta, 
+    editarMeta,           
+    ajustarValorDepositado,
+    excluirMeta, 
+    arquivarMeta,
+    alterarPrazo,
+    criarMetaParaConta,
+    loading: loadingMetas 
+  } = useMetas(user)
 
   const { handleSave, handleDelete, handleQuickPay: _handleQuickPay } = useFinanceActions({
     user, data, refresh, dispatch, editingTransaction,
@@ -195,7 +202,7 @@ export default function App() {
           <DashboardCards 
             renda={totals.renda}
             gastos={totals.gastosTotal}
-            despesasPagas={totals.gastosPagos}  // ✅ NOVA PROP
+            despesasPagas={totals.gastosPagos}
             reserva={totals.reservaTotal}
             saldoProjetado={saldo?.saldoProjetado}
             saldoAtual={saldoAtual}
@@ -225,6 +232,9 @@ export default function App() {
                 isLoading={loading}
                 cartoes={cartoes}
                 currentDate={currentDate}
+                onCriarCartao={criarCartao}
+                onEditarCartao={editarCartao}
+                onExcluirCartao={excluirCartao}
               />
             )}
             {activeTab === TABS.ANALYTICS && (
@@ -234,36 +244,40 @@ export default function App() {
                 currentDate={currentDate}
               />
             )}
-            {activeTab === TABS.CARTOES && (
-              <CartoesScreen
-                cartoes={cartoes}
-                faturas={faturas}
-                onCriar={criarCartao}
-                onEditar={editarCartao}
-                onExcluir={excluirCartao}
-                allTransactions={data}
-                currentDate={currentDate}
-              />
-            )}
             {activeTab === TABS.INTELLIGENCE && (
               <IntelligenceScreen
                 allTransactions={data}
                 currentDate={currentDate}
                 user={user}
-                insights={insights}
-                onGerarInsights={gerarInsights}
-                loadingInsights={loadingInsights}
+                metas={metas}
+                onVerMeta={(metaId) => {
+                  setActiveTab(TABS.METAS)
+                  // Opcional: scroll para a meta
+                }}
+                onCriarMetaParaConta={async (conta) => {
+                  const result = await criarMetaParaConta(
+                    conta.id,
+                    `Pagar: ${conta.descricao}`,
+                    conta.valor
+                  )
+                  if (result.success) {
+                    setActiveTab(TABS.METAS)
+                  }
+                }}
               />
             )}
             {activeTab === TABS.METAS && (
-              <MetasScreen
-                metas={metas}
-                onCreate={criarMeta}
-                onUpdate={atualizarProgresso}
-                onDelete={excluirMeta}
-                transactions={data}
-                loading={loadingMetas}
-              />
+                <MetasScreen
+                  metas={metas}
+                  onCreate={criarMeta}
+                  onDepositar={depositarNaMeta}
+                  onEditar={editarMeta}                   
+                  onAjustarValor={ajustarValorDepositado}  
+                  onDelete={excluirMeta}
+                  onArquivar={arquivarMeta}
+                  onAlterarPrazo={alterarPrazo}
+                  loading={loadingMetas}
+                />
             )}
           </Suspense>
         </div>

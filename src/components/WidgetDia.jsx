@@ -17,37 +17,48 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
   const saldoHoje = (totals?.rendaHoje || 0) - (totals?.gastosHoje || 0)
   const positivo = saldoHoje >= 0
 
-  // Garantir que saldoProjetado é um número e tratar sinal
+  // Extrair valores com fallback
   const saldoProjetadoValor = saldo?.saldoProjetado !== undefined && saldo?.saldoProjetado !== null 
     ? Number(saldo.saldoProjetado) 
     : null
   
-  const isProjecaoNegativa = saldoProjetadoValor !== null && saldoProjetadoValor < 0
-  const isProjecaoPositiva = saldoProjetadoValor !== null && saldoProjetadoValor > 0
+  // Dias restantes: mínimo 1 (último dia)
+  let diasRestantes = saldo?.diasRestantes !== undefined && saldo?.diasRestantes !== null
+    ? Number(saldo.diasRestantes)
+    : 1
+  
+  // Garantir que pelo menos 1 dia reste (para calcular meta)
+  if (diasRestantes <= 0) diasRestantes = 1
 
-  // Calcula meta diária para fechar o mês (quando está negativo)
+  const isProjecaoNegativa = saldoProjetadoValor !== null && saldoProjetadoValor < 0
+
+  // Calcula meta diária
   const getMetaDiaria = () => {
-    if (!saldoProjetadoValor || !saldo?.diasRestantes) return null
+    if (saldoProjetadoValor === null) return null
     
     const deficit = Math.max(0, -saldoProjetadoValor)
     
-    if (deficit > 0) {
-      const metaPorDia = deficit / saldo.diasRestantes
+    if (deficit > 0 && diasRestantes > 0) {
+      const metaPorDia = deficit / diasRestantes
       return { 
         tipo: 'deficit', 
         valor: metaPorDia, 
         total: deficit, 
-        mensagem: `precisa de ${fmt(metaPorDia)}/dia` 
+        mensagem: diasRestantes === 1 
+          ? `precisa de ${fmt(deficit)} hoje` 
+          : `precisa de ${fmt(metaPorDia)}/dia` 
       }
     }
     
-    if (saldoProjetadoValor > 0) {
-      const sobraPorDia = saldoProjetadoValor / saldo.diasRestantes
+    if (saldoProjetadoValor > 0 && diasRestantes > 0) {
+      const sobraPorDia = saldoProjetadoValor / diasRestantes
       return { 
         tipo: 'superavit', 
         valor: sobraPorDia, 
         total: saldoProjetadoValor, 
-        mensagem: `sobra ${fmt(sobraPorDia)}/dia` 
+        mensagem: diasRestantes === 1 
+          ? `sobra ${fmt(saldoProjetadoValor)} hoje` 
+          : `sobra ${fmt(sobraPorDia)}/dia` 
       }
     }
     
@@ -71,19 +82,15 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
         <div className="flex items-center gap-3">
           {saldoProjetadoValor !== null && (
             <div className="text-right">
-              <p className="text-[7px] font-black text-gray-400 uppercase">Até o final do mês</p>
+              <p className="text-[7px] font-black text-gray-400 uppercase">
+                {diasRestantes === 1 ? 'Hoje é o último dia!' : 'Até o final do mês'}
+              </p>
               <p className={`text-xs font-black ${!isProjecaoNegativa ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {!isProjecaoNegativa ? '+' : '-'}{fmt(Math.abs(saldoProjetadoValor))}
               </p>
-              {/* Meta diária (só aparece se tiver déficit) */}
-              {metaDiaria && metaDiaria.tipo === 'deficit' && (
-                <p className="text-[6px] font-black text-amber-500 mt-0.5">
-                  {metaDiaria.mensagem}
-                </p>
-              )}
-              {/* Sobra diária (opcional) */}
-              {metaDiaria && metaDiaria.tipo === 'superavit' && (
-                <p className="text-[6px] font-black text-emerald-500 mt-0.5">
+              {/* Meta diária - SEMPRE mostra quando há déficit */}
+              {isProjecaoNegativa && metaDiaria && (
+                <p className="text-[6px] font-black text-amber-500 mt-0.5 whitespace-nowrap">
                   {metaDiaria.mensagem}
                 </p>
               )}
@@ -114,21 +121,27 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
                   <span>{fmt(saldo.mediaDiariaGasto)}</span>
                 </div>
                 <div className="flex justify-between text-[8px] font-black text-gray-500 uppercase">
-                  <span>Dias restantes</span>
-                  <span>{saldo.diasRestantes}d</span>
+                  <span>{diasRestantes === 1 ? 'Hoje é último dia' : 'Dias restantes'}</span>
+                  <span>{diasRestantes}d</span>
                 </div>
               </div>
 
-              {/* Meta diária expandida (apenas déficit) */}
-              {metaDiaria && metaDiaria.tipo === 'deficit' && (
+              {/* Meta diária expandida */}
+              {isProjecaoNegativa && metaDiaria && (
                 <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
                   <div className="flex items-center gap-2 mb-1">
                     <Target size={12} className="text-amber-600" />
-                    <p className="text-[8px] font-black text-amber-700 uppercase">Meta diária</p>
+                    <p className="text-[8px] font-black text-amber-700 uppercase">
+                      {diasRestantes === 1 ? 'Meta para hoje' : 'Meta diária'}
+                    </p>
                   </div>
-                  <p className="text-base font-black text-amber-700">{fmt(metaDiaria.valor)}/dia</p>
+                  <p className="text-base font-black text-amber-700">
+                    {diasRestantes === 1 ? fmt(metaDiaria.total) : `${fmt(metaDiaria.valor)}/dia`}
+                  </p>
                   <p className="text-[7px] text-amber-600 mt-0.5">
-                    Para evitar déficit de {fmt(metaDiaria.total)} no fim do mês
+                    {diasRestantes === 1 
+                      ? `Para zerar o déficit de ${fmt(metaDiaria.total)}` 
+                      : `Para evitar déficit de ${fmt(metaDiaria.total)} no fim do mês`}
                   </p>
                 </div>
               )}
@@ -145,7 +158,9 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
                   </p>
                   {metaDiaria && (
                     <p className="text-[8px] text-rose-600 mt-1">
-                      Você precisa ganhar {fmt(metaDiaria.valor)} por dia para zerar o déficit.
+                      {diasRestantes === 1 
+                        ? `Você precisa ganhar ${fmt(metaDiaria.total)} hoje para zerar o déficit.`
+                        : `Você precisa ganhar ${fmt(metaDiaria.valor)} por dia para zerar o déficit.`}
                     </p>
                   )}
                 </div>

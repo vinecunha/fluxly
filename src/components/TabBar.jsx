@@ -74,9 +74,8 @@ const NAV_TABS = [
   { id: TABS.DASHBOARD,    label: 'Início',  Icon: LayoutDashboard },
   { id: TABS.BILLS,        label: 'Contas',  Icon: ReceiptText      },
   { id: TABS.ANALYTICS,    label: 'Análise', Icon: BarChart3        },
-  { id: TABS.CARTOES,      label: 'Cartões', Icon: CreditCard       },
   { id: TABS.INTELLIGENCE, label: 'IA',      Icon: Brain            },
-  { id: TABS.METAS,        label: 'Metas',   Icon: Target           }, // ✅ NOVA ABA
+  { id: TABS.METAS,        label: 'Metas',   Icon: Target           },
 ]
 
 export function TabBar({ activeTab, onChangeTab }) {

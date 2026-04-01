@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Brain, CheckCircle2, AlertTriangle, Wallet,
   CircleDollarSign, Zap, RefreshCw, PiggyBank,
   ChevronDown, ChevronUp, Flame, TrendingUp, TrendingDown,
-  Calendar, Target, ShieldCheck, BarChart2, Sparkles, Info
+  Calendar, Target, ShieldCheck, BarChart2, Sparkles, Info, ArrowRight
 } from 'lucide-react'
 import { useIntelligence } from '../hooks/useIntelligence'
 import { useIntelligenceInsights } from '../hooks/useIntelligenceInsights'
-import { useCaixinhas } from '../hooks/useCaixinhas'
 import { categoryIcons } from '../lib/categories'
+import { supabase } from '../lib/supabase'
 
-const fmt  = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 const fmtK = (v) => {
   if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
   return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -21,11 +21,11 @@ function SaudeCard({ saude }) {
   const [expanded, setExpanded] = useState(false)
   const ringColor = {
     emerald: 'stroke-emerald-500', blue: 'stroke-blue-500',
-    amber:   'stroke-amber-400',   rose: 'stroke-rose-500',
+    amber: 'stroke-amber-400', rose: 'stroke-rose-500',
   }[saude.cor]
   const bgColor = {
     emerald: 'bg-emerald-50 text-emerald-700', blue: 'bg-blue-50 text-blue-700',
-    amber:   'bg-amber-50 text-amber-700',      rose: 'bg-rose-50 text-rose-700',
+    amber: 'bg-amber-50 text-amber-700', rose: 'bg-rose-50 text-rose-700',
   }[saude.cor]
   const textColor = {
     emerald: 'text-emerald-600', blue: 'text-blue-600',
@@ -33,8 +33,8 @@ function SaudeCard({ saude }) {
   }[saude.cor]
 
   const radius = 28
-  const circ   = 2 * Math.PI * radius
-  const dash   = (saude.score / 100) * circ
+  const circ = 2 * Math.PI * radius
+  const dash = (saude.score / 100) * circ
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -70,8 +70,8 @@ function SaudeCard({ saude }) {
           <p className="text-[10px] text-gray-400 font-bold mt-2 leading-relaxed">
             {saude.score >= 80 ? 'Suas finanças estão bem organizadas este mês.'
               : saude.score >= 60 ? 'Bom desempenho, mas há pontos a melhorar.'
-              : saude.score >= 40 ? 'Atenção: algumas áreas precisam de ajuste.'
-              : 'Situação crítica — revise seus gastos urgente.'}
+                : saude.score >= 40 ? 'Atenção: algumas áreas precisam de ajuste.'
+                  : 'Situação crítica — revise seus gastos urgente.'}
           </p>
         </div>
       </div>
@@ -126,7 +126,7 @@ function PrevisaoCard({ previsao, daysInMonth, diaHoje }) {
         {!positivo && previsao.precisaGanharPorDia > 0 && (
           <div className="bg-rose-100 rounded-xl px-3 py-2 text-right flex-shrink-0">
             <p className="text-[8px] font-black text-rose-600 uppercase">Precisa ganhar</p>
-            <p className="text-sm font-black text-rose-700">{previsao.precisaGanharPorDia.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}/dia</p>
+            <p className="text-sm font-black text-rose-700">{previsao.precisaGanharPorDia.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/dia</p>
           </div>
         )}
       </div>
@@ -214,7 +214,7 @@ function DiasCriticosCard({ diasCriticos }) {
         {diasCriticos.map(d => (
           <div key={d.dia} className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] font-black text-slate-700">{String(d.dia).padStart(2,'0')}</span>
+              <span className="text-[11px] font-black text-slate-700">{String(d.dia).padStart(2, '0')}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
@@ -235,19 +235,19 @@ function DiasCriticosCard({ diasCriticos }) {
 
 // ─── Simulador de Meta ───────────────────────────────────────────────────────
 function SimuladorMetaCard() {
-  const [objetivo, setObjetivo]   = useState('')
-  const [guardado, setGuardado]   = useState('')
-  const [porMes, setPorMes]       = useState('')
+  const [objetivo, setObjetivo] = useState('')
+  const [guardado, setGuardado] = useState('')
+  const [porMes, setPorMes] = useState('')
   const [resultado, setResultado] = useState(null)
 
   const calcular = () => {
     const obj = parseFloat(String(objetivo).replace(',', '.'))
     const grd = parseFloat(String(guardado).replace(',', '.')) || 0
-    const pm  = parseFloat(String(porMes).replace(',', '.'))
+    const pm = parseFloat(String(porMes).replace(',', '.'))
     if (!obj || !pm || pm <= 0) return
     const falta = Math.max(obj - grd, 0)
     const meses = Math.ceil(falta / pm)
-    const data  = new Date()
+    const data = new Date()
     data.setMonth(data.getMonth() + meses)
     const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
     setResultado({ meses, label, falta, porDia: pm / 30 })
@@ -308,39 +308,70 @@ function SimuladorMetaCard() {
   )
 }
 
-// ─── Conta Card (distribuição) ───────────────────────────────────────────────
+// ─── Componente de Meta vinculada (apenas visualização) ─────────────────────
+function MetaVinculada({ meta, contaValor, onVerMeta }) {
+  const progresso = meta?.progresso || 0
+  const valorAtual = meta?.valor_atual || 0
+  const valorObjetivo = meta?.valor_objetivo || contaValor
+  const falta = Math.max(valorObjetivo - valorAtual, 0)
+
+  return (
+    <div className="mt-2 pt-2 border-t border-gray-100">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <Target size={10} className="text-violet-500" />
+          <span className="text-[8px] font-black text-violet-600 uppercase tracking-wider">
+            Meta: {meta?.nome?.replace('💰 Pagar: ', '') || 'Meta vinculada'}
+          </span>
+        </div>
+        <button
+          onClick={onVerMeta}
+          className="text-[7px] font-black text-violet-400 hover:text-violet-600 underline flex items-center gap-0.5"
+        >
+          Ver detalhes <ArrowRight size={8} />
+        </button>
+      </div>
+      <div className="flex items-center justify-between text-[8px] font-black">
+        <span className="text-gray-500">{fmt(valorAtual)} guardado</span>
+        <span className="text-violet-600">{progresso.toFixed(0)}%</span>
+      </div>
+      <div className="h-1.5 w-full bg-gray-100 rounded-full mt-0.5 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-violet-500 transition-all duration-500"
+          style={{ width: `${progresso}%` }}
+        />
+      </div>
+      {falta > 0 && (
+        <p className="text-[7px] text-gray-400 mt-1">
+          Faltam {fmt(falta)} para completar a meta
+        </p>
+      )}
+      {progresso >= 100 && (
+        <p className="text-[7px] text-emerald-600 mt-1 font-black">
+          🎉 Meta alcançada!
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ─── Conta Card (apenas visualização, sem botão de guardar) ──────────────────
 function UrgencyBadge({ dias }) {
-  if (dias <= 0)  return <span className="text-[7px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-0.5"><Flame size={8}/> Hoje</span>
+  if (dias <= 0) return <span className="text-[7px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-0.5"><Flame size={8} /> Hoje</span>
   if (dias === 1) return <span className="text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-full uppercase">Amanhã</span>
-  if (dias <= 3)  return <span className="text-[7px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full uppercase">{dias}d</span>
-  if (dias <= 7)  return <span className="text-[7px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full uppercase">{dias}d</span>
+  if (dias <= 3) return <span className="text-[7px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full uppercase">{dias}d</span>
+  if (dias <= 7) return <span className="text-[7px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full uppercase">{dias}d</span>
   return <span className="text-[7px] font-black bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full uppercase">{dias}d</span>
 }
 
-function ContaCard({ conta, onGuardar, saving }) {
-  const [expanded, setExpanded]       = useState(false)
-  const [modo, setModo]               = useState('diario')
-  const [valorCustom, setValorCustom] = useState('')
-
-  const catInfo     = categoryIcons[conta.categoria] || { icon: null, color: 'bg-gray-100 text-gray-500' }
+function ContaCard({ conta, metaVinculada, onVerMeta }) {
+  const catInfo = categoryIcons[conta.categoria] || { icon: null, color: 'bg-gray-100 text-gray-500' }
   const pctGuardado = conta.valor > 0 ? Math.min((conta.guardado / conta.valor) * 100, 100) : 0
-  const pctAlocar   = conta.alocar && conta.valor > 0 ? Math.min((conta.alocar / conta.valor) * 100, 100) : 0
-
-  const valorSugerido = modo === 'completar' ? conta.falta
-    : modo === 'diario' ? conta.porDia
-    : parseFloat(String(valorCustom).replace(',', '.')) || 0
-
-  const handleGuardar = () => {
-    const v = parseFloat(String(modo === 'custom' ? valorCustom : valorSugerido.toFixed(2)).replace(',', '.'))
-    if (!v || v <= 0) return
-    onGuardar({ transacaoId: conta.id, valor: v, descricao: conta.descricao })
-    setExpanded(false)
-  }
 
   const borderColor = conta.coberta ? 'border-emerald-100'
-    : conta.urgente    ? 'border-rose-200'
-    : conta.quaseVence ? 'border-amber-100'
-    : 'border-gray-100'
+    : conta.urgente ? 'border-rose-200'
+      : conta.quaseVence ? 'border-amber-100'
+        : 'border-gray-100'
 
   return (
     <div className={`bg-white rounded-2xl border shadow-sm ${borderColor}`}>
@@ -354,11 +385,16 @@ function ContaCard({ conta, onGuardar, saving }) {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <p className="text-[13px] font-bold text-gray-800 truncate">{conta.descricao}</p>
                 <UrgencyBadge dias={conta.diasAteVencimento} />
+                {metaVinculada && (
+                  <span className="text-[7px] font-black bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full uppercase flex items-center gap-0.5">
+                    <Target size={8} /> Meta
+                  </span>
+                )}
               </div>
               <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
                 {conta.diasAteVencimento <= 0 ? 'Vence hoje'
                   : conta.diasAteVencimento === 1 ? 'Vence amanhã'
-                  : `Vence em ${conta.diasAteVencimento} dias`}
+                    : `Vence em ${conta.diasAteVencimento} dias`}
                 {' · '}{conta.categoria || 'Geral'}
               </p>
             </div>
@@ -368,8 +404,8 @@ function ContaCard({ conta, onGuardar, saving }) {
             {conta.coberta
               ? <p className="text-[9px] font-black text-emerald-600">✓ Coberta</p>
               : conta.deficit > 0
-              ? <p className="text-[9px] font-black text-rose-500">-{fmtK(conta.deficit)}</p>
-              : null}
+                ? <p className="text-[9px] font-black text-rose-500">-{fmtK(conta.deficit)}</p>
+                : null}
           </div>
         </div>
 
@@ -377,7 +413,6 @@ function ContaCard({ conta, onGuardar, saving }) {
           <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
             <div className="h-full flex rounded-full overflow-hidden">
               {pctGuardado > 0 && <div className="h-full bg-blue-400 transition-all duration-700" style={{ width: `${pctGuardado}%` }} />}
-              {pctAlocar > 0 && <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${Math.min(pctAlocar, 100 - pctGuardado)}%` }} />}
             </div>
           </div>
           <div className="flex items-center justify-between text-[8px] font-black text-gray-400 uppercase">
@@ -395,80 +430,50 @@ function ContaCard({ conta, onGuardar, saving }) {
                 </span>
               )}
             </div>
-            <span className={pctGuardado + pctAlocar >= 100 ? 'text-emerald-600' : 'text-gray-400'}>
-              {Math.min(pctGuardado + pctAlocar, 100).toFixed(0)}%
+            <span className={pctGuardado >= 100 ? 'text-emerald-600' : 'text-gray-400'}>
+              {Math.min(pctGuardado, 100).toFixed(0)}%
             </span>
           </div>
         </div>
 
-        {conta.falta > 0 && (
-          <div className={`rounded-xl px-3 py-2 flex items-center justify-between ${conta.urgente ? 'bg-rose-50 border border-rose-100' : 'bg-slate-50'}`}>
-            <div>
-              {conta.urgente
-                ? <p className="text-[9px] font-black text-rose-600 uppercase">⚡ Urgente — vence logo!</p>
-                : <p className="text-[9px] font-black text-gray-500 uppercase">Ritmo sugerido</p>}
-              <p className={`text-sm font-black ${conta.urgente ? 'text-rose-600' : 'text-slate-700'}`}>
-                {fmt(conta.porDia)}<span className="text-[9px] font-bold text-gray-400"> /dia</span>
+        {/* Meta Vinculada - apenas visualização */}
+        {metaVinculada && (
+          <MetaVinculada
+            meta={metaVinculada}
+            contaValor={conta.valor}
+            onVerMeta={onVerMeta}
+          />
+        )}
+
+        {/* Mensagem para contas sem meta */}
+        {!metaVinculada && !conta.coberta && (
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <p className="text-[8px] text-gray-400">
+                💡 Crie uma meta para esta conta
               </p>
-            </div>
-            {!conta.coberta && (
-              <button onClick={() => setExpanded(e => !e)}
-                className="flex items-center gap-1 bg-slate-900 text-white text-[9px] font-black uppercase px-3 py-2 rounded-xl active:scale-95 transition-all">
-                Guardar {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+              <button
+                onClick={() => onVerMeta?.(null, conta)}
+                className="text-[7px] font-black text-violet-500 underline"
+              >
+                Criar meta
               </button>
-            )}
+            </div>
           </div>
         )}
       </div>
-
-      {expanded && conta.falta > 0 && (
-        <div className="border-t border-gray-50 p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Quanto guardar agora?</p>
-          <div className="flex gap-2">
-            {[
-              { id: 'diario',    label: `${fmtK(conta.porDia)}/dia` },
-              { id: 'completar', label: `Completar ${fmtK(conta.falta)}` },
-              { id: 'custom',    label: 'Outro valor' },
-            ].map(op => (
-              <button key={op.id} onClick={() => setModo(op.id)}
-                className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase transition-all border ${
-                  modo === op.id ? 'bg-slate-900 border-slate-700 text-white' : 'bg-gray-50 border-transparent text-gray-500'
-                }`}>
-                {op.label}
-              </button>
-            ))}
-          </div>
-          {modo === 'custom' && (
-            <input type="text" inputMode="decimal" placeholder="0,00" value={valorCustom}
-              onChange={e => setValorCustom(e.target.value.replace(/[^0-9.,-]/g, ''))}
-              className="w-full p-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 outline-none text-sm font-black focus:ring-2 focus:ring-slate-500"
-            />
-          )}
-          <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-            <div>
-              <p className="text-[8px] font-black text-gray-400 uppercase">Guardar agora</p>
-              <p className="text-base font-black text-emerald-600">{fmt(valorSugerido)}</p>
-            </div>
-            <button onClick={handleGuardar} disabled={saving || valorSugerido <= 0}
-              className="bg-emerald-600 text-white text-[9px] font-black uppercase px-4 py-2.5 rounded-xl active:scale-95 transition-all disabled:opacity-40">
-              {saving ? 'Salvando...' : 'Confirmar'}
-            </button>
-          </div>
-          <p className="text-[8px] text-gray-300 font-bold text-center">Isso será lançado como reserva no seu fluxo</p>
-        </div>
-      )}
     </div>
   )
 }
 
-// ─── Principal (com props de IA) ────────────────────────────────────────────
-export function IntelligenceScreen({ 
-  allTransactions = [], 
-  currentDate, 
+// ─── Principal (apenas visualização, sem ação de guardar) ────────────────────
+export function IntelligenceScreen({
+  allTransactions = [],
+  currentDate,
   user,
-  insights = null,           // ✅ NOVA PROP
-  onGerarInsights = null,    // ✅ NOVA PROP
-  loadingInsights = false     // ✅ NOVA PROP
+  metas = [],
+  onVerMeta = null,
+  onCriarMetaParaConta = null
 }) {
   const { rendaHoje, mesStr, contasPendentes, enriquecerComSaldo, calcularDistribuicao } =
     useIntelligence(allTransactions, currentDate)
@@ -476,15 +481,42 @@ export function IntelligenceScreen({
   const { saude, previsao, gastoLivre, alertasGastos, diasCriticos, diaHoje, daysInMonth } =
     useIntelligenceInsights(allTransactions, currentDate)
 
-  const { saldoPorConta, guardar } = useCaixinhas(user, mesStr)
+  // Buscar caixinhas apenas para visualização (sem ação de guardar)
+  const [saldoPorConta, setSaldoPorConta] = useState({})
+
+  useEffect(() => {
+    if (!user?.id) return
+    const fetchSaldo = async () => {
+      const { data } = await supabase
+        .from('caixinhas')
+        .select('*')
+        .eq('user_id', user.id)
+      const agrupado = {}
+      data?.forEach(c => {
+        const txId = c.transacao_id
+        agrupado[txId] = (agrupado[txId] || 0) + (c.valor || 0)
+      })
+      setSaldoPorConta(agrupado)
+    }
+    fetchSaldo()
+  }, [user?.id])
+
+  const contas = useMemo(() => enriquecerComSaldo(saldoPorConta), [saldoPorConta, contasPendentes])
+
+  // Mapear metas por conta_id
+  const metasPorConta = useMemo(() => {
+    const map = {}
+    metas.forEach(meta => {
+      if (meta.conta_id) {
+        map[meta.conta_id] = meta
+      }
+    })
+    return map
+  }, [metas])
 
   const [rendaInput, setRendaInput] = useState('')
   const [confirmado, setConfirmado] = useState(false)
-  const [editando, setEditando]     = useState(false)
-  const [saving, setSaving]         = useState(false)
-  const [toast, setToast]           = useState(null)
-
-  const contas = useMemo(() => enriquecerComSaldo(saldoPorConta), [saldoPorConta, contasPendentes])
+  const [editando, setEditando] = useState(false)
 
   const rendaConfirmada = useMemo(() => {
     if (!confirmado) return null
@@ -497,40 +529,28 @@ export function IntelligenceScreen({
     return calcularDistribuicao(rendaConfirmada, saldoPorConta)
   }, [rendaConfirmada, saldoPorConta, contas])
 
-  const displayContas  = rendaConfirmada !== null ? plano : contas
-  const urgentes       = contas.filter(c => c.urgente && c.falta > 0)
-  const contasCoberta  = displayContas.filter(p => p.coberta).length
-  const contasDeficit  = displayContas.filter(p => p.deficit > 0).length
-  const totalDeficit   = displayContas.reduce((s, p) => s + (p.deficit || 0), 0)
-
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  const handleGuardar = async (params) => {
-    setSaving(true)
-    const result = await guardar(params)
-    setSaving(false)
-    if (result?.ok) showToast(`${fmt(params.valor)} guardado para "${params.descricao}"`)
-    else showToast(result?.error || 'Erro ao guardar', 'error')
-  }
+  const displayContas = rendaConfirmada !== null ? plano : contas
+  const urgentes = contas.filter(c => c.urgente && c.falta > 0)
+  const contasCoberta = displayContas.filter(p => p.coberta).length
+  const contasDeficit = displayContas.filter(p => p.deficit > 0).length
+  const totalDeficit = displayContas.reduce((s, p) => s + (p.deficit || 0), 0)
 
   const handleConfirmar = () => {
     const v = parseFloat(String(rendaInput).replace(',', '.'))
     if (!isNaN(v) && v > 0) { setConfirmado(true); setEditando(false) }
   }
 
+  const handleVerMeta = (metaId, conta) => {
+    if (conta && onCriarMetaParaConta) {
+      onCriarMetaParaConta(conta)
+    } else if (metaId && onVerMeta) {
+      onVerMeta(metaId)
+    }
+  }
+
   return (
     <div className="space-y-4">
-
-      {toast && (
-        <div className={`fixed top-4 left-4 right-4 z-50 max-w-lg mx-auto px-4 py-3 rounded-2xl shadow-lg text-xs font-black text-white animate-in slide-in-from-top-2 duration-200 ${
-          toast.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'
-        }`}>{toast.msg}</div>
-      )}
-
-      {/* ✅ CABEÇALHO COM BOTÃO DE IA */}
+      {/* CABEÇALHO */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-slate-900 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -543,30 +563,7 @@ export function IntelligenceScreen({
             </p>
           </div>
         </div>
-
-        {/* ✅ BOTÃO DE INSIGHTS IA */}
-        {onGerarInsights && (
-          <button
-            onClick={onGerarInsights}
-            disabled={loadingInsights}
-            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-black uppercase px-3 py-2 rounded-xl transition-all active:scale-95 disabled:opacity-50"
-          >
-            <Sparkles size={12} />
-            {loadingInsights ? 'Gerando...' : 'Insights IA'}
-          </button>
-        )}
       </div>
-
-      {/* ✅ CARD DE INSIGHTS IA */}
-      {insights && (
-        <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 rounded-2xl p-4 animate-in fade-in duration-300">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} className="text-violet-600" />
-            <p className="text-[9px] font-black text-violet-700 uppercase tracking-widest">IA Insights</p>
-          </div>
-          <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{insights.mensagem || insights}</p>
-        </div>
-      )}
 
       <SaudeCard saude={saude} />
       <PrevisaoCard previsao={previsao} daysInMonth={daysInMonth} diaHoje={diaHoje} />
@@ -576,7 +573,7 @@ export function IntelligenceScreen({
       <SimuladorMetaCard />
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Distribuir renda</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plano de pagamento</p>
 
         {urgentes.length > 0 && (
           <div className="bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3 flex items-start gap-2.5">
@@ -671,10 +668,15 @@ export function IntelligenceScreen({
       {displayContas.length > 0 && (
         <div className="space-y-3">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
-            {rendaConfirmada !== null ? 'Plano de distribuição' : 'Contas do mês'}
+            {rendaConfirmada !== null ? 'Distribuição sugerida' : 'Contas do mês'}
           </p>
           {displayContas.map(conta => (
-            <ContaCard key={conta.id} conta={conta} onGuardar={handleGuardar} saving={saving} />
+            <ContaCard
+              key={conta.id}
+              conta={conta}
+              metaVinculada={metasPorConta[conta.id]}
+              onVerMeta={(metaId, contaData) => handleVerMeta(metaId, contaData)}
+            />
           ))}
         </div>
       )}

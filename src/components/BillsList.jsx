@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { categoryIcons } from '../lib/categories'
 import { getFaturasExibicao } from '../lib/faturaHelpers'
+import { CartoesResumo } from './CartoesResumo'
 
 const fmt  = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 const fmtK = (v) => {
@@ -14,6 +15,7 @@ const fmtK = (v) => {
   return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 }
 
+// ─── Action Confirmation Modal (exportado) ───────────────────────────────────
 export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   if (!target) return null
   const { bill, type } = target
@@ -52,11 +54,11 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-slate-900 /60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
-      <div className="relative z-[10001] bg-white  rounded-2xl p-6 max-w-[320px] w-full shadow-2xl animate-in zoom-in duration-200">
+      <div className="relative z-[10001] bg-white rounded-2xl p-6 max-w-[320px] w-full shadow-2xl animate-in zoom-in duration-200">
         <div className="text-center">
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${config.iconClass}`}>{config.icon}</div>
-          <h3 className="text-lg font-black text-gray-800  mb-2">{config.title}</h3>
-          <p className="text-gray-500  text-[11px] mb-6 leading-relaxed px-2">{config.desc}</p>
+          <h3 className="text-lg font-black text-gray-800 mb-2">{config.title}</h3>
+          <p className="text-gray-500 text-[11px] mb-6 leading-relaxed px-2">{config.desc}</p>
           <div className="space-y-2.5">
             <button type="button" onClick={() => onConfirm(false)}
               className={`w-full py-3.5 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest ${config.btnClass} shadow-lg active:scale-95 transition-transform`}>
@@ -72,13 +74,13 @@ export const ActionConfirmationModal = ({ target, onClose, onConfirm }) => {
                 )}
                 <button type="button" onClick={() => onConfirm(true)}
                   className={`w-full py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform ${
-                    config.seriesWarning ? 'bg-rose-100 text-rose-700' : 'bg-gray-100  text-gray-600 '
+                    config.seriesWarning ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600'
                   }`}>
                   {config.secondaryLabel}
                 </button>
               </>
             )}
-            <button type="button" onClick={onClose} className="w-full py-2 text-gray-400  font-bold text-[9px] uppercase tracking-widest pt-1">Cancelar</button>
+            <button type="button" onClick={onClose} className="w-full py-2 text-gray-400 font-bold text-[9px] uppercase tracking-widest pt-1">Cancelar</button>
           </div>
         </div>
       </div>
@@ -111,13 +113,13 @@ function FaturaVirtualItem({ bill }) {
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${
-              f.pago ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-800  text-white'
+              f.pago ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-800 text-white'
             }`}>
               <CreditCard size={18} />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className={`font-bold text-[13px] leading-tight truncate ${f.pago ? 'text-gray-400  line-through' : 'text-gray-800 '}`}>
+                <p className={`font-bold text-[13px] leading-tight truncate ${f.pago ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                   {bill.descricao}
                 </p>
                 <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase ${
@@ -128,7 +130,7 @@ function FaturaVirtualItem({ bill }) {
                   {f.pago ? 'Quitada' : f.status === 'cobrança' ? 'A pagar' : 'Aberta'}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400  uppercase mt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400 uppercase mt-1 flex-wrap">
                 <span>Vence {new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                 {f.periodo && (
                   <>
@@ -146,7 +148,7 @@ function FaturaVirtualItem({ bill }) {
             </div>
           </div>
           <div className="flex flex-col items-end flex-shrink-0">
-            <p className={`font-black text-xs whitespace-nowrap ${f.pago ? 'text-gray-300 ' : 'text-slate-700'}`}>
+            <p className={`font-black text-xs whitespace-nowrap ${f.pago ? 'text-gray-300' : 'text-slate-700'}`}>
               {fmtVal(f.totalGasto)}
             </p>
             {f.totalPago > 0 && !f.pago && (
@@ -172,7 +174,7 @@ function FaturaVirtualItem({ bill }) {
               <div className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                 style={{ width: `${pctPago}%` }} />
             </div>
-            <p className="text-[8px] text-gray-400  font-bold text-center">
+            <p className="text-[8px] text-gray-400 font-bold text-center">
               {f.totalPago > 0
                 ? `${fmtVal(f.totalPago)} pago de ${fmtVal(f.totalGasto)}`
                 : 'Nenhum pagamento registrado'
@@ -185,7 +187,7 @@ function FaturaVirtualItem({ bill }) {
         {hasItems && (
           <button
             onClick={() => setExpanded(e => !e)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 bg-white  border border-gray-100  rounded-xl text-[9px] font-black uppercase text-gray-500  active:bg-gray-50 transition-colors mt-1"
+            className="w-full flex items-center justify-center gap-1.5 py-2 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase text-gray-500 active:bg-gray-50 transition-colors mt-1"
             style={{ minHeight: 36 }}
           >
             {expanded ? 'Ocultar' : `Ver ${allItems.length} lançamento${allItems.length !== 1 ? 's' : ''}`}
@@ -196,11 +198,10 @@ function FaturaVirtualItem({ bill }) {
 
       {/* Flow expandido */}
       {expanded && hasItems && (
-        <div className="border-t border-gray-100  divide-y divide-gray-50 animate-in slide-in-from-top-1 duration-200">
+        <div className="border-t border-gray-100 divide-y divide-gray-50 animate-in slide-in-from-top-1 duration-200">
           {allItems.map((t, i) => {
             const isPagamento = t._kind === 'pagamento'
             const v = Math.abs(Number(t.valor))
-            const rawDate = t.data_pagamento || t.data
             const dateDisplay = (() => {
               const raw = t.data_pagamento || (t.data + 'T12:00:00')
               const d = new Date(typeof raw === 'string' ? raw.replace(' ', 'T') : raw)
@@ -217,8 +218,8 @@ function FaturaVirtualItem({ bill }) {
                   }
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-gray-800  truncate">{t.descricao}</p>
-                  <p className="text-[9px] text-gray-400  font-bold uppercase">
+                  <p className="text-[11px] font-bold text-gray-800 truncate">{t.descricao}</p>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase">
                     {dateDisplay}
                     {t.categoria ? ` · ${t.categoria}` : ''}
                     {isPagamento && <span className="text-emerald-500"> · pagamento</span>}
@@ -234,18 +235,18 @@ function FaturaVirtualItem({ bill }) {
           })}
 
           {/* Resumo no rodapé */}
-          <div className="px-4 py-3 bg-gray-50 ">
-            <div className="flex justify-between text-[9px] font-black text-gray-500  uppercase mb-1">
+          <div className="px-4 py-3 bg-gray-50">
+            <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase mb-1">
               <span>Compras</span>
               <span className="text-rose-600">-{fmtVal(f.totalGasto)}</span>
             </div>
             {f.totalPago > 0 && (
-              <div className="flex justify-between text-[9px] font-black text-gray-500  uppercase mb-1">
+              <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase mb-1">
                 <span>Pagamentos</span>
                 <span className="text-emerald-600">+{fmtVal(f.totalPago)}</span>
               </div>
             )}
-            <div className="flex justify-between text-[10px] font-black uppercase border-t border-gray-200  pt-1.5 mt-1">
+            <div className="flex justify-between text-[10px] font-black uppercase border-t border-gray-200 pt-1.5 mt-1">
               <span className={f.saldo > 0 ? 'text-rose-600' : 'text-emerald-600'}>
                 {f.saldo > 0 ? 'Saldo a pagar' : 'Quitada'}
               </span>
@@ -260,13 +261,14 @@ function FaturaVirtualItem({ bill }) {
   )
 }
 
+// ─── Swipeable Bill Item ─────────────────────────────────────────────────────
 const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget }) => {
   const startXRef = useRef(null)
   const startYRef = useRef(null)
   const [swipeX, setSwipeX]   = useState(0)
   const [swiping, setSwiping] = useState(false)
   const [pending, setPending] = useState(false)
-  const [dir, setDir]         = useState(null) // 'left' | 'right'
+  const [dir, setDir]         = useState(null)
   const THRESHOLD = 72
   const SNAP = 90
 
@@ -307,7 +309,6 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
 
   const catInfo = categoryInfo || FALLBACK_CATEGORY
 
-  // Urgência
   const hoje = new Date(); hoje.setHours(0,0,0,0)
   const venc = new Date(bill.data + 'T12:00:00'); venc.setHours(0,0,0,0)
   const dias = Math.ceil((venc - hoje) / 86400000)
@@ -343,8 +344,8 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
       </div>
 
       <div
-        className={`bg-white  border shadow-sm flex flex-col gap-2.5 p-3.5 rounded-2xl transition-colors ${
-          isUrgente ? 'border-rose-100' : 'border-gray-100 '
+        className={`bg-white border shadow-sm flex flex-col gap-2.5 p-3.5 rounded-2xl transition-colors ${
+          isUrgente ? 'border-rose-100' : 'border-gray-100'
         }`}
         style={{ transform: `translateX(${swipeX}px)`, transition: swiping ? 'none' : 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
         onTouchStart={onTouchStart}
@@ -355,13 +356,13 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="relative flex-shrink-0">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${
-                bill.pago ? 'bg-gray-50  text-gray-300  opacity-50' : catInfo.color
+                bill.pago ? 'bg-gray-50 text-gray-300 opacity-50' : catInfo.color
               }`}>
                 {catInfo.icon}
               </div>
               <button onClick={() => setActionTarget({ bill, type: 'status' })}
                 className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center transition-colors shadow-sm ${
-                  bill.pago ? 'bg-emerald-500 text-white' : 'bg-white  text-gray-200'
+                  bill.pago ? 'bg-emerald-500 text-white' : 'bg-white text-gray-200'
                 }`}>
                 {bill.pago ? <CheckCircle2 size={10} strokeWidth={4} /> : <Circle size={10} strokeWidth={4} />}
               </button>
@@ -369,15 +370,15 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className={`font-bold text-[13px] leading-tight truncate ${bill.pago ? 'text-gray-300  line-through font-medium' : 'text-gray-800 '}`}>
+                <p className={`font-bold text-[13px] leading-tight truncate ${bill.pago ? 'text-gray-300 line-through font-medium' : 'text-gray-800'}`}>
                   {bill.descricao}
                 </p>
                 {bill.recorrencia_id && <Repeat size={10} className={`${bill.pago ? 'text-gray-200' : 'text-orange-400'} flex-shrink-0`} />}
               </div>
-              <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400  uppercase mt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 text-[8px] font-black text-gray-400 uppercase mt-1 flex-wrap">
                 <span>{new Date(bill.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                 <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
-                <span className={`truncate ${bill.pago ? 'text-gray-300 ' : 'text-slate-400'}`}>{bill.categoria || 'Geral'}</span>
+                <span className={`truncate ${bill.pago ? 'text-gray-300' : 'text-slate-400'}`}>{bill.categoria || 'Geral'}</span>
                 {isUrgente && (
                   <>
                     <span className="w-0.5 h-0.5 bg-gray-200 rounded-full" />
@@ -393,29 +394,29 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
-                className="p-1.5 rounded-xl text-gray-300  hover:text-slate-500 hover:bg-slate-50 transition-colors">
+                className="p-1.5 rounded-xl text-gray-300 hover:text-slate-500 hover:bg-slate-50 transition-colors">
                 <Edit3 size={14} />
               </button>
               <button onClick={() => setActionTarget({ bill, type: 'delete' })}
-                className="p-1.5 rounded-xl text-gray-300  hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                className="p-1.5 rounded-xl text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors">
                 <Trash2 size={14} />
               </button>
             </div>
 
             <div className="flex flex-col items-end sm:hidden">
-              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300 ' : 'text-rose-600'}`}>
+              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300' : 'text-rose-600'}`}>
                 R$ {Number(bill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
               <div className="flex gap-2 mt-1">
                 <button onClick={() => bill.recorrencia_id ? setActionTarget({ bill, type: 'edit' }) : onEdit(bill)}
-                  className="p-1 text-gray-300  active:text-slate-500 transition-colors"><Edit3 size={14} /></button>
+                  className="p-1 text-gray-300 active:text-slate-500 transition-colors"><Edit3 size={14} /></button>
                 <button onClick={() => setActionTarget({ bill, type: 'delete' })}
-                  className="p-1 text-gray-300  active:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                  className="p-1 text-gray-300 active:text-rose-500 transition-colors"><Trash2 size={14} /></button>
               </div>
             </div>
 
             <div className="hidden sm:flex flex-col items-end">
-              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300 ' : isUrgente ? 'text-rose-600' : 'text-rose-600'}`}>
+              <p className={`font-black text-xs whitespace-nowrap ${bill.pago ? 'text-gray-300' : isUrgente ? 'text-rose-600' : 'text-rose-600'}`}>
                 R$ {Number(bill.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -425,10 +426,10 @@ const SwipeableBillItem = ({ bill, stats, categoryInfo, onEdit, setActionTarget 
         {stats && stats.total > 1 && !bill.pago && (
           <div className="space-y-1.5 mt-0.5">
             <div className="flex justify-between items-end px-1">
-              <span className="text-[7px] text-gray-400  font-black uppercase tracking-widest">Progresso</span>
+              <span className="text-[7px] text-gray-400 font-black uppercase tracking-widest">Progresso</span>
               <span className="text-[8px] text-slate-500 font-black tracking-tighter">{stats.paid}/{stats.total} parcelas</span>
             </div>
-            <div className="h-1.5 w-full bg-gray-100  rounded-full overflow-hidden border border-black/5">
+            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden border border-black/5">
               <div className="h-full bg-slate-500 rounded-full transition-all duration-500 ease-out" style={{ width: `${stats.percent}%` }} />
             </div>
           </div>
@@ -454,11 +455,11 @@ function SummaryBar({ pending, paid }) {
   if (totalGeral === 0) return null
 
   return (
-    <div className="bg-white  rounded-2xl border border-gray-100  shadow-sm p-4 space-y-3">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
         <div className="text-center">
-          <p className="text-[7px] font-black text-gray-400  uppercase mb-0.5">Total do mês</p>
-          <p className="text-sm font-black text-gray-800 ">{fmtK(totalGeral)}</p>
+          <p className="text-[7px] font-black text-gray-400 uppercase mb-0.5">Total do mês</p>
+          <p className="text-sm font-black text-gray-800">{fmtK(totalGeral)}</p>
         </div>
         <div className="text-center">
           <p className="text-[7px] font-black text-emerald-500 uppercase mb-0.5">Pago</p>
@@ -471,7 +472,7 @@ function SummaryBar({ pending, paid }) {
       </div>
 
       <div className="space-y-1">
-        <div className="flex justify-between text-[8px] font-black text-gray-400  uppercase">
+        <div className="flex justify-between text-[8px] font-black text-gray-400 uppercase">
           <span>Progresso do mês</span>
           <span>{pctPago.toFixed(0)}%</span>
         </div>
@@ -479,7 +480,7 @@ function SummaryBar({ pending, paid }) {
           <div className="h-full bg-emerald-500 rounded-full transition-all duration-700"
             style={{ width: `${pctPago}%` }} />
         </div>
-        <div className="flex justify-between text-[7px] font-bold text-gray-300 ">
+        <div className="flex justify-between text-[7px] font-bold text-gray-300">
           <span>{paid.length} pagas</span>
           <span>{pending.length} pendentes</span>
         </div>
@@ -498,7 +499,20 @@ function SummaryBar({ pending, paid }) {
   )
 }
 
-export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit, onDelete, isLoading, cartoes = [], currentDate }) => {
+// ─── Main BillsList Component ────────────────────────────────────────────────
+export const BillsList = ({ 
+  transactions, 
+  allTransactions, 
+  onTogglePaid, 
+  onEdit, 
+  onDelete, 
+  isLoading, 
+  cartoes = [], 
+  currentDate,
+  onCriarCartao,
+  onEditarCartao,
+  onExcluirCartao
+}) => {
   const [sortBy, setSortBy]             = useState('vencimento')
   const [isReversed, setIsReversed]     = useState(false)
   const [showPaid, setShowPaid]         = useState(false)
@@ -559,7 +573,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   const pending = useMemo(() => sorted.filter(b => !b.pago), [sorted])
   const paid    = useMemo(() => sorted.filter(b => b.pago),  [sorted])
 
-  // Separar dívidas (empréstimos/financiamentos) das contas normais
+  // Separar dívidas
   const isDivida = (b) => {
     const cat = (b.categoria || '').toLowerCase()
     const desc = (b.descricao || '').toLowerCase()
@@ -582,7 +596,6 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
   }
 
   const renderBill = (bill) => {
-    // Garantir que bill existe antes de renderizar
     if (!bill) return null
     
     if (bill._isFatura) {
@@ -595,7 +608,6 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
       percent: Math.round((rawStats.paid / rawStats.total) * 100),
     } : null
     
-    // Garantir que categoryIcons existe e tem a categoria
     const categoryInfo = categoryIcons && bill.categoria ? categoryIcons[bill.categoria] : FALLBACK_CATEGORY
     
     return (
@@ -614,12 +626,22 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
     <div className="space-y-4">
       <ActionConfirmationModal target={actionTarget} onClose={() => setActionTarget(null)} onConfirm={handleConfirmAction} />
 
+      {/* Cartões Resumo no topo */}
+      <CartoesResumo
+        cartoes={cartoes}
+        allTransactions={allTransactions}
+        currentDate={currentDate}
+        onCriar={onCriarCartao}
+        onEditar={onEditarCartao}
+        onExcluir={onExcluirCartao}
+      />
+
       <div className="flex items-center justify-between px-1">
-        <h4 className="text-gray-500  font-bold text-[10px] uppercase tracking-[0.2em]">Agenda</h4>
+        <h4 className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.2em]">Agenda</h4>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowPaid(p => !p)}
             className={`flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1.5 rounded-2xl transition-all border ${
-              showPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white  text-gray-400  border-gray-100  shadow-sm'
+              showPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-gray-400 border-gray-100 shadow-sm'
             }`}>
             <Filter size={10} />
             {showPaid ? 'Todas' : 'Pendentes'}
@@ -632,19 +654,18 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
         </div>
       </div>
 
-      <p className="text-[8px] text-gray-300  font-bold px-1">← Deslize para pagar ou excluir →</p>
+      <p className="text-[8px] text-gray-300 font-bold px-1">← Deslize para pagar ou excluir →</p>
 
       {isLoading ? (
         <div className="space-y-2.5">
-          {[1,2,3].map(i => <div key={i} className="bg-white  p-3.5 rounded-2xl border border-gray-50  animate-pulse h-[72px]" />)}
+          {[1,2,3].map(i => <div key={i} className="bg-white p-3.5 rounded-2xl border border-gray-50 animate-pulse h-[72px]" />)}
         </div>
       ) : (
         <>
           <SummaryBar pending={pending} paid={paid} />
 
           <div className="space-y-5">
-
-            {/* ── Faturas de cartão ──────────────────────────────── */}
+            {/* Faturas de cartão */}
             {pendingFaturas.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
@@ -657,7 +678,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
               </div>
             )}
 
-            {/* ── Contas do mês ──────────────────────────────────── */}
+            {/* Contas do mês */}
             {pendingContas.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
@@ -670,7 +691,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
               </div>
             )}
 
-            {/* ── Dívidas / Empréstimos ──────────────────────────── */}
+            {/* Dívidas */}
             {pendingDividas.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
@@ -695,7 +716,7 @@ export const BillsList = ({ transactions, allTransactions, onTogglePaid, onEdit,
               </div>
             )}
 
-            {/* ── Pagas ─────────────────────────────────────────── */}
+            {/* Pagas */}
             {paid.length > 0 && (
               <div className="space-y-2">
                 <button onClick={() => setShowPaid(p => !p)} className="flex items-center justify-between w-full px-2">
