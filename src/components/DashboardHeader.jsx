@@ -215,7 +215,14 @@ export const DashboardHeader = ({
 
                 {/* Dropdown de notificações */}
                 {showNotifications && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                  <div 
+                    className="absolute top-full mt-2 w-80 max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200"
+                    style={{ 
+                      right: 'auto',
+                      left: '50%',
+                      transform: 'translateX(-50%)'
+                    }}
+                  >
                     <div className="p-3 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Bell size={14} className="text-gray-500" />
@@ -240,7 +247,11 @@ export const DashboardHeader = ({
                         </div>
                       ) : (
                         activeNotifications.map(notif => (
-                          <NotificationItem key={notif.id} notification={notif} onClose={dismissNotification} />
+                          <NotificationItem
+                            key={notif.id}
+                            notification={notif}
+                            onClose={dismissNotification}
+                          />
                         ))
                       )}
                     </div>

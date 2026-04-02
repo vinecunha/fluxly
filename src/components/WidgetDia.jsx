@@ -140,8 +140,8 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
                   </p>
                   <p className="text-[7px] text-amber-600 mt-0.5">
                     {diasRestantes === 1 
-                      ? `Para zerar o déficit de ${fmt(metaDiaria.total)}` 
-                      : `Para evitar déficit de ${fmt(metaDiaria.total)} no fim do mês`}
+                      ? `Para zerar o déficit de ${fmt(metaDiaria.total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                      : `Para evitar déficit de ${fmt(metaDiaria.total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} no fim do mês`}
                   </p>
                 </div>
               )}
@@ -154,13 +154,13 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
                     <p className="text-[8px] font-black text-rose-700 uppercase">Alerta</p>
                   </div>
                   <p className="text-[9px] font-black text-rose-700">
-                    Projeção negativa de {fmt(Math.abs(saldoProjetadoValor))}
+                    Projeção negativa de {fmt(Math.abs(saldoProjetadoValor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                   </p>
                   {metaDiaria && (
                     <p className="text-[8px] text-rose-600 mt-1">
                       {diasRestantes === 1 
-                        ? `Você precisa ganhar ${fmt(metaDiaria.total)} hoje para zerar o déficit.`
-                        : `Você precisa ganhar ${fmt(metaDiaria.valor)} por dia para zerar o déficit.`}
+                        ? `Você precisa ganhar ${fmt(metaDiaria.total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} hoje para zerar o déficit.`
+                        : `Você precisa ganhar ${fmt(metaDiaria.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} por dia para zerar o déficit.`}
                     </p>
                   )}
                 </div>
