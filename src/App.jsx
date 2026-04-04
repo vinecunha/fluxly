@@ -277,6 +277,7 @@ export default function App() {
                   onArquivar={arquivarMeta}
                   onAlterarPrazo={alterarPrazo}
                   loading={loadingMetas}
+                  rendaHoje={totals?.rendaHoje || 0}
                 />
             )}
           </Suspense>

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react'
-import { Target, Plus, ChevronRight, Trash2, Edit3, Archive, AlertCircle, X, Save, CheckCircle2, PiggyBank } from 'lucide-react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { Target, Plus, ChevronRight, Trash2, Edit3, Archive, AlertCircle, X, Save, CheckCircle2, PiggyBank, TrendingUp, Calendar, Settings, Zap } from 'lucide-react'
 
 const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 
@@ -11,9 +11,164 @@ const formatDateToUS = (dateStr) => {
   return dateStr
 }
 
-// ─── SwipeableMetaCard ──────────────────────────────────────────────────────
-// Igual ao SwipeableFlowItem: swipe no mobile, hover icons no desktop
+// ─── Componente de Meta Diária/Mensal ────────────────────────────────────────
+function DailyGoalCard({ rendaHoje, onUpdateGoal, metas }) {
+  const [showSettings, setShowSettings] = useState(false)
+  const [dailyGoal, setDailyGoal] = useState(() => {
+    const saved = localStorage.getItem('fluxly_daily_goal')
+    return saved ? parseFloat(saved) : 0
+  })
+  const [tempGoal, setTempGoal] = useState(dailyGoal.toString())
 
+  // Calcular necessidade baseada nas metas ativas
+  const necessidadeDiaria = useMemo(() => {
+    const metasAtivas = metas.filter(m => !m.concluida && (m.progresso || 0) < 100)
+    if (metasAtivas.length === 0) return 0
+    
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    
+    let somaNecessidades = 0
+    
+    metasAtivas.forEach(meta => {
+      // Se não tem prazo, considerar o fim do mês atual
+      let dataPrazo = meta.prazo ? new Date(meta.prazo + 'T12:00:00') : null
+      
+      if (!dataPrazo || isNaN(dataPrazo.getTime())) {
+        // Sem prazo: usar último dia do mês atual
+        dataPrazo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+        dataPrazo.setHours(0, 0, 0, 0)
+      }
+      
+      // Se o prazo já passou, ignorar (ou considerar 0)
+      if (dataPrazo < hoje) return
+      
+      const diasRestantes = Math.max(Math.ceil((dataPrazo - hoje) / (1000 * 60 * 60 * 24)), 1)
+      const falta = Math.max(meta.valor_objetivo - (meta.valor_atual || 0), 0)
+      const necessidadeDiariaMeta = falta / diasRestantes
+      
+      somaNecessidades += necessidadeDiariaMeta
+    })
+    
+    return somaNecessidades
+  }, [metas])
+
+  // Determinar qual meta está sendo usada
+  const metaAtual = dailyGoal > 0 ? dailyGoal : necessidadeDiaria
+  const progresso = rendaHoje > 0 ? Math.min((rendaHoje / metaAtual) * 100, 100) : 0
+  const falta = Math.max(metaAtual - rendaHoje, 0)
+  const metaAlcancada = rendaHoje >= metaAtual && metaAtual > 0
+
+  const salvarMeta = () => {
+    let valor = parseFloat(String(tempGoal).replace(',', '.'))
+    if (isNaN(valor)) valor = 0
+    setDailyGoal(valor)
+    localStorage.setItem('fluxly_daily_goal', valor.toString())
+    setShowSettings(false)
+    onUpdateGoal?.(valor)
+  }
+
+  const usarNecessidade = () => {
+    setDailyGoal(necessidadeDiaria)
+    localStorage.setItem('fluxly_daily_goal', necessidadeDiaria.toString())
+    setShowSettings(false)
+    onUpdateGoal?.(necessidadeDiaria)
+  }
+
+  const limparMeta = () => {
+    setDailyGoal(0)
+    localStorage.removeItem('fluxly_daily_goal')
+    setShowSettings(false)
+    onUpdateGoal?.(0)
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Target size={18} className="text-white/80" />
+          <p className="text-[9px] font-black uppercase tracking-widest text-white/80">Meta de Ganho Diário</p>
+        </div>
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+        >
+          <Settings size={14} />
+        </button>
+      </div>
+
+      <div className="flex items-end justify-between mb-2">
+        <div>
+          <p className="text-3xl font-black">{fmt(rendaHoje)}</p>
+          <p className="text-[8px] text-white/60 mt-0.5">ganhos hoje</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xl font-black">{fmt(metaAtual)}</p>
+          <p className="text-[8px] text-white/60">
+            {dailyGoal > 0 ? 'meta personalizada' : 'necessidade das metas'}
+          </p>
+        </div>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="space-y-1 mb-3">
+        <div className="h-2 w-full bg-white/30 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-400 rounded-full transition-all duration-700"
+            style={{ width: `${Math.min(progresso, 100)}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-[8px] font-black text-white/60">
+          <span>{progresso.toFixed(0)}% concluído</span>
+          {falta > 0 && <span>faltam {fmt(falta)}</span>}
+          {metaAlcancada && <span className="text-emerald-300">✓ Meta alcançada!</span>}
+        </div>
+      </div>
+
+      {/* Painel de configuração */}
+      {showSettings && (
+        <div className="mt-3 pt-3 border-t border-white/20 space-y-2 animate-in fade-in duration-200">
+          <p className="text-[8px] font-black text-white/70 uppercase">Definir meta diária</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex: 500,00"
+              value={tempGoal}
+              onChange={e => setTempGoal(e.target.value.replace(/[^0-9.,-]/g, ''))}
+              className="flex-1 p-2 rounded-xl bg-white text-gray-800 text-sm font-bold outline-none"
+            />
+            <button
+              onClick={salvarMeta}
+              className="px-3 py-2 bg-white/20 rounded-xl text-[9px] font-black uppercase hover:bg-white/30 transition-colors"
+            >
+              Salvar
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={usarNecessidade}
+              className="flex-1 py-2 bg-white/10 rounded-xl text-[8px] font-black uppercase hover:bg-white/20 transition-colors"
+            >
+              Usar necessidade ({fmt(necessidadeDiaria)}/dia)
+            </button>
+            <button
+              onClick={limparMeta}
+              className="px-3 py-2 bg-white/10 rounded-xl text-[8px] font-black uppercase hover:bg-white/20 transition-colors"
+            >
+              Limpar
+            </button>
+          </div>
+          <p className="text-[7px] text-white/50 mt-1">
+            💡 A necessidade é calculada com base nas suas metas ativas
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SwipeableMetaCard ──────────────────────────────────────────────────────
 function SwipeableMetaCard({ meta, onDepositar, onEditar, onAjustarValor, onDelete, onArquivar }) {
   // swipe state
   const startX    = useRef(null)
@@ -397,8 +552,18 @@ function SwipeableMetaCard({ meta, onDepositar, onEditar, onAjustarValor, onDele
 }
 
 // ─── MetasScreen ────────────────────────────────────────────────────────────
-
-export function MetasScreen({ metas = [], onCreate, onDepositar, onEditar, onAjustarValor, onDelete, onArquivar, onAlterarPrazo, loading: loadingMetas }) {
+export function MetasScreen({ 
+  metas = [], 
+  onCreate, 
+  onDepositar, 
+  onEditar, 
+  onAjustarValor, 
+  onDelete, 
+  onArquivar, 
+  onAlterarPrazo, 
+  loading: loadingMetas,
+  rendaHoje = 0
+}) {
   const [showForm, setShowForm] = useState(false)
   const [nome, setNome]         = useState('')
   const [valor, setValor]       = useState('')
@@ -450,6 +615,13 @@ export function MetasScreen({ metas = [], onCreate, onDepositar, onEditar, onAju
           <Plus size={10} /> Nova Meta
         </button>
       </div>
+
+      {/* Card de Meta Diária */}
+      <DailyGoalCard
+        rendaHoje={rendaHoje}
+        onUpdateGoal={() => {}}
+        metas={metas}
+      />
 
       {/* Formulário de criação */}
       {showForm && (
