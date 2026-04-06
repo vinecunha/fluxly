@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { CreditCard, ChevronRight, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { getFaturasExibicao } from '../lib/faturaHelpers'
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 const fmtK = (v) => Math.abs(v) >= 1000
   ? `R$${(Math.abs(v) / 1000).toFixed(1)}k`
   : `R$${Number(Math.abs(v)).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`

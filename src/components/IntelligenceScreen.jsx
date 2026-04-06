@@ -10,7 +10,7 @@ import { useIntelligenceInsights } from '../hooks/useIntelligenceInsights'
 import { categoryIcons } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 const fmtK = (v) => {
   if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
   return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`

@@ -1,6 +1,6 @@
 import { saveAs } from 'file-saver'
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 
 export function exportToCSV(transactions, currentDate) {
   const mes = currentDate.getMonth() + 1

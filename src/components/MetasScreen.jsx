@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Target, Plus, ChevronRight, Trash2, Edit3, Archive, AlertCircle, X, Save, CheckCircle2, PiggyBank, TrendingUp, Calendar, Settings, Zap } from 'lucide-react'
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 
 const formatDateToUS = (dateStr) => {
   if (!dateStr) return ''
