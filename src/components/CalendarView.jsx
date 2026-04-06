@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownLeft, BarChart3, TrendingUp as TrendUp, TrendingDown as TrendDown, Minus, Calendar, Target, ChevronDown, ChevronUp } from 'lucide-react'
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTHS   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -16,7 +16,355 @@ const TAB_CONFIG = {
   investimento: { color: 'text-blue-500',    bg: 'bg-blue-50',    bar: 'bg-blue-400',    label: 'Reserva', prefix: '',  Icon: PiggyBank    },
 }
 
-export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate, onDaySelect, filteredCategory }) {
+// ─── Card de análise comparativa (versão mobile-first) ───────────────────────
+function ComparativeAnalysisCard({ dayValue, dayNumber, dayType, currentDate, allTransactions }) {
+  const [expanded, setExpanded] = useState(false)
+  
+  // Buscar valores do mesmo dia nos últimos 3 meses
+  const valoresMesesAnteriores = useMemo(() => {
+    const anoAtual = currentDate.getFullYear()
+    const mesAtual = currentDate.getMonth()
+    const dia = dayNumber
+    
+    const resultados = []
+    
+    for (let i = 1; i <= 3; i++) {
+      let mes = mesAtual - i
+      let ano = anoAtual
+      if (mes < 0) {
+        mes += 12
+        ano -= 1
+      }
+      
+      const diasNoMes = new Date(ano, mes + 1, 0).getDate()
+      if (dia > diasNoMes) continue
+      
+      const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+      
+      let valorDia = 0
+      
+      allTransactions.forEach(t => {
+        const refDate = t.data_pagamento
+          ? new Date(t.data_pagamento).toLocaleDateString('en-CA')
+          : t.data
+        if (refDate === dataStr) {
+          if (dayType === 'renda' && t.tipo === 'renda') {
+            valorDia += Number(t.valor) || 0
+          } else if (dayType === 'gasto' && t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && t.pago) {
+            valorDia += Math.abs(Number(t.valor)) || 0
+          } else if (dayType === 'investimento' && t.tipo === 'reserva' && Number(t.valor) >= 0) {
+            valorDia += Number(t.valor) || 0
+          }
+        }
+      })
+      
+      resultados.push({
+        mes: MONTHS[mes].slice(0, 3),
+        ano: ano.toString().slice(-2),
+        valor: valorDia
+      })
+    }
+    
+    return resultados
+  }, [allTransactions, currentDate, dayNumber, dayType])
+  
+  const valoresValidos = valoresMesesAnteriores.filter(v => v.valor > 0)
+  const media = valoresValidos.length > 0 
+    ? valoresValidos.reduce((s, v) => s + v.valor, 0) / valoresValidos.length 
+    : 0
+  
+  const diferenca = dayValue - media
+  const percentual = media > 0 ? (diferenca / media) * 100 : (dayValue > 0 ? 100 : 0)
+  const isMelhor = dayType === 'gasto' ? diferenca <= 0 : diferenca >= 0
+  
+  const getStatusColor = () => {
+    if (Math.abs(percentual) < 5) return 'text-gray-400'
+    if (isMelhor) return 'text-emerald-600'
+    return 'text-rose-600'
+  }
+  
+  const getStatusText = () => {
+    if (Math.abs(percentual) < 5) return 'Dentro da média'
+    if (isMelhor) {
+      return dayType === 'gasto' 
+        ? `${Math.abs(percentual).toFixed(0)}% abaixo`
+        : `${Math.abs(percentual).toFixed(0)}% acima`
+    }
+    return dayType === 'gasto'
+      ? `${Math.abs(percentual).toFixed(0)}% acima`
+      : `${Math.abs(percentual).toFixed(0)}% abaixo`
+  }
+  
+  const getBarColor = () => {
+    if (Math.abs(percentual) < 5) return 'bg-gray-300'
+    if (isMelhor) return 'bg-emerald-500'
+    return 'bg-rose-500'
+  }
+  
+  const barWidth = Math.min(Math.abs(percentual), 100)
+  
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between py-1"
+      >
+        <div className="flex items-center gap-1.5">
+          <BarChart3 size={12} className="text-gray-400" />
+          <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">
+            Mesmo dia nos últimos 3 meses
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className={`text-[9px] font-black ${getStatusColor()}`}>
+            {getStatusText()}
+          </span>
+          {expanded ? <ChevronUp size={12} className="text-gray-400" /> : <ChevronDown size={12} className="text-gray-400" />}
+        </div>
+      </button>
+      
+      {expanded && (
+        <div className="mt-2 space-y-2 animate-in slide-in-from-top-1 duration-200">
+          {/* Cards de comparação */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl p-2.5">
+              <p className="text-[7px] font-black text-gray-400 uppercase">Média</p>
+              <p className="text-sm font-black text-gray-800">{fmtFull(media)}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-2.5">
+              <p className="text-[7px] font-black text-gray-400 uppercase">Este dia</p>
+              <p className={`text-sm font-black ${dayValue > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
+                {dayValue > 0 ? fmtFull(dayValue) : '—'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Barra de progresso */}
+          {media > 0 && (
+            <div className="space-y-0.5">
+              <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${getBarColor()}`}
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+              <p className={`text-[8px] font-black text-center ${getStatusColor()}`}>
+                {getStatusText()}
+              </p>
+            </div>
+          )}
+          
+          {/* Histórico */}
+          <div className="bg-gray-50 rounded-xl p-2.5">
+            <p className="text-[7px] font-black text-gray-400 mb-1.5 uppercase tracking-wider">Histórico</p>
+            <div className="flex justify-between">
+              {valoresMesesAnteriores.map((v, idx) => (
+                <div key={idx} className="text-center">
+                  <p className="text-[8px] font-black text-gray-500">{v.mes}/{v.ano}</p>
+                  <p className={`text-[10px] font-black ${v.valor > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {v.valor > 0 ? fmtFull(v.valor) : '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Card de análise acumulada (versão mobile-first) ─────────────────────────
+function CumulativeAnalysisCard({ dayNumber, dayType, currentDate, allTransactions }) {
+  const [expanded, setExpanded] = useState(false)
+  
+  // Calcular valor acumulado do dia 1 até o dia selecionado no mês atual
+  const valorAtualAcumulado = useMemo(() => {
+    let total = 0
+    const ano = currentDate.getFullYear()
+    const mes = currentDate.getMonth()
+    
+    for (let dia = 1; dia <= dayNumber; dia++) {
+      const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+      
+      allTransactions.forEach(t => {
+        const refDate = t.data_pagamento
+          ? new Date(t.data_pagamento).toLocaleDateString('en-CA')
+          : t.data
+        if (refDate === dataStr) {
+          if (dayType === 'renda' && t.tipo === 'renda') {
+            total += Number(t.valor) || 0
+          } else if (dayType === 'gasto' && t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && t.pago) {
+            total += Math.abs(Number(t.valor)) || 0
+          } else if (dayType === 'investimento' && t.tipo === 'reserva' && Number(t.valor) >= 0) {
+            total += Number(t.valor) || 0
+          }
+        }
+      })
+    }
+    
+    return total
+  }, [allTransactions, currentDate, dayNumber, dayType])
+  
+  // Calcular médias acumuladas dos últimos 3 meses
+  const mediasAcumuladas = useMemo(() => {
+    const anoAtual = currentDate.getFullYear()
+    const mesAtual = currentDate.getMonth()
+    const dia = dayNumber
+    
+    const resultados = []
+    
+    for (let i = 1; i <= 3; i++) {
+      let mes = mesAtual - i
+      let ano = anoAtual
+      if (mes < 0) {
+        mes += 12
+        ano -= 1
+      }
+      
+      const diasNoMes = new Date(ano, mes + 1, 0).getDate()
+      const diasAComparar = Math.min(dia, diasNoMes)
+      
+      let totalAcumulado = 0
+      
+      for (let d = 1; d <= diasAComparar; d++) {
+        const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        
+        allTransactions.forEach(t => {
+          const refDate = t.data_pagamento
+            ? new Date(t.data_pagamento).toLocaleDateString('en-CA')
+            : t.data
+          if (refDate === dataStr) {
+            if (dayType === 'renda' && t.tipo === 'renda') {
+              totalAcumulado += Number(t.valor) || 0
+            } else if (dayType === 'gasto' && t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && t.pago) {
+              totalAcumulado += Math.abs(Number(t.valor)) || 0
+            } else if (dayType === 'investimento' && t.tipo === 'reserva' && Number(t.valor) >= 0) {
+              totalAcumulado += Number(t.valor) || 0
+            }
+          }
+        })
+      }
+      
+      resultados.push({
+        mes: MONTHS[mes].slice(0, 3),
+        ano: ano.toString().slice(-2),
+        total: totalAcumulado,
+        dias: diasAComparar
+      })
+    }
+    
+    return resultados
+  }, [allTransactions, currentDate, dayNumber, dayType])
+  
+  const mediasValidas = mediasAcumuladas.filter(m => m.total > 0)
+  const mediaAcumulada = mediasValidas.length > 0 
+    ? mediasValidas.reduce((s, m) => s + m.total, 0) / mediasValidas.length 
+    : 0
+  
+  const diferenca = valorAtualAcumulado - mediaAcumulada
+  const percentual = mediaAcumulada > 0 ? (diferenca / mediaAcumulada) * 100 : (valorAtualAcumulado > 0 ? 100 : 0)
+  const isMelhor = dayType === 'gasto' ? diferenca <= 0 : diferenca >= 0
+  
+  const getStatusColor = () => {
+    if (Math.abs(percentual) < 5) return 'text-gray-400'
+    if (isMelhor) return 'text-emerald-600'
+    return 'text-rose-600'
+  }
+  
+  const getStatusText = () => {
+    if (Math.abs(percentual) < 5) return 'Dentro da média'
+    if (isMelhor) {
+      return dayType === 'gasto' 
+        ? `${Math.abs(percentual).toFixed(0)}% abaixo`
+        : `${Math.abs(percentual).toFixed(0)}% acima`
+    }
+    return dayType === 'gasto'
+      ? `${Math.abs(percentual).toFixed(0)}% acima`
+      : `${Math.abs(percentual).toFixed(0)}% abaixo`
+  }
+  
+  const getBarColor = () => {
+    if (Math.abs(percentual) < 5) return 'bg-gray-300'
+    if (isMelhor) return 'bg-emerald-500'
+    return 'bg-rose-500'
+  }
+  
+  const barWidth = Math.min(Math.abs(percentual), 100)
+  
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between py-1"
+      >
+        <div className="flex items-center gap-1.5">
+          <Target size={12} className="text-gray-400" />
+          <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">
+            Acumulado até dia {dayNumber}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className={`text-[9px] font-black ${getStatusColor()}`}>
+            {getStatusText()}
+          </span>
+          {expanded ? <ChevronUp size={12} className="text-gray-400" /> : <ChevronDown size={12} className="text-gray-400" />}
+        </div>
+      </button>
+      
+      {expanded && (
+        <div className="mt-2 space-y-2 animate-in slide-in-from-top-1 duration-200">
+          {/* Cards de comparação */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl p-2.5">
+              <p className="text-[7px] font-black text-gray-400 uppercase">Média acumulada</p>
+              <p className="text-sm font-black text-gray-800">{fmtFull(mediaAcumulada)}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-2.5">
+              <p className="text-[7px] font-black text-gray-400 uppercase">Este mês</p>
+              <p className={`text-sm font-black ${valorAtualAcumulado > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
+                {valorAtualAcumulado > 0 ? fmtFull(valorAtualAcumulado) : '—'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Barra de progresso */}
+          {mediaAcumulada > 0 && (
+            <div className="space-y-0.5">
+              <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${getBarColor()}`}
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+              <p className={`text-[8px] font-black text-center ${getStatusColor()}`}>
+                {getStatusText()}
+              </p>
+            </div>
+          )}
+          
+          {/* Histórico */}
+          <div className="bg-gray-50 rounded-xl p-2.5">
+            <p className="text-[7px] font-black text-gray-400 mb-1.5 uppercase tracking-wider">Histórico acumulado</p>
+            <div className="flex justify-between">
+              {mediasAcumuladas.map((m, idx) => (
+                <div key={idx} className="text-center">
+                  <p className="text-[8px] font-black text-gray-500">{m.mes}/{m.ano}</p>
+                  <p className={`text-[10px] font-black ${m.total > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {m.total > 0 ? fmtFull(m.total) : '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── CalendarView principal (mobile-first) ───────────────────────────────────
+export function CalendarView({ transactions = [], activeTab = 'gasto', currentDate, onDaySelect, filteredCategory, allTransactions = [] }) {
   const today    = new Date()
   const viewDate = currentDate instanceof Date ? currentDate : new Date()
   const year     = viewDate.getFullYear()
@@ -52,7 +400,6 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
       } else if (activeTab === 'gasto' && t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao' && t.pago) {
         add(refDate, t, v, false)
       }
-      // Guardar categorias do dia para filtro
       if (map[refDate]) {
         if (!map[refDate].cats) map[refDate].cats = new Set()
         const cat = activeTab === 'renda'
@@ -73,7 +420,6 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
     return Math.max(...vals, 1)
   }, [dayMap, isInvestimento])
 
-  // Resumo do mês
   const summary = useMemo(() => {
     const dias = Object.keys(dayMap)
     const diasComEntrada = dias.filter(d => dayMap[d].entrada > 0).length
@@ -91,6 +437,12 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
     ? `${year}-${String(month + 1).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}`
     : null
   const selectedData = selectedKey ? dayMap[selectedKey] : null
+  
+  const valorDiaSelecionado = selectedData 
+    ? (isInvestimento 
+        ? (activeTab === 'investimento' ? selectedData.entrada : selectedData.entrada + selectedData.saida)
+        : selectedData.entrada + selectedData.saida)
+    : 0
 
   return (
     <div className="space-y-3">
@@ -106,36 +458,36 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
         {/* Resumo do mês */}
         <div className={`border-b border-gray-50 px-3 py-2.5 ${isInvestimento ? '' : ''}`}>
           {isInvestimento ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6 }}>
+            <div className="grid grid-cols-4 gap-1">
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">Dias entrada</p>
-                <p className="text-sm font-black text-emerald-600">{summary.diasComEntrada}</p>
+                <p className="text-[7px] font-black text-gray-400 uppercase">Entrada</p>
+                <p className="text-[10px] font-black text-emerald-600">{summary.diasComEntrada}d</p>
               </div>
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">Total entrada</p>
-                <p className="text-[11px] font-black text-emerald-600">{fmt(summary.totalEntrada)}</p>
+                <p className="text-[7px] font-black text-gray-400 uppercase">Total</p>
+                <p className="text-[10px] font-black text-emerald-600">{fmt(summary.totalEntrada)}</p>
               </div>
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">Dias saída</p>
-                <p className="text-sm font-black text-rose-500">{summary.diasComSaida}</p>
+                <p className="text-[7px] font-black text-gray-400 uppercase">Saída</p>
+                <p className="text-[10px] font-black text-rose-500">{summary.diasComSaida}d</p>
               </div>
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">Total saída</p>
-                <p className="text-[11px] font-black text-rose-500">{fmt(summary.totalSaida)}</p>
+                <p className="text-[7px] font-black text-gray-400 uppercase">Total</p>
+                <p className="text-[10px] font-black text-rose-500">{fmt(summary.totalSaida)}</p>
               </div>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
+            <div className="grid grid-cols-2 gap-2">
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">
+                <p className="text-[7px] font-black text-gray-400 uppercase">
                   Dias com {activeTab === 'renda' ? 'renda' : 'gastos'}
                 </p>
-                <p className={`text-sm font-black ${cfg.color}`}>
+                <p className={`text-[11px] font-black ${cfg.color}`}>
                   {activeTab === 'renda' ? summary.diasComEntrada : summary.diasComSaida}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[8px] font-black text-gray-400 uppercase">Total do mês</p>
+                <p className="text-[7px] font-black text-gray-400 uppercase">Total</p>
                 <p className={`text-[11px] font-black ${cfg.color}`}>
                   {fmtFull(activeTab === 'renda' ? summary.totalEntrada : summary.totalSaida)}
                 </p>
@@ -144,13 +496,13 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }} className="border-b border-gray-50">
+        <div className="grid grid-cols-7 border-b border-gray-50">
           {WEEKDAYS.map(d => (
-            <div key={d} className="py-2 text-center text-[9px] font-black text-gray-400 uppercase">{d}</div>
+            <div key={d} className="py-1.5 text-center text-[8px] font-black text-gray-400 uppercase">{d}</div>
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+        <div className="grid grid-cols-7">
           {Array.from({ length: totalCells }).map((_, i) => {
             const dayNum  = i - firstDay + 1
             const isValid = dayNum >= 1 && dayNum <= daysInMonth
@@ -182,8 +534,8 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
                     onDaySelect(key)
                   }
                 }}
-                style={{ minHeight: 60 }}
-                className={`p-1 border-b border-r border-gray-50 flex flex-col items-center justify-start transition-all ${
+                style={{ minHeight: 52 }}
+                className={`p-0.5 border-b border-r border-gray-50 flex flex-col items-center justify-start transition-all ${
                   !isValid ? 'bg-gray-50/30'
                   : isSelected ? cfg.bg
                   : filteredCategory && data?.cats?.has(filteredCategory) ? cfg.bg
@@ -194,28 +546,28 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
               >
                 {isValid && (
                   <>
-                    <span className={`text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${
-                      isToday    ? 'bg-slate-900 text-white' :
+                    <span className={`text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full mb-0.5 flex-shrink-0 ${
+                      isToday    ? 'bg-slate-900 text-white text-[9px]' :
                       isSelected ? cfg.color                 :
                       'text-gray-600'
                     }`}>
                       {dayNum}
                     </span>
                     {data && (
-                      <div className="w-full px-0.5 space-y-0.5">
+                      <div className="w-full px-0.5">
                         {isInvestimento ? (
                           <>
                             {hasEntrada && (
-                              <div className="w-full bg-gray-100 rounded-full overflow-hidden" style={{ height: 2 }}>
+                              <div className="w-full bg-gray-100 rounded-full overflow-hidden mb-0.5" style={{ height: 2 }}>
                                 <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.max((data.entrada / maxDay) * 100, 8)}%` }} />
                               </div>
                             )}
                             {hasSaida && (
-                              <div className="w-full bg-gray-100 rounded-full overflow-hidden" style={{ height: 2 }}>
+                              <div className="w-full bg-gray-100 rounded-full overflow-hidden mb-0.5" style={{ height: 2 }}>
                                 <div className="h-full rounded-full bg-rose-400" style={{ width: `${Math.max((data.saida / maxDay) * 100, 8)}%` }} />
                               </div>
                             )}
-                            <span className="text-[7px] font-black w-full text-center block truncate text-blue-500">
+                            <span className="text-[6px] font-black w-full text-center block truncate text-blue-500">
                               {hasEntrada && hasSaida
                                 ? `+${fmt(data.entrada)} -${fmt(data.saida)}`
                                 : hasEntrada ? `+${fmt(data.entrada)}` : `-${fmt(data.saida)}`
@@ -224,10 +576,10 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
                           </>
                         ) : (
                           <>
-                            <div className="w-full bg-gray-100 rounded-full overflow-hidden" style={{ height: 3 }}>
+                            <div className="w-full bg-gray-100 rounded-full overflow-hidden" style={{ height: 2 }}>
                               <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${pct}%` }} />
                             </div>
-                            <span className={`text-[7px] font-black w-full text-center block truncate ${cfg.color}`}>
+                            <span className={`text-[6px] font-black w-full text-center block truncate ${cfg.color}`}>
                               {fmt(data.entrada + data.saida)}
                             </span>
                           </>
@@ -242,44 +594,44 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
         </div>
 
         {isInvestimento && (
-          <div className="flex items-center justify-center gap-4 px-4 py-2 border-t border-gray-50">
+          <div className="flex items-center justify-center gap-3 px-3 py-2 border-t border-gray-50">
             <div className="flex items-center gap-1">
-              <ArrowUpRight size={10} className="text-emerald-500" />
-              <span className="text-[8px] font-bold text-gray-400 uppercase">Entrada</span>
-              <div className="w-2 h-2 rounded-full bg-emerald-400 ml-0.5" />
+              <ArrowUpRight size={8} className="text-emerald-500" />
+              <span className="text-[7px] font-bold text-gray-400 uppercase">Entrada</span>
             </div>
             <div className="flex items-center gap-1">
-              <ArrowDownLeft size={10} className="text-rose-500" />
-              <span className="text-[8px] font-bold text-gray-400 uppercase">Saída</span>
-              <div className="w-2 h-2 rounded-full bg-rose-400 ml-0.5" />
+              <ArrowDownLeft size={8} className="text-rose-500" />
+              <span className="text-[7px] font-bold text-gray-400 uppercase">Saída</span>
             </div>
           </div>
         )}
       </div>
 
       {selectedData && selectedDay && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 animate-in slide-in-from-top-2 duration-200">
+          {/* Cabeçalho do dia */}
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
               {String(selectedDay).padStart(2,'0')}/{String(month+1).padStart(2,'0')}/{year}
             </p>
             {isInvestimento ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {selectedData.entrada > 0 && (
-                  <p className="text-sm font-black text-emerald-600">+{fmtFull(selectedData.entrada)}</p>
+                  <p className="text-[11px] font-black text-emerald-600">+{fmtFull(selectedData.entrada)}</p>
                 )}
                 {selectedData.saida > 0 && (
-                  <p className="text-sm font-black text-rose-500">-{fmtFull(selectedData.saida)}</p>
+                  <p className="text-[11px] font-black text-rose-500">-{fmtFull(selectedData.saida)}</p>
                 )}
               </div>
             ) : (
-              <p className={`text-sm font-black ${cfg.color}`}>
+              <p className={`text-[11px] font-black ${cfg.color}`}>
                 {cfg.prefix} {fmtFull(selectedData.entrada + selectedData.saida)}
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
+          {/* Lista de transações do dia */}
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {selectedData.items
               .sort((a, b) => Math.abs(Number(b.valor)) - Math.abs(Number(a.valor)))
               .map(t => {
@@ -291,34 +643,40 @@ export function CalendarView({ transactions = [], activeTab = 'gasto', currentDa
                   ? (isEnt ? 'text-emerald-600' : 'text-rose-500')
                   : cfg.color
                 const itemPrefix = isInvestimento ? (isEnt ? '+' : '-') : cfg.prefix
-                const barColor  = isInvestimento
-                  ? (isEnt ? 'bg-emerald-400' : 'bg-rose-400')
-                  : cfg.bar
 
                 return (
-                  <div key={t.id} className="space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-gray-700 truncate">{t.descricao}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">
-                          {isInvestimento && (
-                            <span className={`mr-1 ${itemColor}`}>{isEnt ? '↑ entrada' : '↓ saída'}</span>
-                          )}
-                          {t.categoria || t.tipo}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 ml-3 text-right">
-                        <p className={`text-xs font-black ${itemColor}`}>{itemPrefix} {fmtFull(v)}</p>
-                        <p className="text-[9px] text-gray-300 font-bold">{pctItem.toFixed(0)}%</p>
-                      </div>
+                  <div key={t.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-gray-700 truncate">{t.descricao}</p>
+                      <p className="text-[7px] text-gray-400 font-bold uppercase">
+                        {isInvestimento && (isEnt ? '↑ entrada' : '↓ saída')}
+                        {!isInvestimento && (t.categoria || t.tipo)}
+                      </p>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full overflow-hidden" style={{ height: 2 }}>
-                      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pctItem}%` }} />
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className={`text-[10px] font-black ${itemColor}`}>{itemPrefix} {fmtFull(v)}</p>
+                      <p className="text-[7px] text-gray-400">{pctItem.toFixed(0)}%</p>
                     </div>
                   </div>
                 )
               })}
           </div>
+          
+          {/* Análises comparativas */}
+          <ComparativeAnalysisCard
+            dayValue={valorDiaSelecionado}
+            dayNumber={selectedDay}
+            dayType={activeTab}
+            currentDate={currentDate}
+            allTransactions={allTransactions}
+          />
+          
+          <CumulativeAnalysisCard
+            dayNumber={selectedDay}
+            dayType={activeTab}
+            currentDate={currentDate}
+            allTransactions={allTransactions}
+          />
         </div>
       )}
     </div>

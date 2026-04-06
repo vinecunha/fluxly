@@ -686,6 +686,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         currentDate={currentDate}
         onDaySelect={handleDaySelect}
         filteredCategory={selectedCategory}
+        allTransactions={allTransactions}
       />
     </section>
   )
