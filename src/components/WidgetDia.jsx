@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { TrendingUp, TrendingDown, ChevronRight, Target, AlertCircle, Sparkles } from 'lucide-react'
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 
 export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
   const [expanded, setExpanded] = useState(false)
@@ -154,7 +154,7 @@ export function WidgetDia({ saldo, totals, onVerDetalhes, isLoading }) {
                     <p className="text-[8px] font-black text-rose-700 uppercase">Alerta</p>
                   </div>
                   <p className="text-[9px] font-black text-rose-700">
-                    Projeção negativa de {fmt(Math.abs(saldoProjetadoValor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                    Projeção negativa de {fmt(Math.abs(saldoProjetadoValor))}
                   </p>
                   {metaDiaria && (
                     <p className="text-[8px] text-rose-600 mt-1">
