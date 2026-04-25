@@ -1,19 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { env } from '../lib/env'
 
-/**
- * usePushNotifications
- *
- * Gerencia permissão e inscrição em notificações push.
- * Requer:
- *   1. Service Worker registrado (public/sw.js)
- *   2. VITE_VAPID_PUBLIC_KEY no .env.local
- *
- * Uso:
- *   const { permission, requestPermission } = usePushNotifications()
- */
-export function usePushNotifications() {
-  const [permission, setPermission] = useState(
+type NotificationPermission = 'granted' | 'denied' | 'default'
+
+interface UsePushNotificationsReturn {
+  permission: NotificationPermission
+  requestPermission: () => Promise<NotificationPermission>
+}
+
+export function usePushNotifications(): UsePushNotificationsReturn {
+  const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   )
 
@@ -38,11 +34,13 @@ export function usePushNotifications() {
   return { permission, requestPermission }
 }
 
-/**
- * Envia uma notificação local imediata (sem servidor).
- * Útil para confirmações de ação dentro do app.
- */
-export function sendLocalNotification(title, body, options = {}) {
+interface NotificationOptions {
+  tag?: string
+  icon?: string
+  badge?: string
+}
+
+export function sendLocalNotification(title: string, body: string, options: NotificationOptions = {}): void {
   if (typeof Notification === 'undefined') return
   if (Notification.permission !== 'granted') return
 
@@ -54,22 +52,23 @@ export function sendLocalNotification(title, body, options = {}) {
   })
 }
 
-/**
- * Agenda uma notificação via Service Worker para uma data futura.
- * O SW precisa tratar o evento 'push' ou 'notificationclick'.
- * Aqui usamos postMessage para passar o agendamento ao SW.
- */
-export function scheduleNotification({ title, body, scheduledAt, tag }) {
+interface ScheduledNotification {
+  title: string
+  body: string
+  scheduledAt: Date
+  tag?: string
+}
+
+export function scheduleNotification({ title, body, scheduledAt, tag }: ScheduledNotification): void {
   if (!navigator.serviceWorker?.controller) return
 
   navigator.serviceWorker.controller.postMessage({
     type: 'SCHEDULE_NOTIFICATION',
-    payload: { title, body, scheduledAt, tag },
+    payload: { title, body, scheduledAt: scheduledAt.toISOString(), tag },
   })
 }
 
-// ─── Inscrição Push (Web Push API) ──────────────────────────────────────────
-async function _subscribeToPush() {
+async function _subscribeToPush(): Promise<PushSubscription | undefined> {
   try {
     const registration = await navigator.serviceWorker.ready
     const existing = await registration.pushManager.getSubscription()
@@ -80,19 +79,17 @@ async function _subscribeToPush() {
       applicationServerKey: _urlBase64ToUint8Array(env.VAPID_PUBLIC_KEY),
     })
 
-    // Aqui você enviaria `subscription` para o seu backend/Supabase Edge Function.
-    // Por enquanto, logamos para debug:
     if (env.IS_DEV) {
       console.info('[Push] Inscrição criada:', JSON.stringify(subscription))
     }
 
     return subscription
   } catch (err) {
-    console.warn('[Push] Falha ao inscrever:', err)
+    console.warn('[Push] Falha ao inscribver:', err)
   }
 }
 
-function _urlBase64ToUint8Array(base64String) {
+function _urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64)

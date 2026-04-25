@@ -1,6 +1,19 @@
 import { useMemo } from 'react'
+import type { Transaction } from '../types'
 
-export function useIntelligence(allTransactions = [], currentDate) {
+interface ContaPendente extends Transaction {
+  diasAteVencimento: number
+  diasUtil: number
+  valor: number
+}
+
+interface SaldoContaInfo {
+  total?: number
+  rendimento?: number
+  original?: number
+}
+
+export function useIntelligence(allTransactions: Transaction[] = [], currentDate: Date) {
   const ref    = currentDate instanceof Date ? currentDate : new Date()
   const ano    = ref.getFullYear()
   const mes    = ref.getMonth()
@@ -34,10 +47,9 @@ export function useIntelligence(allTransactions = [], currentDate) {
       .sort((a, b) => a.diasAteVencimento - b.diasAteVencimento)
   }, [allTransactions, ano, mes])
 
-  const enriquecerComSaldo = (saldoPorConta = {}) => {
+  const enriquecerComSaldo = (saldoPorConta: Record<string, number | SaldoContaInfo> = {}) => {
     return contasPendentes.map(c => {
       const entrada    = saldoPorConta[c.id]
-      // Compatível com formato antigo (número) e novo (objeto {total, rendimento, original})
       const guardado   = entrada && typeof entrada === 'object' ? entrada.total : (entrada || 0)
       const falta      = Math.max(c.valor - guardado, 0)
       const porDia     = falta > 0 ? falta / Math.max(c.diasUtil, 1) : 0
@@ -47,7 +59,7 @@ export function useIntelligence(allTransactions = [], currentDate) {
     })
   }
 
-  function calcularDistribuicao(rendaDisponivel, saldoPorConta = {}) {
+  function calcularDistribuicao(rendaDisponivel: number, saldoPorConta: Record<string, number | SaldoContaInfo> = {}) {
     const contas = enriquecerComSaldo(saldoPorConta)
     let saldo = rendaDisponivel
     const resultado = []

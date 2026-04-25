@@ -1,9 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { logger } from '../lib/logger'
+import type { User } from '../types'
 
-export function useCaixinhas(user, mesStr, onGuardarMeta = null) {
-  const [saldoPorConta, setSaldoPorConta] = useState({})
+interface CaixinhaItem {
+  transacao_id: string
+  total: number
+  items: unknown[]
+}
+
+interface UseCaixinhasReturn {
+  saldoPorConta: Record<string, CaixinhaItem>
+  guardar: (params: { transacaoId: string; valor: number; descricao?: string }) => Promise<{ ok?: boolean; data?: unknown[]; error?: string }>
+  zerarCaixinha: (transacaoId: string) => Promise<void>
+  loading: boolean
+  refresh: () => Promise<void>
+}
+
+export function useCaixinhas(user: User | null, mesStr: string, onGuardarMeta: ((transacaoId: string, valor: number, descricao: string) => Promise<unknown>) | null = null): UseCaixinhasReturn {
+  const [saldoPorConta, setSaldoPorConta] = useState<Record<string, CaixinhaItem>>({})
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
@@ -23,7 +38,7 @@ export function useCaixinhas(user, mesStr, onGuardarMeta = null) {
 
       if (error) throw error
 
-      const agrupado = {}
+      const agrupado: Record<string, CaixinhaItem> = {}
       ;(caixinhas || []).forEach(c => {
         const txId = c.transacao_id
         if (!agrupado[txId]) {
@@ -42,7 +57,7 @@ export function useCaixinhas(user, mesStr, onGuardarMeta = null) {
     }
   }, [user?.id])
 
-  const guardar = useCallback(async ({ transacaoId, valor, descricao }) => {
+  const guardar = useCallback(async ({ transacaoId, valor, descricao }: { transacaoId: string; valor: number; descricao?: string }) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
@@ -61,20 +76,19 @@ export function useCaixinhas(user, mesStr, onGuardarMeta = null) {
 
       await fetchData()
 
-      // ✅ SE TIVER CALLBACK DE META, CHAMAR
       if (onGuardarMeta) {
-        const metaResult = await onGuardarMeta(transacaoId, Number(valor), descricao)
+        const metaResult = await onGuardarMeta(transacaoId, Number(valor), descricao || '')
         return { ok: true, data, meta: metaResult }
       }
 
       return { ok: true, data }
     } catch (error) {
       logger.error('Erro ao guardar na caixinha:', error)
-      return { error: error.message }
+      return { error: (error as Error).message }
     }
   }, [user?.id, fetchData, onGuardarMeta])
 
-  const zerarCaixinha = useCallback(async (transacaoId) => {
+  const zerarCaixinha = useCallback(async (transacaoId: string) => {
     if (!user?.id) return
 
     try {

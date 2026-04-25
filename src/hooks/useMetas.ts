@@ -1,11 +1,28 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { logger } from '../lib/logger'
+import type { Meta, User } from '../types'
 
-export function useMetas(user) {
-  const [metas, setMetas] = useState([])
+interface UseMetasReturn {
+  metas: Meta[]
+  loading: boolean
+  error: string | null
+  criarMeta: (nome: string, valorObjetivo: number, prazo: string, categoria?: string, contaId?: string) => Promise<{ success?: boolean; data?: Meta; error?: string }>
+  criarMetaParaConta: (contaId: string, nome: string, valorObjetivo: number, prazo?: string) => Promise<{ success?: boolean; data?: Meta; error?: string }>
+  depositarNaMeta: (metaId: string, valor: number) => Promise<{ success?: boolean; data?: Meta; progresso?: number; error?: string }>
+  editarMeta: (metaId: string, updates: Partial<Meta>) => Promise<{ success?: boolean; data?: Meta; error?: string }>
+  ajustarValorDepositado: (metaId: string, novoValorAtual: number, transacaoId?: string) => Promise<{ success?: boolean; data?: Meta; error?: string }>
+  excluirMeta: (metaId: string) => Promise<{ success?: boolean; error?: string }>
+  arquivarMeta: (metaId: string) => Promise<{ success?: boolean; error?: string }>
+  alterarPrazo: (metaId: string, novoPrazo: string) => Promise<{ success?: boolean; data?: Meta; error?: string }>
+  getMetaPorConta: (contaId: string) => Promise<Meta | null>
+  sincronizarComCaixinhas: () => Promise<void>
+  refresh: () => Promise<void>
+}
+
+export function useMetas(user: User | null): UseMetasReturn {
+  const [metas, setMetas] = useState<Meta[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchMetas = useCallback(async () => {
     if (!user?.id) {
@@ -26,14 +43,13 @@ export function useMetas(user) {
       setMetas(data || [])
     } catch (err) {
       console.error('Erro ao buscar metas:', err)
-      setError(err.message)
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
   }, [user?.id])
 
-  // Buscar meta por conta_id
-  const getMetaPorConta = useCallback(async (contaId) => {
+  const getMetaPorConta = useCallback(async (contaId: string): Promise<Meta | null> => {
     if (!user?.id || !contaId) return null
     
     try {
@@ -52,13 +68,12 @@ export function useMetas(user) {
     }
   }, [user?.id])
 
-  // Criar meta vinculada a uma conta
-  const criarMetaParaConta = useCallback(async (contaId, nome, valorObjetivo, prazo = null) => {
+  const criarMetaParaConta = useCallback(async (contaId: string, nome: string, valorObjetivo: number, prazo?: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     const metaExistente = await getMetaPorConta(contaId)
     if (metaExistente) {
-      return { error: 'Já existe uma meta para esta conta', meta: metaExistente }
+      return { error: 'Já existe uma meta para esta conta', data: metaExistente }
     }
 
     const prazoFinal = prazo || (() => {
@@ -72,14 +87,12 @@ export function useMetas(user) {
         .from('metas')
         .insert([{
           user_id: user.id,
-          nome,
+          descricao: nome,
           valor_objetivo: valorObjetivo,
-          valor_atual: 0,
+          valor_depositado: 0,
           prazo: prazoFinal,
-          categoria: 'Conta',
-          conta_id: contaId,
-          progresso: 0,
-          concluida: false,
+          ativa: true,
+          arquivada: false,
           created_at: new Date().toISOString()
         }])
         .select()
@@ -91,12 +104,11 @@ export function useMetas(user) {
       return { success: true, data }
     } catch (err) {
       console.error('Erro ao criar meta para conta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id, getMetaPorConta])
 
-  // ✅ EDITAR META (dados básicos)
-  const editarMeta = useCallback(async (metaId, updates) => {
+  const editarMeta = useCallback(async (metaId: string, updates: Partial<Meta>) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     const meta = metas.find(m => m.id === metaId)
@@ -120,12 +132,11 @@ export function useMetas(user) {
       return { success: true, data }
     } catch (err) {
       console.error('Erro ao editar meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id, metas])
 
-  // ✅ AJUSTAR VALOR DEPOSITADO (corrigir lançamento)
-  const ajustarValorDepositado = useCallback(async (metaId, novoValorAtual, transacaoId = null) => {
+  const ajustarValorDepositado = useCallback(async (metaId: string, novoValorAtual: number, transacaoId?: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     const meta = metas.find(m => m.id === metaId)
@@ -135,13 +146,10 @@ export function useMetas(user) {
     const concluida = novoProgresso >= 100
 
     try {
-      // Atualizar meta
       const { data, error } = await supabase
         .from('metas')
         .update({
-          valor_atual: novoValorAtual,
-          progresso: novoProgresso,
-          concluida,
+          valor_depositado: novoValorAtual,
           updated_at: new Date().toISOString()
         })
         .eq('id', metaId)
@@ -151,7 +159,6 @@ export function useMetas(user) {
 
       if (error) throw error
 
-      // Se tiver transacao_id, atualizar também a caixinha
       if (transacaoId) {
         await supabase
           .from('caixinhas')
@@ -164,18 +171,17 @@ export function useMetas(user) {
       return { success: true, data }
     } catch (err) {
       console.error('Erro ao ajustar valor da meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id, metas])
 
-  // Depositar na meta
-  const depositarNaMeta = useCallback(async (metaId, valor) => {
+  const depositarNaMeta = useCallback(async (metaId: string, valor: number) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
     
     const meta = metas.find(m => m.id === metaId)
     if (!meta) return { error: 'Meta não encontrada' }
 
-    const novoValor = (meta.valor_atual || 0) + valor
+    const novoValor = (meta.valor_depositado || 0) + valor
     const novoProgresso = Math.min((novoValor / meta.valor_objetivo) * 100, 100)
     const concluida = novoProgresso >= 100
 
@@ -183,9 +189,7 @@ export function useMetas(user) {
       const { data, error } = await supabase
         .from('metas')
         .update({
-          valor_atual: novoValor,
-          progresso: novoProgresso,
-          concluida,
+          valor_depositado: novoValor,
           updated_at: new Date().toISOString()
         })
         .eq('id', metaId)
@@ -197,25 +201,24 @@ export function useMetas(user) {
 
       setMetas(prev => prev.map(m => m.id === metaId ? data : m))
       
-      // Registrar na caixinha
       await supabase
         .from('caixinhas')
         .insert([{
           user_id: user.id,
-          transacao_id: meta.conta_id,
+          transacao_id: meta.id,
           valor,
-          descricao: `Depósito na meta: ${meta.nome}`,
+          descricao: `Depósito na meta: ${meta.descricao}`,
           created_at: new Date().toISOString()
         }])
 
       return { success: true, data, progresso: novoProgresso }
     } catch (err) {
       console.error('Erro ao depositar na meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id, metas])
 
-  const criarMeta = useCallback(async (nome, valorObjetivo, prazo, categoria = null, contaId = null) => {
+  const criarMeta = useCallback(async (nome: string, valorObjetivo: number, prazo: string, categoria?: string, contaId?: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
@@ -223,14 +226,12 @@ export function useMetas(user) {
         .from('metas')
         .insert([{
           user_id: user.id,
-          nome,
+          descricao: nome,
           valor_objetivo: valorObjetivo,
-          valor_atual: 0,
+          valor_depositado: 0,
           prazo,
-          categoria,
-          conta_id: contaId,
-          progresso: 0,
-          concluida: false,
+          ativa: true,
+          arquivada: false,
           created_at: new Date().toISOString()
         }])
         .select()
@@ -242,11 +243,11 @@ export function useMetas(user) {
       return { success: true, data }
     } catch (err) {
       console.error('Erro ao criar meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id])
 
-  const excluirMeta = useCallback(async (metaId) => {
+  const excluirMeta = useCallback(async (metaId: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
@@ -262,31 +263,31 @@ export function useMetas(user) {
       return { success: true }
     } catch (err) {
       console.error('Erro ao excluir meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id])
 
-  const arquivarMeta = useCallback(async (metaId) => {
+  const arquivarMeta = useCallback(async (metaId: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
       const { error } = await supabase
         .from('metas')
-        .update({ concluida: true, updated_at: new Date().toISOString() })
+        .update({ arquivada: true, updated_at: new Date().toISOString() })
         .eq('id', metaId)
         .eq('user_id', user.id)
 
       if (error) throw error
 
-      setMetas(prev => prev.map(m => m.id === metaId ? { ...m, concluida: true } : m))
+      setMetas(prev => prev.map(m => m.id === metaId ? { ...m, arquivada: true } : m))
       return { success: true }
     } catch (err) {
       console.error('Erro ao arquivar meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id])
 
-  const alterarPrazo = useCallback(async (metaId, novoPrazo) => {
+  const alterarPrazo = useCallback(async (metaId: string, novoPrazo: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
@@ -307,7 +308,7 @@ export function useMetas(user) {
       return { success: true, data }
     } catch (err) {
       console.error('Erro ao alterar prazo da meta:', err)
-      return { error: err.message }
+      return { error: (err as Error).message }
     }
   }, [user?.id])
 
@@ -320,7 +321,7 @@ export function useMetas(user) {
         .select('transacao_id, valor')
         .eq('user_id', user.id)
 
-      const totalPorConta = {}
+      const totalPorConta: Record<string, number> = {}
       caixinhas?.forEach(c => {
         if (c.transacao_id) {
           totalPorConta[c.transacao_id] = (totalPorConta[c.transacao_id] || 0) + c.valor
@@ -340,9 +341,8 @@ export function useMetas(user) {
         await supabase
           .from('metas')
           .update({
-            valor_atual: valorAtual,
-            progresso,
-            concluida: progresso >= 100
+            valor_depositado: valorAtual,
+            arquivada: progresso >= 100
           })
           .eq('id', meta.id)
           .eq('user_id', user.id)

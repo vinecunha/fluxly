@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
 
-export function useServiceWorker() {
+export function useServiceWorker(): void {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      // Pega o caminho base configurado no Vite (ex: '/fluxly/')
       const basePath = import.meta.env.BASE_URL || '/'
       const swPath = `${basePath}sw.js`
       

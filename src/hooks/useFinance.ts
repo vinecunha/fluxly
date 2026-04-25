@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { logger } from '../lib/logger'
+import type { Transaction, User } from '../types'
 
-export function useFinance(user) {
-  const [data, setData] = useState([])
+interface UseFinanceReturn {
+  data: Transaction[]
+  loading: boolean
+  refresh: () => Promise<void>
+}
+
+export function useFinance(user: User | null): UseFinanceReturn {
+  const [data, setData] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -25,7 +32,6 @@ export function useFinance(user) {
 
       if (error) throw error
 
-      // Defesa extra: descartar qualquer registro que não pertença ao usuário logado
       const userId = user.id
       const safe = (transacoes || []).filter(t => t.user_id === userId)
 
@@ -34,8 +40,8 @@ export function useFinance(user) {
       const duration = performance.now() - startTime
       logger.performance('useFinance.refresh', duration)
       
-    } catch (error) {
-      logger.error('Erro ao buscar finanças:', error.message)
+    } catch (err) {
+      logger.error('Erro ao buscar finanças:', (err as Error).message)
       setData([])
     } finally {
       setLoading(false)

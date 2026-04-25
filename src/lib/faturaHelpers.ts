@@ -1,50 +1,44 @@
-/**
- * Lógica real de cartão de crédito Itaú (e maioria dos bancos BR).
- *
- * O fechamento marca o FIM do ciclo anterior e o INÍCIO do novo:
- *   - Compras feitas NO dia do fechamento já entram na PRÓXIMA fatura
- *   - Período de gastos: do dia do fechamento (inclusive) do mês anterior
- *                        até o dia anterior ao fechamento do mês atual
- *
- * Fechamento = 8, Vencimento = 15:
- *   Fatura março:
- *     gastos:   08/fev (inclusive) → 07/mar (inclusive)
- *     vence:    15/mar
- *     cobrança: 08/mar → 07/abr
- *
- *   Fatura abril:
- *     gastos:   08/mar (inclusive) → 07/abr (inclusive)
- *     vence:    15/abr
- *     cobrança: 08/abr → 07/mai
- *
- * Qual ciclo mostrar para um viewDate:
- *   - Se hoje >= fechamento no mês atual → ciclo do PRÓXIMO mês (fatura aberta acumulando)
- *   - Caso contrário → ciclo do mês visualizado
- */
+import type { Transaction, Cartao } from '../types'
 
-function _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, cicloAno) {
-  const diaFech = cartao.fechamento
-  const diaVenc = cartao.vencimento
+interface FaturaResult {
+  totalGasto: number
+  totalPago: number
+  totalPagoEfetivo: number
+  saldo: number
+  credito: number
+  creditoAnt: number
+  qtdGastos: number
+  periodo: string
+  vencStr: string
+  pago: boolean
+  status: 'quitada' | 'cobrança' | 'aberta'
+  gastos: Transaction[]
+  pagamentos: Transaction[]
+  inicioGastos: Date
+  fimGastos: Date
+  inicioCob: Date
+  fimCob: Date
+  venc: Date
+  cicloMes: number
+  cicloAno: number
+}
 
-  // Período de GASTOS:
-  //   início = dia fechamento do mês anterior (inclusive)
-  //   fim    = dia (fechamento - 1) do mês atual (inclusive)
+function _calcFaturaParaCicloSemCredito(cartao: Cartao, allTransactions: Transaction[], cicloMes: number, cicloAno: number): FaturaResult {
+  const diaFech = cartao.dia_fechamento
+  const diaVenc = cartao.dia_vencimento
+
   const mesIniGasto = cicloMes === 0 ? 11 : cicloMes - 1
   const anoIniGasto = cicloMes === 0 ? cicloAno - 1 : cicloAno
 
   const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech,     0,  0,  0)
   const fimGastos    = new Date(cicloAno,    cicloMes,    diaFech - 1, 23, 59, 59)
 
-  // Período de COBRANÇA:
-  //   início = dia fechamento do ciclo atual (quando a fatura fecha e entra em cobrança)
-  //   fim    = dia (fechamento - 1) do próximo mês (inclusive)
   const mesCobFim = cicloMes === 11 ? 0  : cicloMes + 1
   const anoCobFim = cicloMes === 11 ? cicloAno + 1 : cicloAno
 
   const inicioCob = new Date(cicloAno,  cicloMes,  diaFech,     0,  0,  0)
   const fimCob    = new Date(anoCobFim, mesCobFim, diaFech - 1, 23, 59, 59)
 
-  // Vencimento
   const venc    = new Date(cicloAno, cicloMes, diaVenc)
   const vencStr = venc.toLocaleDateString('en-CA')
 
@@ -64,12 +58,10 @@ function _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, ciclo
   const totalGasto = gastos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
   const totalPago  = pagamentos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
 
-  // Crédito = overpayment desta fatura (passa para a próxima)
   const credito = totalPago > totalGasto
     ? Math.round((totalPago - totalGasto) * 100) / 100
     : 0
 
-  // Buscar crédito da fatura anterior e aplicar aqui
   const antMes = cicloMes === 0 ? 11 : cicloMes - 1
   const antAno = cicloMes === 0 ? cicloAno - 1 : cicloAno
   const ant    = _calcBase(cartao, allTransactions, antMes, antAno)
@@ -81,7 +73,7 @@ function _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, ciclo
     ? Math.round((totalPagoEfetivo - totalGasto) * 100) / 100
     : 0
 
-  const nomeMes = (d) => d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+  const nomeMes = (d: Date) => d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
   const periodo = `${inicioGastos.getDate()} ${nomeMes(inicioGastos)} – ${fimGastos.getDate()} ${nomeMes(fimGastos)}`
   const pago    = totalGasto > 0 && saldo <= 0
 
@@ -99,10 +91,9 @@ function _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, ciclo
   }
 }
 
-// Versão base sem crédito anterior (evita recursão infinita)
-function _calcBase(cartao, allTransactions, cicloMes, cicloAno) {
-  const diaFech = cartao.fechamento
-  const diaVenc = cartao.vencimento
+function _calcBase(cartao: Cartao, allTransactions: Transaction[], cicloMes: number, cicloAno: number) {
+  const diaFech = cartao.dia_fechamento
+  const diaVenc = cartao.dia_vencimento
   const mesIniGasto = cicloMes === 0 ? 11 : cicloMes - 1
   const anoIniGasto = cicloMes === 0 ? cicloAno - 1 : cicloAno
   const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech, 0, 0, 0)
@@ -132,14 +123,14 @@ function _calcBase(cartao, allTransactions, cicloMes, cicloAno) {
   return { totalGasto, totalPago, credito }
 }
 
-export function calcFatura(cartao, allTransactions, viewDate) {
+export function calcFatura(cartao: Cartao, allTransactions: Transaction[], viewDate: Date): FaturaResult {
   const ref    = viewDate instanceof Date ? viewDate : new Date()
   const anoRef = ref.getFullYear()
   const mesRef = ref.getMonth()
 
   const hoje      = new Date(); hoje.setHours(0, 0, 0, 0)
   const isHojeMes = anoRef === hoje.getFullYear() && mesRef === hoje.getMonth()
-  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.fechamento
+  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.dia_fechamento
 
   let cicloMes, cicloAno
   if (jáFechou) {
@@ -153,17 +144,16 @@ export function calcFatura(cartao, allTransactions, viewDate) {
   return _calcFaturaParaCicloSemCredito(cartao, allTransactions, cicloMes, cicloAno)
 }
 
-export function getFaturasExibicao(cartao, allTransactions, viewDate) {
+export function getFaturasExibicao(cartao: Cartao, allTransactions: Transaction[], viewDate: Date): (FaturaResult & { _label: string })[] {
   const ref    = viewDate instanceof Date ? viewDate : new Date()
   const anoRef = ref.getFullYear()
   const mesRef = ref.getMonth()
 
   const hoje      = new Date(); hoje.setHours(0, 0, 0, 0)
   const isHojeMes = anoRef === hoje.getFullYear() && mesRef === hoje.getMonth()
-  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.fechamento
+  const jáFechou  = isHojeMes && hoje.getDate() >= cartao.dia_fechamento
 
   if (jáFechou && isHojeMes) {
-    // Só mostra duas faturas quando o usuário está visualizando o mês atual
     const fatFechada = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
     const proxMes = mesRef === 11 ? 0 : mesRef + 1
     const proxAno = mesRef === 11 ? anoRef + 1 : anoRef
@@ -174,7 +164,6 @@ export function getFaturasExibicao(cartao, allTransactions, viewDate) {
     ]
   }
 
-  // Mês passado, futuro ou antes do fechamento: uma fatura só
   const fat = _calcFaturaParaCicloSemCredito(cartao, allTransactions, mesRef, anoRef)
   const label = fat.status === 'quitada' ? 'Fatura quitada'
     : fat.status === 'cobrança' ? 'Fatura em cobrança'

@@ -1,22 +1,22 @@
 import { useMemo } from 'react'
+import type { Transaction, SaldoProjetado, Alert as AlertType } from '../types'
 
-const getTodayStr = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+const getTodayStr = (): string => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 
-/**
- * Gera alertas inteligentes contextuais.
- * Retorna array de alertas ordenados por prioridade.
- *
- * Tipos:
- *  - 'perigo'   → vermelho  (fatura vencendo, projeção negativa, dívida cara)
- *  - 'atencao'  → âmbar     (gasto acima da média, margem apertada)
- *  - 'info'     → azul      (dica, conquista próxima)
- *  - 'ok'       → verde     (mês positivo, meta atingida)
- */
-export function useAlertas(transactions, saldo, currentDate) {
+interface Alerta {
+  id: string
+  tipo: 'perigo' | 'atencao' | 'info' | 'ok'
+  emoji: string
+  titulo: string
+  texto: string
+  prioridade: number
+}
+
+export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | null, currentDate: Date): AlertType[] {
   const todayStr = getTodayStr()
 
   return useMemo(() => {
-    const alertas = []
+    const alertas: Alerta[] = []
     const hoje = new Date(todayStr + 'T12:00:00')
     const viewM = currentDate.getMonth()
     const viewY = currentDate.getFullYear()
@@ -27,7 +27,6 @@ export function useAlertas(transactions, saldo, currentDate) {
       return d.getMonth() === viewM && d.getFullYear() === viewY
     })
 
-    // ── 1. Fatura do cartão vencendo em até 3 dias ────────────────────────────
     const faturasPendentes = (transactions || []).filter(t => {
       if (t.tipo !== 'pagamento_cartao' || t.pago) return false
       const venc = new Date(t.data + 'T12:00:00')
@@ -47,7 +46,6 @@ export function useAlertas(transactions, saldo, currentDate) {
       })
     })
 
-    // ── 2. Contas vencidas (fixa/esporadica não pagas) ────────────────────────
     const vencidas = (transactions || []).filter(t => {
       if (!['fixa','esporadica'].includes(t.tipo) || t.pago) return false
       const venc = new Date(t.data + 'T12:00:00')
@@ -65,7 +63,6 @@ export function useAlertas(transactions, saldo, currentDate) {
       })
     }
 
-    // ── 3. Projeção negativa ──────────────────────────────────────────────────
     if (isThisMonth && saldo?.saldoProjetado != null && saldo.saldoProjetado < 0) {
       alertas.push({
         id:         'projecao-negativa',
@@ -86,10 +83,8 @@ export function useAlertas(transactions, saldo, currentDate) {
       })
     }
 
-    // ── 4. Categoria acima da média ───────────────────────────────────────────
     if (isThisMonth) {
-      // Construir médias dos últimos 3 meses por categoria
-      const mediasCat = {}
+      const mediasCat: Record<string, number[]> = {}
       for (let i = 1; i <= 3; i++) {
         const m = new Date(viewY, viewM - i, 1)
         const txAnt = (transactions || []).filter(t => {
@@ -104,8 +99,7 @@ export function useAlertas(transactions, saldo, currentDate) {
         })
       }
 
-      // Gastos do mês atual por categoria
-      const gastosCat = {}
+      const gastosCat: Record<string, number> = {}
       txMes.filter(t => t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao')
            .forEach(t => {
              const cat = t.categoria || 'Outros'
@@ -117,7 +111,7 @@ export function useAlertas(transactions, saldo, currentDate) {
         if (!hist || hist.length < 2) return
         const media = hist.reduce((s,v)=>s+v,0) / hist.length
         const pct   = media > 0 ? ((gasto - media) / media) * 100 : 0
-        if (pct >= 40 && gasto > 50) { // acima 40% da média e valor relevante
+        if (pct >= 40 && gasto > 50) {
           alertas.push({
             id:         `cat-alta-${cat}`,
             tipo:       'atencao',
@@ -130,7 +124,6 @@ export function useAlertas(transactions, saldo, currentDate) {
       })
     }
 
-    // ── 5. Mês positivo ───────────────────────────────────────────────────────
     if (isThisMonth && saldo?.saldoProjetado != null && saldo.saldoProjetado >= 500) {
       alertas.push({
         id:         'mes-positivo',
@@ -142,13 +135,11 @@ export function useAlertas(transactions, saldo, currentDate) {
       })
     }
 
-    // ── 6. Dívida com juros altos sem pagamento recente ───────────────────────
     const dividas = (transactions || []).filter(t =>
       t.tipo === 'fixa' &&
       (t.categoria || '').toLowerCase().includes('empr') &&
       !t.pago
     )
-    // Agrupar por recorrencia_id e ver se alguma está sem pagamento há mais de 35 dias
     const recIds = [...new Set(dividas.map(t => t.recorrencia_id).filter(Boolean))]
     recIds.forEach(rid => {
       const parcelas = (transactions || []).filter(t => t.recorrencia_id === rid)
@@ -169,7 +160,11 @@ export function useAlertas(transactions, saldo, currentDate) {
       }
     })
 
-    // Ordenar por prioridade (maior = mais urgente)
-    return alertas.sort((a, b) => b.prioridade - a.prioridade)
+    return alertas.sort((a, b) => b.prioridade - a.prioridade).map(a => ({
+      id: a.id,
+      titulo: a.titulo,
+      descricao: a.texto,
+      tipo: a.tipo === 'perigo' ? 'error' : a.tipo === 'atencao' ? 'warning' : a.tipo === 'ok' ? 'success' : 'info'
+    }))
   }, [transactions, saldo, currentDate, todayStr])
 }

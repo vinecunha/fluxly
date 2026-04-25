@@ -1,37 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const THRESHOLD = 80   // px para acionar o refresh
-const MAX_PULL  = 120  // px máximo de arrasto
+const THRESHOLD = 80
+const MAX_PULL  = 120
 
-/**
- * usePullToRefresh
- *
- * Detecta o gesto de pull-to-refresh no topo da página.
- *
- * @param {Function} onRefresh — função async chamada ao soltar
- * @returns {{ pullDistance, isPulling, isRefreshing }}
- */
-export function usePullToRefresh(onRefresh) {
+interface UsePullToRefreshParams {
+  onRefresh: () => Promise<void>
+}
+
+interface UsePullToRefreshReturn {
+  pullDistance: number
+  isPulling: boolean
+  isRefreshing: boolean
+}
+
+export function usePullToRefresh(onRefresh: () => Promise<void>): UsePullToRefreshReturn {
   const [pullDistance, setPullDistance] = useState(0)
   const [isPulling, setIsPulling]       = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const startY    = useRef(null)
+  const startY    = useRef<number | null>(null)
   const triggered = useRef(false)
 
-  const handleTouchStart = useCallback((e) => {
-    // Só ativa se já estiver no topo da página
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     if (window.scrollY > 0) return
     startY.current  = e.touches[0].clientY
     triggered.current = false
   }, [])
 
-  const handleTouchMove = useCallback((e) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (startY.current === null) return
     const delta = e.touches[0].clientY - startY.current
     if (delta <= 0) { setPullDistance(0); return }
 
-    // Resiste progressivamente (efeito elástico)
     const resistance = 0.5
     const clamped = Math.min(delta * resistance, MAX_PULL)
     setPullDistance(clamped)
@@ -39,7 +39,6 @@ export function usePullToRefresh(onRefresh) {
 
     if (clamped >= THRESHOLD && !triggered.current) {
       triggered.current = true
-      // Vibração háptica leve ao atingir o threshold
       navigator.vibrate?.(10)
     }
   }, [])

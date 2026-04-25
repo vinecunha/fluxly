@@ -1,19 +1,13 @@
 import { useMemo } from 'react'
+import type { Transaction, SaldoProjetado } from '../types'
 import { getTodayString } from '../lib/dateHelpers'
 
-/**
- * Calcula o saldo projetado para o fim do mês atual.
- *
- * Lógica:
- *  - Renda confirmada (já recebida)
- *  - + Fixas/recorrentes com vencimento futuro no mês (estimativa de entrada se for renda futura)
- *  - - Gastos já pagos
- *  - - Fixas/esporádicas pendentes com vencimento até fim do mês
- *  - - Faturas de cartão pendentes (saldo a pagar)
- *
- * Retorna também o "saldo de hoje" (o que entrou menos o que saiu hoje).
- */
-export function useSaldoProjetado(transactions, faturas, currentDate) {
+interface FaturaInfo {
+  saldo?: number
+  venc?: Date
+}
+
+export function useSaldoProjetado(transactions: Transaction[], faturas: FaturaInfo[], currentDate: Date): SaldoProjetado {
   const todayStr = getTodayString()
 
   return useMemo(() => {
@@ -36,7 +30,7 @@ export function useSaldoProjetado(transactions, faturas, currentDate) {
 
       const v     = Math.abs(Number(t.valor) || 0)
       const tDate = new Date(t.data + 'T12:00:00')
-      const pDate = t.data_pagamento ? new Date(t.data_pagamento + 'T12:00:00') : null
+      const pDate = t.pago_em ? new Date(t.pago_em + 'T12:00:00') : null
 
       const noMes = tDate.getMonth() === viewM && tDate.getFullYear() === viewY
       if (!noMes) return
@@ -51,26 +45,21 @@ export function useSaldoProjetado(transactions, faturas, currentDate) {
           rendaConfirmada += v
           if (isHoje) rendaHoje += v
         }
-        // renda futura não confirmada: não projetamos (conservador)
         return
       }
 
-      // gastos
       if (pago) {
         gastosConfirmados += v
         if (isHoje) gastosHoje += v
       } else {
-        // pendente: vence dentro do mês
         if (tDate <= ultimoDia) pendentesSaida += v
       }
     })
 
-    // Faturas de cartão com saldo a pagar no mês
     let faturasPendentes = 0
     ;(faturas || []).forEach(fat => {
       if (!fat) return
       const saldo = fat.saldo || 0
-      // fatura vence neste mês?
       if (fat.venc) {
         const vDate = fat.venc instanceof Date ? fat.venc : new Date(fat.venc)
         if (vDate.getMonth() === viewM && vDate.getFullYear() === viewY && saldo > 0) {
@@ -83,20 +72,19 @@ export function useSaldoProjetado(transactions, faturas, currentDate) {
     const saldoProjetado = saldoAtual - pendentesSaida - faturasPendentes
     const saldoHoje     = rendaHoje - gastosHoje
 
-    // Dias restantes no mês
     const daysInMonth   = ultimoDia.getDate()
     const currentDay    = isCurrentMonth ? hoje.getDate() : daysInMonth
     const diasRestantes = Math.max(daysInMonth - currentDay, 0)
 
-    // Média diária de gasto atual
     const mediaDiariaGasto = currentDay > 0 ? gastosConfirmados / currentDay : 0
-    // Projeção linear até fim do mês
     const projecaoGastos   = gastosConfirmados + mediaDiariaGasto * diasRestantes
 
     return {
       saldoAtual,
       saldoProjetado,
       saldoHoje,
+      entradas: rendaConfirmada,
+      saidas: gastosConfirmados,
       rendaConfirmada,
       gastosConfirmados,
       pendentesSaida,

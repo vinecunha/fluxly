@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import type { Cartao, User } from '../types'
 
-// useCartoes apenas gerencia os metadados dos cartões (nome, limite, fechamento, vencimento, cor)
-// O cálculo de fatura é feito no frontend via calcFatura (faturaHelpers.js)
-// usando allTransactions do useFinance — sem depender de views do BD
+interface UseCartoesReturn {
+  cartoes: Cartao[]
+  faturas: unknown[]
+  loading: boolean
+  refresh: () => Promise<void>
+  criarCartao: (dados: Partial<Cartao>) => Promise<void>
+  editarCartao: (id: string, dados: Partial<Cartao>) => Promise<void>
+  excluirCartao: (id: string) => Promise<void>
+}
 
-export function useCartoes(user) {
-  const [cartoes, setCartoes] = useState([])
+export function useCartoes(user: User | null): UseCartoesReturn {
+  const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -17,7 +24,7 @@ export function useCartoes(user) {
         .from('cartoes')
         .select('*')
         .eq('user_id', user.id)
-        .eq('ativo', true)
+        .eq('ativa', true)
         .order('created_at')
       setCartoes(c || [])
     } finally {
@@ -27,9 +34,9 @@ export function useCartoes(user) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const criarCartao = async (dados) => {
-    console.log('🔵 criarCartao chamado com:', dados) // ✅ LOG
-    const { error } = await supabase.from('cartoes').insert([{ ...dados, user_id: user.id }])
+  const criarCartao = async (dados: Partial<Cartao>) => {
+    console.log('🔵 criarCartao chamado com:', dados)
+    const { error } = await supabase.from('cartoes').insert([{ ...dados, user_id: user?.id }])
     if (error) {
       console.error('🔴 Erro ao criar cartão:', error)
       throw error
@@ -38,14 +45,14 @@ export function useCartoes(user) {
     await refresh()
   }
 
-  const editarCartao = async (id, dados) => {
+  const editarCartao = async (id: string, dados: Partial<Cartao>) => {
     const { error } = await supabase.from('cartoes').update(dados).eq('id', id)
     if (error) throw error
     await refresh()
   }
 
-  const excluirCartao = async (id) => {
-    const { error } = await supabase.from('cartoes').update({ ativo: false }).eq('id', id)
+  const excluirCartao = async (id: string) => {
+    const { error } = await supabase.from('cartoes').update({ ativa: false }).eq('id', id)
     if (error) throw error
     await refresh()
   }
