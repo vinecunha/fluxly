@@ -86,7 +86,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
 
       let query = supabase.from('transacoes').update({ 
         pago: novoStatus, 
-        pago_em: dataPagamento 
+        data_pagamento: dataPagamento 
       })
       
       if (alterarTodaSerie && recorrencia_id) {
@@ -111,7 +111,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
           categoria: 'Outros gastos',
           pago: true,
           data: new Date().toLocaleDateString('en-CA'),
-          pago_em: new Date().toISOString(),
+          data_pagamento: new Date().toISOString(),
           recorrencia_id: null,
         }])
         
@@ -276,7 +276,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       repetir: formData.repetir || 'nao',
       recorrencia_limite: formData.recorrencia_limite || null,
       recorrencia_id: formData.recorrencia_id || null,
-      pago_em: devePagar
+      data_pagamento: devePagar
         ? new Date(formData.data + 'T12:00:00').toISOString()
         : ((formData.pago && !formData.data_pagamento) ? new Date().toISOString() : (formData.data_pagamento || null)),
     }
@@ -360,7 +360,7 @@ async function _insertTransaction(payload: Record<string, unknown>, formData: Fo
         data: dataAtual.toISOString().split('T')[0],
         recorrencia_id: groupID,
         pago: devePagar,
-        pago_em: devePagar ? dataAtual.toISOString() : null,
+        data_pagamento: devePagar ? dataAtual.toISOString() : null,
       })
 
       if (formData.repetir === 'mensal') {

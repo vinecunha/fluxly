@@ -17,7 +17,7 @@ export interface Transaction {
   pago: boolean
   cartao_id?: string
   recorrencia_id?: string
-  pago_em?: string | null
+  data_pagamento?: string | null
   categoria?: string
   created_at?: string
   updated_at?: string

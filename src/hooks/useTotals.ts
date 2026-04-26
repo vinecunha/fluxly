@@ -15,7 +15,7 @@ export function useTotals(data: Transaction[], currentDate: Date): Totals {
 
       const v     = Number(t.valor) || 0
       const tDate = new Date(t.data + 'T12:00:00')
-      const pDate = t.pago_em ? new Date(t.pago_em) : null
+      const pDate = t.data_pagamento ? new Date(t.data_pagamento) : null
 
       const isDueThisMonth  = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
       const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear

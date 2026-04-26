@@ -30,7 +30,7 @@ export function useSaldoProjetado(transactions: Transaction[], faturas: FaturaIn
 
       const v     = Math.abs(Number(t.valor) || 0)
       const tDate = new Date(t.data + 'T12:00:00')
-      const pDate = t.pago_em ? new Date(t.pago_em + 'T12:00:00') : null
+      const pDate = t.data_pagamento ? new Date(t.data_pagamento + 'T12:00:00') : null
 
       const noMes = tDate.getMonth() === viewM && tDate.getFullYear() === viewY
       if (!noMes) return
