@@ -17,7 +17,7 @@ interface UseCaixinhasReturn {
   refresh: () => Promise<void>
 }
 
-export function useCaixinhas(user: User | null, mesStr: string, onGuardarMeta: ((transacaoId: string, valor: number, descricao: string) => Promise<unknown>) | null = null): UseCaixinhasReturn {
+export function useCaixinhas(user: User | null, onGuardarMeta: ((transacaoId: string, valor: number, descricao: string) => Promise<unknown>) | null = null): UseCaixinhasReturn {
   const [saldoPorConta, setSaldoPorConta] = useState<Record<string, CaixinhaItem>>({})
   const [loading, setLoading] = useState(true)
 

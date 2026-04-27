@@ -14,6 +14,7 @@ import { useCartoes } from './hooks/useCartoes'
 import { useCaixinhas } from './hooks/useCaixinhas'
 import { useMetas } from './hooks/useMetas'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { InitialLoader, DataLoaderSkeleton } from './components/SkeletonLoader'
 
 import { AuthScreen } from './components/AuthScreen'
 import { DashboardHeader } from './components/DashboardHeader'
@@ -84,7 +85,7 @@ export default function App() {
     currentDate
   )
   const alertas = useAlertas(data, saldo, currentDate)
-  const { zerarCaixinha } = useCaixinhas(user, mesStr)
+  const { zerarCaixinha } = useCaixinhas(user)
   
   const filteredData = useFilteredData(data, currentDate)
   const totals = useTotals(filteredData, currentDate)
@@ -164,7 +165,7 @@ export default function App() {
     return (totals.renda || 0) - (totals.gastosPagos || 0)
   }, [totals.renda, totals.gastosPagos])
 
-  if (!authChecked) return null
+  if (!authChecked) return <InitialLoader />
   if (!user) return <AuthScreen />
 
   return (
@@ -199,28 +200,36 @@ export default function App() {
         <div className="px-4 pt-3 space-y-4">
           <NotificationPrompt />
 
-          <DashboardCards 
-            renda={totals.renda}
-            gastos={totals.gastosTotal}
-            despesasPagas={totals.gastosPagos}
-            reserva={totals.reservaTotal}
-            saldoProjetado={saldo?.saldoProjetado}
-            saldoAtual={saldoAtual}
-            saldo={saldo}
-            totals={totals}
-            onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
-            isLoading={loading}
-          />
+          {loading ? (
+            <DataLoaderSkeleton type="dashboard" />
+          ) : (
+            <DashboardCards 
+              renda={totals.renda}
+              gastos={totals.gastosTotal}
+              despesasPagas={totals.gastosPagos}
+              reserva={totals.reservaTotal}
+              saldoProjetado={saldo?.saldoProjetado}
+              saldoAtual={saldoAtual}
+              saldo={saldo}
+              totals={totals}
+              onVerDetalhes={() => setActiveTab(TABS.ANALYTICS)}
+              isLoading={loading}
+            />
+          )}
 
           <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
 
           <Suspense fallback={TAB_FALLBACK}>
             {activeTab === TABS.DASHBOARD && (
-              <RecentFlow
-                transactions={filteredData}
-                onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
-                onDelete={handleDelete}
-              />
+              loading ? (
+                <DataLoaderSkeleton type="list" />
+              ) : (
+                <RecentFlow
+                  transactions={filteredData}
+                  onEdit={(t) => dispatch({ type: UI_ACTIONS.OPEN_MODAL, payload: t })}
+                  onDelete={handleDelete}
+                />
+              )
             )}
             {activeTab === TABS.BILLS && (
               <BillsList

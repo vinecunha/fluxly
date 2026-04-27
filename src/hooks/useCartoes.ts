@@ -46,13 +46,15 @@ export function useCartoes(user: User | null): UseCartoesReturn {
   }
 
   const editarCartao = async (id: string, dados: Partial<Cartao>) => {
-    const { error } = await supabase.from('cartoes').update(dados).eq('id', id)
+    if (!user?.id) return
+    const { error } = await supabase.from('cartoes').update(dados).eq('id', id).eq('user_id', user.id)
     if (error) throw error
     await refresh()
   }
 
   const excluirCartao = async (id: string) => {
-    const { error } = await supabase.from('cartoes').update({ ativa: false }).eq('id', id)
+    if (!user?.id) return
+    const { error } = await supabase.from('cartoes').update({ ativa: false }).eq('id', id).eq('user_id', user.id)
     if (error) throw error
     await refresh()
   }
