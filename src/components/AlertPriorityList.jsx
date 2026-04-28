@@ -1,9 +1,9 @@
-import React from 'react'
+﻿import React from 'react'
 import { AlertTriangle, Flame, Calendar, CheckCircle2 } from 'lucide-react'
 
 export function AlertPriorityList({ alertas, onQuickPay, isSaving }) {
   // Filtrar apenas alertas de prioridade alta
-  const urgentes = alertas.filter(a => a.tipo === 'perigo' || a.tipo === 'atencao').slice(0, 3)
+  const urgentes = alertas.filter(a => a.tipo === 'error' || a.tipo === 'warning').slice(0, 3)
   
   if (urgentes.length === 0) {
     return (
@@ -20,17 +20,17 @@ export function AlertPriorityList({ alertas, onQuickPay, isSaving }) {
   return (
     <div className="space-y-2">
       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-1">
-        ⚠️ Ações urgentes
+        âš ï¸ AÃ§Ãµes urgentes
       </p>
       {urgentes.map((alerta, i) => (
         <div key={i} className={`rounded-2xl p-4 ${
-          alerta.tipo === 'perigo' ? 'bg-rose-50 border border-rose-100' : 'bg-amber-50 border border-amber-100'
+          alerta.tipo === 'error' ? 'bg-rose-50 border border-rose-100' : 'bg-amber-50 border border-amber-100'
         }`}>
           <div className="flex items-start gap-3">
             <div className={`p-2 rounded-xl ${
-              alerta.tipo === 'perigo' ? 'bg-rose-100' : 'bg-amber-100'
+              alerta.tipo === 'error' ? 'bg-rose-100' : 'bg-amber-100'
             }`}>
-              {alerta.tipo === 'perigo' ? (
+              {alerta.tipo === 'error' ? (
                 <Flame size={16} className="text-rose-600" />
               ) : (
                 <AlertTriangle size={16} className="text-amber-600" />
@@ -38,7 +38,7 @@ export function AlertPriorityList({ alertas, onQuickPay, isSaving }) {
             </div>
             <div className="flex-1">
               <p className="text-[11px] font-black text-gray-800">{alerta.titulo}</p>
-              <p className="text-[9px] text-gray-500 mt-0.5">{alerta.texto}</p>
+              <p className="text-[9px] text-gray-500 mt-0.5">{alerta.descricao}</p>
             </div>
           </div>
         </div>

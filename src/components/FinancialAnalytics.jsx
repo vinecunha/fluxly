@@ -8,22 +8,7 @@ import { categoryIcons } from '../lib/categories'
 import { useMonthlyAverages } from '../hooks/useMonthlyAverages'
 import { useCDI } from '../hooks/useCDI'
 import { CalendarView } from './CalendarView'
-
-const MonthlyChart = lazy(() =>
-  import('./MonthlyChart').then(m => ({ default: m.MonthlyChart }))
-)
-
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const fmtK = (v) => {
-  if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
-  return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
-
-const PALETTE = [
-  '#1e293b', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
-  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316',
-  '#64748b', '#a78bfa', '#34d399', '#fbbf24', '#fb923c',
-]
+import { fmt, fmtK, PALETTE } from '../lib/formatters'
 
 // ─── Seletor de Tab (estilo moderno) ─────────────────────────────────────────
 function TabSelector({ tab, onTabChange }) {

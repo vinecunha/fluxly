@@ -1,20 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import {
-  Brain, CheckCircle2, AlertTriangle, Wallet,
-  CircleDollarSign, Zap, RefreshCw, PiggyBank,
-  ChevronDown, ChevronUp, Flame, TrendingUp, TrendingDown,
-  Calendar, Target, ShieldCheck, BarChart2, Sparkles, Info, ArrowRight
-} from 'lucide-react'
-import { useIntelligence } from '../hooks/useIntelligence'
-import { useIntelligenceInsights } from '../hooks/useIntelligenceInsights'
-import { categoryIcons } from '../lib/categories'
-import { supabase } from '../lib/supabase'
-
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
-const fmtK = (v) => {
-  if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
-  return `R$${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-}
+import { Zap, TrendingUp, TrendingDown, AlertTriangle, Target, Brain, Lightbulb, ArrowRight, Info, ChevronDown, ChevronUp, Sparkles, BarChart3, Calendar, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { fmt, fmtShort } from '../lib/formatters'
 
 // ─── Saúde Financeira ────────────────────────────────────────────────────────
 function SaudeCard({ saude }) {

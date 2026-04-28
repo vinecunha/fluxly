@@ -1,34 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { X, ChevronRight, ChevronLeft, Check, Repeat, CreditCard } from 'lucide-react'
 import { ActionConfirmationModal } from './BillsList'
-
-const getToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-const fmt = (v) => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})
-
-// ✅ Função para formatar valor monetário automaticamente
-const formatCurrencyInput = (value) => {
-  // Remove tudo que não é número
-  let numericValue = value.replace(/\D/g, '')
-  
-  if (numericValue === '') return ''
-  
-  // Converte para centavos (divide por 100)
-  const numeric = parseInt(numericValue, 10) / 100
-  return numeric.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
-
-// ✅ Função para converter valor formatado para número
-const parseCurrencyValue = (formattedValue) => {
-  if (!formattedValue) return 0
-  // Remove R$ e espaços, substitui vírgula por ponto
-  const numeric = formattedValue
-    .replace(/[^\d,]/g, '')
-    .replace(',', '.')
-  return parseFloat(numeric) || 0
-}
+import { formatCurrencyInput, parseCurrencyValue, getToday, fmt } from '../lib/formatters'
 
 // ✅ Componente de input de valor com formatação automática
 function CurrencyInput({ value, onChange, onClear, placeholder = "0,00" }) {

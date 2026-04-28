@@ -1,15 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Target, Plus, ChevronRight, Trash2, Edit3, Archive, AlertCircle, X, Save, CheckCircle2, PiggyBank, TrendingUp, Calendar, Settings, Zap } from 'lucide-react'
-
-const fmt = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
-
-const formatDateToUS = (dateStr) => {
-  if (!dateStr) return ''
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr
-  const parts = dateStr.split('/')
-  if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`
-  return dateStr
-}
+import { fmt, toUSDate } from '../lib/formatters'
 
 // ─── Componente de Meta Diária/Mensal ────────────────────────────────────────
 function DailyGoalCard({ rendaHoje, onUpdateGoal, metas }) {
