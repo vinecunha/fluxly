@@ -42,10 +42,10 @@ export function useCaixinhas(user: User | null, onGuardarMeta: ((transacaoId: st
       ;(caixinhas || []).forEach(c => {
         const txId = c.transacao_id
         if (!agrupado[txId]) {
-          agrupado[txId] = { total: 0, items: [] }
+          agrupado[txId] = { transacao_id: txId, total: 0, items: [] }
         }
-        agrupado[txId].total += Number(c.valor) || 0
-        agrupado[txId].items.push(c)
+        agrupado[txId]!.total += Number(c.valor) || 0
+        agrupado[txId]!.items.push(c)
       })
 
       setSaldoPorConta(agrupado)

@@ -1,7 +1,8 @@
 export function getTodayString(): string {
   const agora = new Date()
   const offset = agora.getTimezoneOffset() * 60000
-  return new Date(agora - offset).toISOString().split('T')[0]
+  const result = new Date(agora.getTime() - offset).toISOString().split('T')[0]
+  return result ?? ''
 }
 
 export function getWeekRange(referenceDateStr: string) {
@@ -25,8 +26,8 @@ export function isInMonth(dateStr: string, paymentDateStr: string | null, viewMo
   const tDate = new Date(dateStr + 'T12:00:00')
   const pDate = paymentDateStr ? new Date(paymentDateStr) : null
   const isDueThisMonth = tDate.getMonth() === viewMonth && tDate.getFullYear() === viewYear
-  const isPaidThisMonth = pDate && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
-  return isDueThisMonth || isPaidThisMonth
+  const isPaidThisMonth = pDate != null && pDate.getMonth() === viewMonth && pDate.getFullYear() === viewYear
+  return Boolean(isDueThisMonth || isPaidThisMonth)
 }
 
 export function getFaturaPeriodo(dataTransacao: string, diaFechamento: number): string {
@@ -48,5 +49,5 @@ export function getFaturaPeriodo(dataTransacao: string, diaFechamento: number): 
 }
 
 export function getPeriodoAtual(diaFechamento: number): string {
-  return getFaturaPeriodo(new Date().toISOString().split('T')[0], diaFechamento)
+  return getFaturaPeriodo(new Date().toISOString().split('T')[0] ?? '', diaFechamento)
 }

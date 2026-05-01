@@ -30,12 +30,12 @@ export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | 
     const faturasPendentes = (transactions || []).filter(t => {
       if (t.tipo !== 'pagamento_cartao' || t.pago) return false
       const venc = new Date(t.data + 'T12:00:00')
-      const dias = Math.ceil((venc - hoje) / 86400000)
+      const dias = Math.ceil((venc.getTime() - hoje.getTime()) / 86400000)
       return dias >= 0 && dias <= 3
     })
     faturasPendentes.forEach(f => {
       const venc = new Date(f.data + 'T12:00:00')
-      const dias = Math.ceil((venc - hoje) / 86400000)
+      const dias = Math.ceil((venc.getTime() - hoje.getTime()) / 86400000)
       alertas.push({
         id:       `fatura-${f.id}`,
         tipo:     dias === 0 ? 'perigo' : 'atencao',
@@ -52,7 +52,7 @@ export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | 
       return venc < hoje
     })
     if (vencidas.length > 0) {
-      const total = vencidas.reduce((s, t) => s + (parseFloat(t.valor)||0), 0)
+      const total = vencidas.reduce((s, t) => s + (Number(t.valor)||0), 0)
       alertas.push({
         id:         'vencidas',
         tipo:       'perigo',
@@ -95,7 +95,7 @@ export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | 
         txAnt.forEach(t => {
           const cat = t.categoria || 'Outros'
           if (!mediasCat[cat]) mediasCat[cat] = []
-          mediasCat[cat].push(parseFloat(t.valor)||0)
+          mediasCat[cat].push(Number(t.valor)||0)
         })
       }
 
@@ -103,7 +103,7 @@ export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | 
       txMes.filter(t => t.tipo !== 'renda' && t.tipo !== 'reserva' && t.tipo !== 'pagamento_cartao')
            .forEach(t => {
              const cat = t.categoria || 'Outros'
-             gastosCat[cat] = (gastosCat[cat]||0) + (parseFloat(t.valor)||0)
+              gastosCat[cat] = (gastosCat[cat]||0) + (Number(t.valor)||0)
            })
 
       Object.entries(gastosCat).forEach(([cat, gasto]) => {
@@ -144,9 +144,9 @@ export function useAlertas(transactions: Transaction[], saldo: SaldoProjetado | 
     recIds.forEach(rid => {
       const parcelas = (transactions || []).filter(t => t.recorrencia_id === rid)
       const pagas    = parcelas.filter(t => t.pago)
-      const ultima   = pagas.sort((a,b) => new Date(b.data) - new Date(a.data))[0]
+      const ultima   = pagas.sort((a,b) => new Date(b.data).getTime() - new Date(a.data).getTime())[0]
       if (!ultima) return
-      const diasSemPagar = Math.floor((hoje - new Date(ultima.data + 'T12:00:00')) / 86400000)
+      const diasSemPagar = Math.floor((hoje.getTime() - new Date(ultima.data + 'T12:00:00').getTime()) / 86400000)
       if (diasSemPagar > 40) {
         const desc = dividas.find(t => t.recorrencia_id === rid)?.descricao || 'Empréstimo'
         alertas.push({

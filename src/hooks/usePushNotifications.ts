@@ -76,7 +76,7 @@ async function _subscribeToPush(): Promise<PushSubscription | undefined> {
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: _urlBase64ToUint8Array(env.VAPID_PUBLIC_KEY),
+      applicationServerKey: _urlBase64ToUint8Array(env.VAPID_PUBLIC_KEY) as BufferSource,
     })
 
     if (env.IS_DEV) {
@@ -93,5 +93,10 @@ function _urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64)
-  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+  const buffer = new ArrayBuffer(rawData.length)
+  const output = new Uint8Array(buffer)
+  for (let i = 0; i < rawData.length; ++i) {
+    output[i] = rawData.charCodeAt(i)
+  }
+  return output
 }

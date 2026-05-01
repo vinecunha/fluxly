@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx,.jsx,.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",

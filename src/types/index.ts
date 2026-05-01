@@ -73,7 +73,7 @@ export interface Caixinha {
 
 export interface User {
   id: string
-  email: string
+  email: string | undefined
   created_at?: string
 }
 
@@ -131,3 +131,6 @@ export interface SaldoProjetado {
   entradas: number
   saidas: number
 }
+
+// Re-export CSV types
+export type { CSVRow, CSVColumn, PapaParseError, PapaParseMeta, ParseResult } from './csv'

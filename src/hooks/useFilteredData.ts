@@ -6,6 +6,6 @@ export function useFilteredData(data: Transaction[], currentDate: Date): Transac
   return useMemo(() => {
     const viewMonth = currentDate.getMonth()
     const viewYear = currentDate.getFullYear()
-    return (data || []).filter(t => isInMonth(t.data, t.data_pagamento, viewMonth, viewYear))
+    return (data || []).filter(t => isInMonth(t.data, t.data_pagamento ?? null, viewMonth, viewYear))
   }, [data, currentDate])
 }

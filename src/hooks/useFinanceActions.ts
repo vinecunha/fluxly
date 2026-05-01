@@ -198,7 +198,7 @@ export function useFinanceActions({ user, data, refresh, dispatch, editingTransa
       payload: {
         label: snapshot.length > 1
           ? `${snapshot.length} registros removidos`
-          : `"${snapshot[0].descricao}" removido`,
+          : `"${snapshot[0]!.descricao}" removido`,
         timerId,
         restore: () => {
           clearTimeout(timerId)

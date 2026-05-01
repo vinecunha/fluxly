@@ -1,12 +1,6 @@
 import { useMemo } from 'react'
 import type { Transaction } from '../types'
 
-interface ContaPendente extends Transaction {
-  diasAteVencimento: number
-  diasUtil: number
-  valor: number
-}
-
 interface SaldoContaInfo {
   total?: number
   rendimento?: number
@@ -39,7 +33,7 @@ export function useIntelligence(allTransactions: Transaction[] = [], currentDate
       .map(t => {
         const venc = new Date(t.data + 'T12:00:00')
         venc.setHours(0, 0, 0, 0)
-        const diasAteVencimento = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24))
+        const diasAteVencimento = Math.ceil((venc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
         const diasUtil = Math.max(diasAteVencimento, 1)
         const valor = Number(t.valor) || 0
         return { ...t, diasAteVencimento, diasUtil, valor }
@@ -50,8 +44,8 @@ export function useIntelligence(allTransactions: Transaction[] = [], currentDate
   const enriquecerComSaldo = (saldoPorConta: Record<string, number | SaldoContaInfo> = {}) => {
     return contasPendentes.map(c => {
       const entrada    = saldoPorConta[c.id]
-      const guardado   = entrada && typeof entrada === 'object' ? entrada.total : (entrada || 0)
-      const falta      = Math.max(c.valor - guardado, 0)
+      const guardado   = entrada && typeof entrada === 'object' ? entrada.total : (entrada || 0) ?? 0
+      const falta      = Math.max(c.valor - (guardado ?? 0), 0)
       const porDia     = falta > 0 ? falta / Math.max(c.diasUtil, 1) : 0
       const urgente    = c.diasAteVencimento <= 2
       const quaseVence = c.diasAteVencimento <= 7

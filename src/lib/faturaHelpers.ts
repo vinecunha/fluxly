@@ -58,10 +58,6 @@ function _calcFaturaParaCicloSemCredito(cartao: Cartao, allTransactions: Transac
   const totalGasto = gastos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
   const totalPago  = pagamentos.reduce((s, t) => s + (Math.abs(Number(t.valor)) || 0), 0)
 
-  const credito = totalPago > totalGasto
-    ? Math.round((totalPago - totalGasto) * 100) / 100
-    : 0
-
   const antMes = cicloMes === 0 ? 11 : cicloMes - 1
   const antAno = cicloMes === 0 ? cicloAno - 1 : cicloAno
   const ant    = _calcBase(cartao, allTransactions, antMes, antAno)
@@ -93,7 +89,6 @@ function _calcFaturaParaCicloSemCredito(cartao: Cartao, allTransactions: Transac
 
 function _calcBase(cartao: Cartao, allTransactions: Transaction[], cicloMes: number, cicloAno: number) {
   const diaFech = cartao.dia_fechamento
-  const diaVenc = cartao.dia_vencimento
   const mesIniGasto = cicloMes === 0 ? 11 : cicloMes - 1
   const anoIniGasto = cicloMes === 0 ? cicloAno - 1 : cicloAno
   const inicioGastos = new Date(anoIniGasto, mesIniGasto, diaFech, 0, 0, 0)

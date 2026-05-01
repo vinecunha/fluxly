@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import type { Transaction } from '../types'
 
 export function useIntelligenceInsights(_allTransactions: Transaction[] = [], _currentDate: Date) {

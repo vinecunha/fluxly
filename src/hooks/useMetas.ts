@@ -142,10 +142,9 @@ export function useMetas(user: User | null): UseMetasReturn {
     const meta = metas.find(m => m.id === metaId)
     if (!meta) return { error: 'Meta não encontrada' }
 
-    const novoProgresso = Math.min((novoValorAtual / meta.valor_objetivo) * 100, 100)
-    const concluida = novoProgresso >= 100
+     void Math.min((novoValorAtual / meta.valor_objetivo) * 100, 100)
 
-    try {
+     try {
       const { data, error } = await supabase
         .from('metas')
         .update({
@@ -181,11 +180,10 @@ export function useMetas(user: User | null): UseMetasReturn {
     const meta = metas.find(m => m.id === metaId)
     if (!meta) return { error: 'Meta não encontrada' }
 
-    const novoValor = (meta.valor_depositado || 0) + valor
-    const novoProgresso = Math.min((novoValor / meta.valor_objetivo) * 100, 100)
-    const concluida = novoProgresso >= 100
+     const novoValor = (meta.valor_depositado || 0) + valor
+     const novoProgresso = Math.min((novoValor / meta.valor_objetivo) * 100, 100)
 
-    try {
+     try {
       const { data, error } = await supabase
         .from('metas')
         .update({
@@ -218,7 +216,7 @@ export function useMetas(user: User | null): UseMetasReturn {
     }
   }, [user?.id, metas])
 
-  const criarMeta = useCallback(async (nome: string, valorObjetivo: number, prazo: string, categoria?: string, contaId?: string) => {
+  const criarMeta = useCallback(async (nome: string, valorObjetivo: number, prazo: string, _categoria?: string, _contaId?: string) => {
     if (!user?.id) return { error: 'Usuário não autenticado' }
 
     try {
@@ -334,7 +332,7 @@ export function useMetas(user: User | null): UseMetasReturn {
         .eq('user_id', user.id)
         .not('conta_id', 'is', null)
 
-      for (const meta of metasComConta) {
+       for (const meta of (metasComConta ?? [])) {
         const valorAtual = totalPorConta[meta.conta_id] || 0
         const progresso = Math.min((valorAtual / meta.valor_objetivo) * 100, 100)
         

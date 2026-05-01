@@ -3,10 +3,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 const THRESHOLD = 80
 const MAX_PULL  = 120
 
-interface UsePullToRefreshParams {
-  onRefresh: () => Promise<void>
-}
-
 interface UsePullToRefreshReturn {
   pullDistance: number
   isPulling: boolean
@@ -23,13 +19,13 @@ export function usePullToRefresh(onRefresh: () => Promise<void>): UsePullToRefre
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (window.scrollY > 0) return
-    startY.current  = e.touches[0].clientY
+    startY.current  = e.touches[0]?.clientY ?? null
     triggered.current = false
   }, [])
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (startY.current === null) return
-    const delta = e.touches[0].clientY - startY.current
+    const delta = (e.touches[0]?.clientY ?? 0) - (startY.current ?? 0)
     if (delta <= 0) { setPullDistance(0); return }
 
     const resistance = 0.5

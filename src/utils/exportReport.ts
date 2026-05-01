@@ -1,8 +1,6 @@
 import { saveAs } from 'file-saver'
 import type { Transaction } from '../types'
 
-const fmt = (v: number): string => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
-
 export function exportToCSV(transactions: Transaction[], currentDate: Date): void {
   const mes = currentDate.getMonth() + 1
   const ano = currentDate.getFullYear()
@@ -25,7 +23,7 @@ export function exportToCSV(transactions: Transaction[], currentDate: Date): voi
   saveAs(blob, `fluxly-${ano}-${String(mes).padStart(2, '0')}.csv`)
 }
 
-export async function exportToPDF(transactions: Transaction[], currentDate: Date): Promise<void> {
+export async function exportToPDF(_transactions: Transaction[], _currentDate: Date): Promise<void> {
   console.log('PDF export ainda não implementado')
   alert('Exportação PDF em desenvolvimento')
 }
