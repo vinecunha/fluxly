@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
-  ChevronLeft, ChevronRight, LogOut, CalendarDays, RefreshCw,
-  Bell, Flame, AlertTriangle, Info, X, CheckCircle2, PiggyBank, Zap,
+  LogOut, RefreshCw, CalendarDays,
+  Bell, Flame, AlertTriangle, Info, X, CheckCircle2,
   TrendingUp, TrendingDown
 } from 'lucide-react'
+import PeriodFilter from './PeriodFilter'
+import { getCurrentDateFromPeriod, isCurrentPeriod } from '../lib/periodHelpers'
 
 // Componente de notificação individual
 function NotificationItem({ notification, onClose }) {
@@ -55,10 +57,11 @@ function NotificationItem({ notification, onClose }) {
 
 export const DashboardHeader = ({
   renda, totalDespesas, reservaTotal,
-  currentDate, onMonthChange, onLogout, isLoading,
+  period, onPeriodChange, onLogout, isLoading,
   onRefresh, isRefreshing, onOpenAnalytics,
   saldoProjetado, alertas = [], onQuickPay, isSaving
 }) => {
+  const currentDate = getCurrentDateFromPeriod(period)
   const [showNotifications, setShowNotifications] = useState(false)
   const [dismissedNotifications, setDismissedNotifications] = useState(new Set())
   const notificationsRef = useRef(null)
@@ -117,6 +120,8 @@ export const DashboardHeader = ({
   }, [renda, totalDespesas, currentDate])
 
   const { isCurrentMonth, progresso, progressoIdealPct, valorIdealAteHoje, estaNoRitmo } = metrics
+  const isMonthView = period.type === 'month'
+  const showIdealMarker = isMonthView && isCurrentMonth
   const isCoberto = renda >= totalDespesas && totalDespesas > 0
 
   const getBarColor = () => {
@@ -127,23 +132,6 @@ export const DashboardHeader = ({
 
   const fmtFull = (v) =>
     `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-  const formatMonth = () =>
-    currentDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase()
-
-  const navigateToMonth = (year, month) => {
-    const targetDate = new Date(year, month, 1)
-    const diffMonths = (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
-      (targetDate.getMonth() - currentDate.getMonth())
-    if (diffMonths !== 0) {
-      onMonthChange(diffMonths)
-    }
-  }
-
-  const goToCurrentMonth = () => {
-    const now = new Date()
-    navigateToMonth(now.getFullYear(), now.getMonth())
-  }
 
   if (isLoading) {
     return (
@@ -172,27 +160,15 @@ export const DashboardHeader = ({
               <div className="h-3.5 w-px bg-white/20" />
             </div>
 
-            {/* Seletor de mês */}
-            <div className="flex items-center bg-white/10 rounded-2xl border border-white/10 flex-1 mx-1">
-              <button onClick={() => onMonthChange(-1)} className="px-4 text-white/50 active:text-white hover:text-white transition-colors" style={{ minHeight: 40 }}>
-                <ChevronLeft size={14} />
+            {/* Filtro Temporal Global */}
+            <PeriodFilter period={period} onPeriodChange={onPeriodChange} />
+            {period.type !== 'custom' && !isCurrentPeriod(period) && (
+              <button onClick={() => onPeriodChange({ ...period, referenceDate: new Date() })}
+                className="flex-shrink-0 bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all"
+                style={{ minHeight: 36, minWidth: 36 }}>
+                <CalendarDays size={14} className="text-white" />
               </button>
-              <div className="relative flex-1 text-center">
-                <span className="text-[11px] font-black tracking-widest text-white block">{formatMonth()}</span>
-                <input
-                  type="month"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
-                  onChange={(e) => {
-                    const [year, month] = e.target.value.split('-')
-                    navigateToMonth(parseInt(year), parseInt(month) - 1)
-                  }}
-                />
-              </div>
-              <button onClick={() => onMonthChange(1)} className="px-4 text-white/50 active:text-white hover:text-white transition-colors" style={{ minHeight: 40 }}>
-                <ChevronRight size={14} />
-              </button>
-            </div>
+            )}
 
             {/* Botões */}
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -274,11 +250,6 @@ export const DashboardHeader = ({
                 )}
               </div>
 
-              {!isCurrentMonth && (
-                <button onClick={goToCurrentMonth} className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all" style={{ minHeight: 36, minWidth: 36 }}>
-                  <CalendarDays className="w-3.5 h-3.5 text-white" />
-                </button>
-              )}
               {onRefresh && (
                 <button onClick={onRefresh} disabled={isRefreshing || isLoading}
                   className="bg-white/10 p-2 rounded-xl border border-white/10 active:scale-90 transition-all disabled:opacity-40"
@@ -312,7 +283,7 @@ export const DashboardHeader = ({
                 <div className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor()}`}
                   style={{ width: `${progresso}%` }} />
               </div>
-              {isCurrentMonth && (
+              {showIdealMarker && (
                 <div className="absolute h-4 w-0.5 bg-white rounded-full z-10"
                   style={{ left: `${progressoIdealPct}%` }}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/20 text-white text-[6px] font-black px-1 py-0.5 rounded whitespace-nowrap">
@@ -325,10 +296,10 @@ export const DashboardHeader = ({
             {/* Indicador de ritmo */}
             <div className="flex items-center justify-between mt-1">
               <p className="text-[7px] text-white/50 font-bold">
-                {isCurrentMonth && `ideal: ${fmtFull(valorIdealAteHoje)}`}
+                {showIdealMarker && `ideal: ${fmtFull(valorIdealAteHoje)}`}
               </p>
               <div className="flex items-center gap-1">
-                {isCurrentMonth && (
+                {showIdealMarker && (
                   estaNoRitmo
                     ? <TrendingUp size={8} className="text-emerald-400" />
                     : <TrendingDown size={8} className="text-amber-400" />

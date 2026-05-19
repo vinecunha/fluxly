@@ -1,11 +1,10 @@
 import type { Transaction } from '../types'
-import { isInMonth } from '../lib/dateHelpers'
+import { isInPeriod } from '../lib/periodHelpers'
+import type { PeriodState } from '../lib/periodHelpers'
 import { useMemo } from 'react'
 
-export function useFilteredData(data: Transaction[], currentDate: Date): Transaction[] {
+export function useFilteredData(data: Transaction[], period: PeriodState): Transaction[] {
   return useMemo(() => {
-    const viewMonth = currentDate.getMonth()
-    const viewYear = currentDate.getFullYear()
-    return (data || []).filter(t => isInMonth(t.data, t.data_pagamento ?? null, viewMonth, viewYear))
-  }, [data, currentDate])
+    return (data || []).filter(t => isInPeriod(t.data, t.data_pagamento ?? null, period))
+  }, [data, period])
 }

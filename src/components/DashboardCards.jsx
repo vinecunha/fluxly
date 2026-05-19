@@ -1,5 +1,5 @@
 import React from 'react'
-import { TrendingUp, TrendingDown, PiggyBank, Wallet, ArrowUpRight, ArrowDownRight, CircleDollarSign, Info, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownRight, CircleDollarSign, Info, CheckCircle2 } from 'lucide-react'
 import { WidgetDia } from './WidgetDia'
 import { fmt } from '../lib/formatters'
 
@@ -24,7 +24,14 @@ export function DashboardCards({ renda, gastos, despesasPagas, reserva, saldoPro
       } text-white`}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Balanço Mensal</span>
-          <Wallet size={18} className="opacity-80" />
+          <div className="flex flex-col items-center bg-white/90 rounded-lg w-9 h-9 overflow-hidden shadow-sm flex-shrink-0">
+            <div className="bg-red-500 w-full text-center leading-none py-[2px]">
+              <span className="text-[6px] font-bold text-white uppercase">{new Date().toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase().replace('.', '')}</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-[11px] font-black text-gray-900 leading-none">{new Date().getDate()}</span>
+            </div>
+          </div>
         </div>
         <p className="text-3xl font-black break-all">{fmt(Math.abs(saldoAtual) < 0.01 ? 0 : saldoAtual)}</p>
         <div className="flex items-center gap-2 mt-2">

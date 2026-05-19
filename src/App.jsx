@@ -6,6 +6,7 @@ import { useFinance } from './hooks/useFinance'
 import { useTotals } from './hooks/useTotals'
 import { useAlerts } from './hooks/useAlerts'
 import { useFilteredData } from './hooks/useFilteredData'
+import { getCurrentDateFromPeriod, createDefaultPeriod } from './lib/periodHelpers'
 import { useFinanceActions } from './hooks/useFinanceActions'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { useOffline } from './hooks/useOffline'
@@ -48,7 +49,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState(TABS.DASHBOARD)
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [period, setPeriod] = useState(() => createDefaultPeriod('month'))
 
   const [uiState, dispatch] = useReducer(uiReducer, initialUIState)
   const { isModalOpen, editingTransaction, isSaving, savingMessage, toast, showAlerts, undo } = uiState
@@ -73,9 +74,7 @@ export default function App() {
     dispatch({ type: UI_ACTIONS.SHOW_TOAST, payload: { message: 'Sessão expirada. Faça login novamente.', type: 'error' } })
   }, [])
 
-  const mesStr = useMemo(() => {
-    return `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
-  }, [currentDate])
+  const currentDate = useMemo(() => getCurrentDateFromPeriod(period), [period])
 
   const { data, loading, refresh } = useFinance(user)
   const { cartoes, faturas, criarCartao, editarCartao, excluirCartao } = useCartoes(user)
@@ -87,7 +86,7 @@ export default function App() {
   const alertas = useAlertas(data, saldo, currentDate)
   const { zerarCaixinha } = useCaixinhas(user)
   
-  const filteredData = useFilteredData(data, currentDate)
+  const filteredData = useFilteredData(data, period)
   const totals = useTotals(filteredData, currentDate)
   
   const { overdueCount, todayCount } = useAlerts(data)
@@ -152,12 +151,8 @@ export default function App() {
 
   const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(refresh)
 
-  const changeMonth = useCallback((direction) => {
-    setCurrentDate(prev => {
-      const d = new Date(prev)
-      d.setMonth(d.getMonth() + direction)
-      return d
-    })
+  const handlePeriodChange = useCallback((newPeriod) => {
+    setPeriod(newPeriod)
   }, [])
 
   // Calcular saldo atual
@@ -184,8 +179,8 @@ export default function App() {
           renda={totals.renda}
           totalDespesas={totals.gastosTotal}
           reservaTotal={totals.reservaTotal}
-          currentDate={currentDate}
-          onMonthChange={changeMonth}
+          period={period}
+          onPeriodChange={handlePeriodChange}
           onLogout={() => supabase.auth.signOut()}
           isLoading={loading}
           onRefresh={refresh}
