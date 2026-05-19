@@ -62,6 +62,9 @@ function AccumulatedComparison({ dayNumber, dayType, currentDate, allTransaction
   const isMelhor = dayType === 'gasto' ? diferenca <= 0 : diferenca >= 0
   
   const barColor = isMelhor ? 'bg-emerald-500' : 'bg-rose-500'
+  const barWidth = mediaAcumulada > 0
+    ? Math.min((valorAtualAcumulado / mediaAcumulada) * 100, 100)
+    : (valorAtualAcumulado > 0 ? 100 : 0)
   
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">

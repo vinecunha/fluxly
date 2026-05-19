@@ -595,6 +595,11 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
     setSelectedCategory(null)
   }
 
+  const handleTabChange = (newTab) => {
+    setTab(newTab)
+    resetFilters()
+  }
+
   const tabConfig = {
     gasto: { title: 'Gastos', value: viewTotal, color: 'rose', icon: TrendingDown, trendLabel: 'vs média 3 meses' },
     renda: { title: 'Renda', value: viewTotal, color: 'emerald', icon: TrendingUp, trendLabel: 'vs média 3 meses' },
@@ -626,7 +631,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
       )}
 
       {/* Seletor de Tab */}
-      <TabSelector tab={tab} onTabChange={setTab} />
+      <TabSelector tab={tab} onTabChange={handleTabChange} />
 
       {/* Card Total */}
       <TotalCard
