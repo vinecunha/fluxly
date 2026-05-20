@@ -2,20 +2,12 @@ import { useState } from 'react'
 import { Bell, X } from 'lucide-react'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 
-/**
- * NotificationPrompt
- *
- * Exibe um banner discreto pedindo permissão de notificações.
- * Aparece uma vez; o usuário pode dispensar permanentemente.
- * Coloque no App.jsx logo abaixo do OfflineBanner.
- */
 export function NotificationPrompt() {
   const { permission, requestPermission } = usePushNotifications()
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem('fluxly_notif_dismissed') === '1'
   )
 
-  // Não mostra se já tem permissão, negou, ou dispensou o banner
   if (permission !== 'default' || dismissed) return null
 
   const handleDismiss = () => {
@@ -25,33 +17,33 @@ export function NotificationPrompt() {
 
   const handleAllow = async () => {
     const result = await requestPermission()
-    if (result !== 'default') setDismissed(true) // sai do banner após decisão
+    if (result !== 'default') setDismissed(true)
   }
 
   return (
-    <div className="mx-4 mb-3 bg-slate-50 border border-slate-100 rounded-2xl-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top duration-300">
-      <div className="bg-slate-100 p-2 rounded-2xl-xl flex-shrink-0">
-        <Bell size={16} className="text-slate-600" />
+    <div className="mx-4 mb-4 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-lg shadow-blue-200 animate-in slide-in-from-top duration-300">
+      <div className="bg-white/20 p-2.5 rounded-xl flex-shrink-0">
+        <Bell size={20} className="text-white" />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-black text-slate-800 leading-tight">Ativar lembretes de vencimento</p>
-        <p className="text-[10px] text-slate-500 mt-0.5">Receba avisos antes das contas vencerem.</p>
+        <p className="text-sm font-bold text-white leading-tight">Ativar lembretes de vencimento</p>
+        <p className="text-xs text-blue-100 mt-0.5">Receba avisos antes das contas vencerem.</p>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={handleAllow}
-          className="bg-slate-900 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-2xl-xl active:scale-95 transition-all"
+          className="bg-white text-blue-600 text-xs font-bold uppercase px-5 py-2.5 rounded-xl active:scale-95 transition-all hover:bg-blue-50 shadow-md"
         >
           Ativar
         </button>
         <button
           onClick={handleDismiss}
-          className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+          className="text-white/60 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded-lg"
           aria-label="Dispensar"
         >
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
     </div>

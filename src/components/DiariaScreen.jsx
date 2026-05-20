@@ -58,15 +58,39 @@ function fimMes(d) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0)
 }
 
-function agregar(lista) {
-  return lista.reduce((s, d) => ({
-    km: s.km + (d.km_rodados || 0),
-    horas: s.horas + (d.horas_operacao || 0),
-    custoGnv: s.custoGnv + (d.custo_gnv || 0),
-    custoGas: s.custoGas + (d.custo_gasolina || 0),
-    ganhos: s.ganhos + (d.ganhos || 0),
-    outrosGastos: s.outrosGastos + (d.outros_gastos || 0),
-  }), { km: 0, horas: 0, custoGnv: 0, custoGas: 0, ganhos: 0, outrosGastos: 0 })
+function calcGasolinaCarryOver(historicoFull, targetDataStr) {
+  if (!historicoFull?.length || !targetDataStr) return 0
+  const targetDate = new Date(targetDataStr + 'T12:00:00')
+  let carryOver = 0
+  for (const dia of historicoFull) {
+    if (!dia.data || dia.data >= targetDataStr) continue
+    const entries = Array.isArray(dia.gasolina_entries_jsonb) ? dia.gasolina_entries_jsonb : []
+    for (const entry of entries) {
+      const dias = Math.max(1, entry.dias || 1)
+      const custo = entry.custo || entry.valor || 0
+      if (custo <= 0) continue
+      const entryDate = new Date(dia.data + 'T12:00:00')
+      const diffDays = Math.round((targetDate - entryDate) / (1000 * 60 * 60 * 24))
+      if (diffDays >= 0 && diffDays < dias) {
+        carryOver += custo / dias
+      }
+    }
+  }
+  return Math.round(carryOver * 100) / 100
+}
+
+function agregar(lista, historicoFull) {
+  return lista.reduce((s, d) => {
+    const carry = historicoFull ? calcGasolinaCarryOver(historicoFull, d.data) : 0
+    return {
+      km: s.km + (d.km_rodados || 0),
+      horas: s.horas + (d.horas_operacao || 0),
+      custoGnv: s.custoGnv + (d.custo_gnv || 0),
+      custoGas: s.custoGas + (d.custo_gasolina || 0) + carry,
+      ganhos: s.ganhos + (d.ganhos || 0),
+      outrosGastos: s.outrosGastos + (d.outros_gastos || 0),
+    }
+  }, { km: 0, horas: 0, custoGnv: 0, custoGas: 0, ganhos: 0, outrosGastos: 0 })
 }
 
 // ─── Insights ────────────────────────────────────────────────────────────────
@@ -95,8 +119,8 @@ function InsightsCards({ historicoFull, hoje }) {
     const ontemEntry = todas.find(d => d.data === ontemStr)
     if (hojeEntry && hojeEntry.km_rodados > 0 && ontemEntry && ontemEntry.km_rodados > 0) {
       const h = hojeEntry; const o = ontemEntry
-      const custoHoje = (h.custo_gnv || 0) + (h.custo_gasolina || 0)
-      const custoOntem = (o.custo_gnv || 0) + (o.custo_gasolina || 0)
+      const custoHoje = (h.custo_gnv || 0) + (h.custo_gasolina || 0) + calcGasolinaCarryOver(todas, hojeStr)
+      const custoOntem = (o.custo_gnv || 0) + (o.custo_gasolina || 0) + calcGasolinaCarryOver(todas, ontemStr)
       const lucroHoje = (h.ganhos || 0) - custoHoje
       const lucroOntem = (o.ganhos || 0) - custoOntem
       const itens = [
@@ -112,8 +136,8 @@ function InsightsCards({ historicoFull, hoje }) {
     }
 
     // ── Semana Atual vs Semana Passada ──
-    const semanaAtual = agregar(todas.filter(d => d.data >= diaStr(semanaAtualInicio) && d.data <= diaStr(semanaAtualFim)))
-    const semanaPassada = agregar(todas.filter(d => d.data >= diaStr(semanaPassadaInicio) && d.data <= diaStr(semanaPassadaFim)))
+    const semanaAtual = agregar(todas.filter(d => d.data >= diaStr(semanaAtualInicio) && d.data <= diaStr(semanaAtualFim)), todas)
+    const semanaPassada = agregar(todas.filter(d => d.data >= diaStr(semanaPassadaInicio) && d.data <= diaStr(semanaPassadaFim)), todas)
     if (semanaAtual.km > 0 && semanaPassada.km > 0) {
       const custoAtual = semanaAtual.custoGnv + semanaAtual.custoGas
       const custoPassado = semanaPassada.custoGnv + semanaPassada.custoGas
@@ -135,8 +159,8 @@ function InsightsCards({ historicoFull, hoje }) {
     }
 
     // ── Mês Atual vs Mês Passado ──
-    const mesAtual = agregar(todas.filter(d => d.data >= diaStr(mesAtualInicio) && d.data <= diaStr(mesAtualFim)))
-    const mesPassado = agregar(todas.filter(d => d.data >= diaStr(mesPassadoInicio) && d.data <= diaStr(mesPassadoFim)))
+    const mesAtual = agregar(todas.filter(d => d.data >= diaStr(mesAtualInicio) && d.data <= diaStr(mesAtualFim)), todas)
+    const mesPassado = agregar(todas.filter(d => d.data >= diaStr(mesPassadoInicio) && d.data <= diaStr(mesPassadoFim)), todas)
     if (mesAtual.km > 0 && mesPassado.km > 0) {
       const custoAtualM = mesAtual.custoGnv + mesAtual.custoGas
       const custoPassadoM = mesPassado.custoGnv + mesPassado.custoGas
@@ -407,8 +431,8 @@ export function DiariaScreen({ user, diariasHook, period, transacoes }) {
 
   // ─── Agregado do período ─────────────────────────────────────────────────
   const agregadoPeriodo = useMemo(() => {
-    return agregar(diariasDoPeriodo)
-  }, [diariasDoPeriodo])
+    return agregar(diariasDoPeriodo, historicoFull)
+  }, [diariasDoPeriodo, historicoFull])
 
   // ─── Data alvo (para modo dia) ────────────────────────────────────────────
   const dataAlvo = useMemo(() => {
@@ -537,17 +561,25 @@ export function DiariaScreen({ user, diariasHook, period, transacoes }) {
   const lucroLiquido = ganhosFinal - totalGastos
 
   // ─── Valores efetivos (hoje = local state, passado = diariaAlvo) ──────────
+  const gasolinaCarryOver = ehModoDia ? calcGasolinaCarryOver(historicoFull, dataAlvoStr) : 0
+
   const ef = useMemo(() => {
-    if (ehHoje) return {
-      km: kmFinal, horas: horasFinal, kmPorHora: kmPorHora,
-      custoGnv: gnvTotalCusto, custoGasolina: gasTotalCusto,
-      volumeGnv: gnvTotalVolume, litrosGasolina: gasTotalLitros,
-      custoCombustivel: custoCombustivel, outrosGastos: outrosGastosFinal,
-      totalGastos: totalGastos, custoPorKm: custoPorKm,
-      ganhos: ganhosFinal, lucroBruto: lucroBruto, lucroLiquido: lucroLiquido,
+    if (ehHoje) {
+      const cg = gasTotalCusto + gasolinaCarryOver
+      const cc = gnvTotalCusto + cg
+      const tg = cc + outrosGastosFinal
+      return {
+        km: kmFinal, horas: horasFinal, kmPorHora: kmPorHora,
+        custoGnv: gnvTotalCusto, custoGasolina: cg,
+        volumeGnv: gnvTotalVolume, litrosGasolina: gasTotalLitros,
+        custoCombustivel: cc, outrosGastos: outrosGastosFinal,
+        totalGastos: tg, custoPorKm: kmFinal > 0 ? cc / kmFinal : 0,
+        ganhos: ganhosFinal, lucroBruto: ganhosFinal - cc, lucroLiquido: ganhosFinal - tg,
+      }
     }
     const d = diariaAlvo
-    const cc = (d?.custo_gnv || 0) + (d?.custo_gasolina || 0)
+    const cg = (d?.custo_gasolina || 0) + gasolinaCarryOver
+    const cc = (d?.custo_gnv || 0) + cg
     const og = d?.outros_gastos || 0
     const tg = cc + og
     const g = d?.ganhos || 0
@@ -555,7 +587,7 @@ export function DiariaScreen({ user, diariasHook, period, transacoes }) {
     const h = d?.horas_operacao || 0
     return {
       km, horas: h, kmPorHora: h > 0 ? km / h : 0,
-      custoGnv: d?.custo_gnv || 0, custoGasolina: d?.custo_gasolina || 0,
+      custoGnv: d?.custo_gnv || 0, custoGasolina: cg,
       volumeGnv: d?.volume_gnv || 0, litrosGasolina: d?.litros_gasolina || 0,
       custoCombustivel: cc, outrosGastos: og, totalGastos: tg,
       custoPorKm: km > 0 ? cc / km : 0, ganhos: g,
@@ -563,7 +595,8 @@ export function DiariaScreen({ user, diariasHook, period, transacoes }) {
     }
   }, [ehHoje, kmFinal, horasFinal, kmPorHora, gnvTotalCusto, gasTotalCusto,
       gnvTotalVolume, gasTotalLitros, custoCombustivel, outrosGastosFinal,
-      totalGastos, custoPorKm, ganhosFinal, lucroBruto, lucroLiquido, diariaAlvo])
+      totalGastos, custoPorKm, ganhosFinal, lucroBruto, lucroLiquido, diariaAlvo,
+      gasolinaCarryOver])
 
   // ─── Salvar módulo ─────────────────────────────────────────────────────────
   const salvarModulo = async (dadosModulo, dadosPerfil = {}) => {

@@ -196,9 +196,9 @@ export default function App() {
           isSaving={isSaving}
         />
 
-        <div className="px-4 pt-3 space-y-4">
-          <NotificationPrompt />
+        <NotificationPrompt />
 
+        <div className="px-4 pt-3 space-y-4">
           {loading ? (
             <DataLoaderSkeleton type="dashboard" />
           ) : (
