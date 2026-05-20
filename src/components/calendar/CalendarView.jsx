@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { TAB_CONFIG, fmtFull, getDayValue, calculateMaxDay } from './constants'
 import { getTransactionValue, getDayCategory } from './transactionUtils'
 import StatusCard from './StatusCard'
@@ -7,6 +8,7 @@ import AccumulatedComparison from './AccumulatedComparison'
 import CalendarHeader from './CalendarHeader'
 import CalendarGrid from './CalendarGrid'
 import TransactionList from './TransactionList'
+import MonthlyOverview from './MonthlyOverview'
 
 export function CalendarView({ 
   transactions = [], 
@@ -14,18 +16,30 @@ export function CalendarView({
   currentDate, 
   onDaySelect, 
   filteredCategory, 
-  allTransactions = [] 
+  allTransactions = [],
+  periodType = 'month'
 }) {
-  const today    = new Date()
   const viewDate = currentDate instanceof Date ? currentDate : new Date()
   const year     = viewDate.getFullYear()
   const month    = viewDate.getMonth()
   const cfg      = TAB_CONFIG[activeTab] || TAB_CONFIG.gasto
 
-  const [selectedDay, setSelectedDay] = useState(null)
+  const isYearView = periodType === 'year' || periodType === '12months'
+
+  const [selectedDay, setSelectedDay] = useState(
+    periodType === 'today' ? today.getDate() : null
+  )
+
+  useEffect(() => {
+    if (periodType === 'today') {
+      setSelectedDay(new Date().getDate())
+    } else if (!isYearView) {
+      setSelectedDay(null)
+    }
+  }, [periodType, isYearView])
 
   const dayMap = useMemo(() => {
-    setSelectedDay(null)
+    if (isYearView) return {}
     const map = {}
 
     ;(transactions || []).forEach(t => {
@@ -49,7 +63,7 @@ export function CalendarView({
       }
     })
     return map
-  }, [transactions, year, month, activeTab])
+  }, [transactions, year, month, activeTab, periodType, isYearView])
 
   const isInvestimento = activeTab === 'investimento'
 
@@ -73,6 +87,32 @@ export function CalendarView({
   const selectedKey  = selectedDay ? `${year}-${String(month + 1).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}` : null
   const selectedData = selectedKey ? dayMap[selectedKey] : null
   const valorDiaSelecionado = selectedData ? getDayValue(selectedData, isInvestimento, activeTab) : 0
+
+  const weekDays = useMemo(() => {
+    if (periodType !== 'week') return []
+    const now = new Date()
+    const day = now.getDay()
+    const diffToMonday = day === 0 ? -6 : 1 - day
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + i)
+      if (d.getMonth() === month && d.getFullYear() === year) {
+        days.push(d.getDate())
+      }
+    }
+    return days
+  }, [periodType, month, year])
+
+  if (isYearView) {
+    return (
+      <MonthlyOverview
+        allTransactions={allTransactions}
+        activeTab={activeTab}
+        currentDate={currentDate}
+        periodType={periodType}
+      />
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -101,6 +141,7 @@ export function CalendarView({
           setSelectedDay={setSelectedDay}
           onDaySelect={onDaySelect}
           filteredCategory={filteredCategory}
+          weekDays={weekDays}
         />
 
         {isInvestimento && (

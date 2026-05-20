@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { env } from '../lib/env'
+import { env } from '@lib/env'
+import { logger } from '@lib/logger'
 
 type NotificationPermission = 'granted' | 'denied' | 'default'
 
@@ -80,12 +81,12 @@ async function _subscribeToPush(): Promise<PushSubscription | undefined> {
     })
 
     if (env.IS_DEV) {
-      console.info('[Push] Inscrição criada:', JSON.stringify(subscription))
+      logger.info('[Push] Inscrição criada:', JSON.stringify(subscription))
     }
 
     return subscription
   } catch (err) {
-    console.warn('[Push] Falha ao inscribver:', err)
+    logger.warn('[Push] Falha ao inscribver:', err)
   }
 }
 

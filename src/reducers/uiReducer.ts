@@ -1,5 +1,5 @@
-import { UI_ACTIONS } from '../lib/constants'
-import type { UIState, Transaction } from '../types'
+import { UI_ACTIONS } from '@lib/constants'
+import type { UIState, Transaction } from '@types'
 
 export const initialUIState: UIState = {
   isModalOpen: false,

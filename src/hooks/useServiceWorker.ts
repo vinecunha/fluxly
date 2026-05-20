@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { logger } from '@lib/logger'
 
 export function useServiceWorker(): void {
   useEffect(() => {
@@ -6,17 +7,17 @@ export function useServiceWorker(): void {
       const basePath = import.meta.env.BASE_URL || '/'
       const swPath = `${basePath}sw.js`
       
-      console.log('[SW] Registrando em:', swPath)
+      logger.log('[SW] Registrando em:', swPath)
       
       navigator.serviceWorker.register(swPath)
         .then(registration => {
-          console.log('[SW] Registrado com sucesso! Scope:', registration.scope)
+          logger.log('[SW] Registrado com sucesso! Scope:', registration.scope)
         })
         .catch(err => {
-          console.error('[SW] Falha no registro:', err)
+          logger.error('[SW] Falha no registro:', err)
         })
     } else {
-      console.warn('[SW] Service Worker não suportado neste navegador')
+      logger.warn('[SW] Service Worker não suportado neste navegador')
     }
   }, [])
 }

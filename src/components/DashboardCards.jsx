@@ -1,7 +1,7 @@
 import React from 'react'
 import { TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownRight, CircleDollarSign, Info, CheckCircle2 } from 'lucide-react'
 import { WidgetDia } from './WidgetDia'
-import { fmt } from '../lib/formatters'
+import { fmt } from '@lib/formatters'
 
 export function DashboardCards({ renda, gastos, despesasPagas, reserva, saldoProjetado, saldoAtual, saldo, totals, onVerDetalhes, isLoading }) {
   // Calcula o percentual de gasto em relação à renda

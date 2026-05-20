@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '@lib/supabase'
 import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 const VIEWS = { LOGIN: 'login', REGISTER: 'register', FORGOT: 'forgot' }

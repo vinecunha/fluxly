@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Search, X, ArrowUpDown, Filter, CheckCircle2, Edit3, Trash2, TrendingUp, TrendingDown, PiggyBank, CreditCard } from 'lucide-react'
-import { categoryIcons } from '../lib/categories'
+import { categoryIcons } from '@lib/categories'
 
 const ITEMS_PER_PAGE = 8
 const SORT_OPTIONS = [

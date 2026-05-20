@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { CreditCard, ChevronRight, Plus, ChevronDown, ChevronUp } from 'lucide-react'
-import { getFaturasExibicao } from '../lib/faturaHelpers'
-import { fmt, fmtShort } from '../lib/formatters'
+import { getFaturasExibicao } from '@lib/faturaHelpers'
+import { fmt, fmtShort } from '@lib/formatters'
+import { logger } from '@lib/logger'
 
 const CORES = [
   { id: 'slate', bg: 'bg-slate-800', hex: '#1e293b' },
@@ -52,7 +53,7 @@ export function CartoesResumo({ cartoes, onCriar, onEditar, onExcluir, allTransa
       setShowForm(false)
       setForm({ nome: '', limite: '', vencimento: '', fechamento: '', cor: 'slate' })
     } catch (err) {
-      console.error('Erro ao salvar cartão:', err)
+      logger.error('Erro ao salvar cartão:', err)
     } finally {
       setSaving(false)
     }

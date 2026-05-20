@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { AUTO_PAID_TYPES, UI_ACTIONS } from '../lib/constants'
-import { logger } from '../lib/logger'
-import type { Transaction, User } from '../types'
+import { supabase } from '@lib/supabase'
+import { AUTO_PAID_TYPES, UI_ACTIONS } from '@lib/constants'
+import { logger } from '@lib/logger'
+import type { Transaction, User } from '@types'
 
 const UNDO_TIMEOUT = 5000
 const MAX_RECORRENCIAS = 120

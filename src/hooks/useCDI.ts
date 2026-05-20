@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { logger } from '@lib/logger'
 
 interface UseCDIReturn {
   taxaAnual: number
@@ -21,7 +22,7 @@ export function useCDI(): UseCDIReturn {
           setTaxaAnual(anual)
         }
       } catch (error) {
-        console.error("Erro ao buscar CDI real:", error)
+        logger.error("Erro ao buscar CDI real:", error)
       } finally {
         setLoading(false)
       }

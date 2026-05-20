@@ -5,8 +5,8 @@ import {
   ArrowUp, ArrowDown, Undo2, Tag, AlertTriangle, Filter,
   TrendingDown, Clock, CreditCard, ChevronDown, ChevronUp
 } from 'lucide-react'
-import { categoryIcons } from '../lib/categories'
-import { getFaturasExibicao } from '../lib/faturaHelpers'
+import { categoryIcons } from '@lib/categories'
+import { getFaturasExibicao } from '@lib/faturaHelpers'
 import { CartoesResumo } from './CartoesResumo'
 
 const fmt  = (v) => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`

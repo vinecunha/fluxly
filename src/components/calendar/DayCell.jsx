@@ -5,7 +5,8 @@ import { TAB_CONFIG, fmt } from './constants'
 function DayCell({ 
   dayNum, isValid, dateKey, data, isToday, isSelected, 
   cfg, isInvestimento, maxDay, filteredCategory, dayMap,
-  onDaySelect, year, month, selectedDay, setSelectedDay 
+  onDaySelect, year, month, selectedDay, setSelectedDay,
+  isWeekDay = false
 }) {
   const mainVal = data ? (isInvestimento ? data.entrada + data.saida : data.entrada + data.saida) : 0
   const pct = data ? Math.max((mainVal / maxDay) * 100, 8) : 0
@@ -31,6 +32,7 @@ function DayCell({
         : filteredCategory && data?.cats?.has(filteredCategory) ? cfg.bg
         : filteredCategory && data && !data.cats?.has(filteredCategory) ? 'opacity-20'
         : filteredCategory && !data ? 'opacity-10'
+        : isWeekDay ? 'bg-slate-100/70'
         : 'hover:bg-gray-50 active:bg-gray-100'
       }`}
     >

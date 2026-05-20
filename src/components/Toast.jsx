@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { X, CheckCircle2, AlertCircle } from 'lucide-react'
-import { UI_ACTIONS } from '../lib/constants'
+import { UI_ACTIONS } from '@lib/constants'
 
 export function Toast({ message, type = 'error', dispatch }) {
   useEffect(() => {

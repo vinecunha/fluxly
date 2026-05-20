@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Target, Plus, ChevronRight, Trash2, Edit3, Archive, AlertCircle, X, Save, CheckCircle2, PiggyBank, TrendingUp, Calendar, Settings, Zap } from 'lucide-react'
-import { fmt, toUSDate } from '../lib/formatters'
+import { fmt, toUSDate } from '@lib/formatters'
 
 // ─── Componente de Meta Diária/Mensal ────────────────────────────────────────
 function DailyGoalCard({ rendaHoje, onUpdateGoal, metas }) {
@@ -184,7 +184,7 @@ function SwipeableMetaCard({ meta, onDepositar, onEditar, onAjustarValor, onDele
     nome:           meta.nome,
     valor_objetivo: meta.valor_objetivo,
     categoria:      meta.categoria || '',
-    prazo:          formatDateToUS(meta.prazo),
+    prazo:          toUSDate(meta.prazo),
   })
 
   const haptic = () => { try { navigator.vibrate?.(30) } catch(_){} }

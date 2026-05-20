@@ -5,7 +5,7 @@ import DayCell from './DayCell'
 function CalendarGrid({ 
   year, month, firstDay, daysInMonth, totalCells, dayMap, maxDay,
   cfg, isInvestimento, selectedDay, setSelectedDay, onDaySelect,
-  filteredCategory
+  filteredCategory, weekDays = []
 }) {
   return (
     <>
@@ -46,6 +46,7 @@ function CalendarGrid({
               month={month}
               selectedDay={selectedDay}
               setSelectedDay={setSelectedDay}
+              isWeekDay={weekDays.includes(dayNum)}
             />
           )
         })}

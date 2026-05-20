@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { logger } from '../lib/logger'
-import type { Transaction, User } from '../types'
+import { supabase } from '@lib/supabase'
+import { logger } from '@lib/logger'
+import type { Transaction, User } from '@types'
 
 interface UseFinanceReturn {
   data: Transaction[]

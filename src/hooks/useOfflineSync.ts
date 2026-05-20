@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import type { Transaction } from '../types'
+import { supabase } from '@lib/supabase'
+import type { Transaction } from '@types'
 
 interface UseOfflineSyncParams {
   refresh: () => Promise<void>

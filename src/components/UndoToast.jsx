@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Undo2 } from 'lucide-react'
-import { UI_ACTIONS } from '../lib/constants'
+import { UI_ACTIONS } from '@lib/constants'
 
 const UNDO_TIMEOUT = 5000
 

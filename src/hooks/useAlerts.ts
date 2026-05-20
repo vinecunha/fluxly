@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import type { Transaction } from '../types'
-import { getTodayString } from '../lib/dateHelpers'
+import type { Transaction } from '@types'
+import { getTodayString } from '@lib/dateHelpers'
 
 export function useAlerts(data: Transaction[]) {
   const todayStr = getTodayString()

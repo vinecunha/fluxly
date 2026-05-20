@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import type { Cartao, User } from '../types'
+import { supabase } from '@lib/supabase'
+import type { Cartao, User } from '@types'
+import { logger } from '@lib/logger'
 
 interface UseCartoesReturn {
   cartoes: Cartao[]
@@ -35,13 +36,13 @@ export function useCartoes(user: User | null): UseCartoesReturn {
   useEffect(() => { refresh() }, [refresh])
 
   const criarCartao = async (dados: Partial<Cartao>) => {
-    console.log('🔵 criarCartao chamado com:', dados)
+    logger.log('🔵 criarCartao chamado com:', dados)
     const { error } = await supabase.from('cartoes').insert([{ ...dados, user_id: user?.id }])
     if (error) {
-      console.error('🔴 Erro ao criar cartão:', error)
+      logger.error('🔴 Erro ao criar cartão:', error)
       throw error
     }
-    console.log('✅ Cartão criado com sucesso')
+    logger.log('✅ Cartão criado com sucesso')
     await refresh()
   }
 

@@ -65,7 +65,7 @@ export function getPeriodRange(period: PeriodState): PeriodRange {
     }
     case '12months': {
       const end = toEndOfDay(new Date(ref.getFullYear(), ref.getMonth() + 1, 0))
-      const start = toStartOfDay(new Date(end.getFullYear() - 1, end.getMonth(), 1))
+      const start = toStartOfDay(new Date(end.getFullYear() - 1, end.getMonth() + 1, 1))
       return { start, end }
     }
     case 'custom': {
@@ -78,9 +78,13 @@ export function getPeriodRange(period: PeriodState): PeriodRange {
 
 export function getPeriodLabel(period: PeriodState): string {
   const ref = period.referenceDate
+  const hoje = new Date()
   switch (period.type) {
-    case 'today':
-      return `HOJE, ${ref.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase()}`
+    case 'today': {
+      const dataStr = ref.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toUpperCase()
+      if (ref.toDateString() === hoje.toDateString()) return `HOJE, ${dataStr}`
+      return dataStr
+    }
     case 'week': {
       const r = getPeriodRange(period)
       return `${fmtDate(r.start)} - ${fmtDate(r.end)}`

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { logger } from '../lib/logger'
-import type { User } from '../types'
+import { supabase } from '@lib/supabase'
+import { logger } from '@lib/logger'
+import type { User } from '@types'
 
 interface CaixinhaItem {
   transacao_id: string

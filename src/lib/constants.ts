@@ -1,4 +1,4 @@
-import type { TransactionType, TabType } from '../types'
+import type { TransactionType, TabType } from '@types'
 
 export const AUTO_PAID_TYPES: TransactionType[] = ['gasto_diario', 'renda', 'reserva', 'retirada', 'pagamento_cartao']
 
@@ -8,7 +8,7 @@ export const TABS: Record<string, TabType> = {
   FLOW: 'flow',
   ANALYTICS: 'analytics',
   CARTOES: 'cartoes',
-  INTELLIGENCE: 'intelligence',
+  DIARIAS: 'diarias',
   METAS: 'metas',
 }
 

@@ -106,13 +106,62 @@ export interface UIState {
   undo: UndoAction | null
 }
 
+export interface Diaria {
+  id: string
+  user_id: string
+  data: string
+  km_rodados: number
+  hodometro_inicial?: number | null
+  hodometro_final?: number | null
+  horas_operacao: number
+  custo_gnv: number
+  volume_gnv: number
+  preco_gnv?: number | null
+  gnv_entries_jsonb?: any[] | null
+  custo_gasolina: number
+  litros_gasolina: number
+  preco_gasolina?: number | null
+  gasolina_entries_jsonb?: any[] | null
+  ganhos: number
+  outros_gastos: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface PerfilMotorista {
+  id: string
+  user_id: string
+  preco_gnv?: number | null
+  preco_gasolina?: number | null
+  ultimo_hodometro?: number | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DiariaState {
+  etapa: 'km' | 'tempo' | 'gnv' | 'gasolina' | 'resumo' | 'salvo'
+  km_rodados: number
+  hodometro_inicial: number | null
+  hodometro_final: number | null
+  horas_operacao: number
+  volume_gnv: number
+  preco_gnv: number | null
+  custo_gnv: number
+  litros_gasolina: number
+  preco_gasolina: number | null
+  custo_gasolina: number
+  ganhos: number
+  km_por_hora: number
+  custo_por_km: number
+}
+
 export type TabType = 
   | 'dashboard' 
   | 'bills' 
   | 'flow' 
   | 'analytics' 
   | 'cartoes' 
-  | 'intelligence' 
+  | 'diarias'
   | 'metas'
 
 export interface Totals {

@@ -5,7 +5,7 @@ import {
   TrendingUp, TrendingDown
 } from 'lucide-react'
 import PeriodFilter from './PeriodFilter'
-import { getCurrentDateFromPeriod, isCurrentPeriod } from '../lib/periodHelpers'
+import { getCurrentDateFromPeriod, isCurrentPeriod } from '@lib/periodHelpers'
 
 // Componente de notificação individual
 function NotificationItem({ notification, onClose }) {

@@ -14,6 +14,7 @@ import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useCartoes } from './hooks/useCartoes'
 import { useCaixinhas } from './hooks/useCaixinhas'
 import { useMetas } from './hooks/useMetas'
+import { useDiarias } from './hooks/useDiarias'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { InitialLoader, DataLoaderSkeleton } from './components/SkeletonLoader'
 
@@ -30,14 +31,15 @@ import { OfflineBanner } from './components/OfflineBanner'
 import { NotificationPrompt } from './components/NotificationPrompt'
 import { TransactionModal } from './components/TransactionModal'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
-import { IntelligenceScreen } from './components/IntelligenceScreen'
 import { DashboardCards } from './components/DashboardCards'
 import { AlertPriorityList } from './components/AlertPriorityList'
+import { logger } from '@lib/logger'
 
 const BillsList = lazy(() => import('./components/BillsList').then(m => ({ default: m.BillsList })))
 const RecentFlow = lazy(() => import('./components/RecentFlow').then(m => ({ default: m.RecentFlow })))
 const FinancialAnalytics = lazy(() => import('./components/FinancialAnalytics').then(m => ({ default: m.FinancialAnalytics })))
 const MetasScreen = lazy(() => import('./components/MetasScreen').then(m => ({ default: m.MetasScreen })))
+const DiariaScreen = lazy(() => import('./components/DiariaScreen').then(m => ({ default: m.DiariaScreen })))
 
 const TAB_FALLBACK = (
   <div className="flex items-center justify-center py-20">
@@ -104,6 +106,8 @@ export default function App() {
     loading: loadingMetas 
   } = useMetas(user)
 
+  const diarias = useDiarias(user)
+
   const { handleSave, handleDelete, handleQuickPay: _handleQuickPay } = useFinanceActions({
     user, data, refresh, dispatch, editingTransaction,
     onSessionExpired: handleSessionExpired,
@@ -139,7 +143,7 @@ export default function App() {
         payload: { message: `${transacoes.length} transações importadas!`, type: 'success' } 
       })
     } catch (error) {
-      console.error('Erro na importação:', error)
+      logger.error('Erro na importação:', error)
       dispatch({ 
         type: UI_ACTIONS.SHOW_TOAST, 
         payload: { message: 'Erro ao importar', type: 'error' } 
@@ -246,29 +250,11 @@ export default function App() {
                 transactions={filteredData}
                 allTransactions={data}
                 currentDate={currentDate}
+                period={period}
               />
             )}
-            {activeTab === TABS.INTELLIGENCE && (
-              <IntelligenceScreen
-                allTransactions={data}
-                currentDate={currentDate}
-                user={user}
-                metas={metas}
-                onVerMeta={(metaId) => {
-                  setActiveTab(TABS.METAS)
-                  // Opcional: scroll para a meta
-                }}
-                onCriarMetaParaConta={async (conta) => {
-                  const result = await criarMetaParaConta(
-                    conta.id,
-                    `Pagar: ${conta.descricao}`,
-                    conta.valor
-                  )
-                  if (result.success) {
-                    setActiveTab(TABS.METAS)
-                  }
-                }}
-              />
+            {activeTab === TABS.DIARIAS && (
+              <DiariaScreen user={user} diariasHook={diarias} period={period} transacoes={data} />
             )}
             {activeTab === TABS.METAS && (
                 <MetasScreen

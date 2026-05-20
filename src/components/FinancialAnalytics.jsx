@@ -4,11 +4,11 @@ import {
   DollarSign, PiggyBank, Building2, Wallet,
   ChevronRight, Zap, Calendar, BarChart3, PieChart, Target
 } from 'lucide-react'
-import { categoryIcons } from '../lib/categories'
-import { useMonthlyAverages } from '../hooks/useMonthlyAverages'
-import { useCDI } from '../hooks/useCDI'
+import { categoryIcons } from '@lib/categories'
+import { useMonthlyAverages } from '@hooks/useMonthlyAverages'
+import { useCDI } from '@hooks/useCDI'
 import { CalendarView } from './CalendarView'
-import { fmt, fmtK, PALETTE } from '../lib/formatters'
+import { fmt, fmtK, PALETTE } from '@lib/formatters'
 
 // ─── Seletor de Tab (estilo moderno) ─────────────────────────────────────────
 function TabSelector({ tab, onTabChange }) {
@@ -536,7 +536,7 @@ function CategoryRanking({ allTransactions, tab, currentDate }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export function FinancialAnalytics({ transactions = [], allTransactions = [], currentDate }) {
+export function FinancialAnalytics({ transactions = [], allTransactions = [], currentDate, period }) {
   const [tab, setTab] = useState('gasto')
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(null)
@@ -677,6 +677,7 @@ export function FinancialAnalytics({ transactions = [], allTransactions = [], cu
         onDaySelect={handleDaySelect}
         filteredCategory={selectedCategory}
         allTransactions={allTransactions}
+        periodType={period?.type}
       />
     </section>
   )

@@ -1,5 +1,5 @@
-import { LayoutDashboard, BarChart3, ReceiptText, Plus, CreditCard, Brain, Target, TrendingUp, TrendingDown, PiggyBank, Zap } from 'lucide-react'
-import { TABS } from '../lib/constants'
+import { LayoutDashboard, BarChart3, ReceiptText, Plus, CreditCard, Target, TrendingUp, TrendingDown, PiggyBank, Zap, CarFront } from 'lucide-react'
+import { TABS } from '@lib/constants'
 import { useMemo } from 'react'
 
 // ─── FAB inteligente ─────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ function useSmartFAB(activeTab, transactions = []) {
     if (activeTab === TABS.CARTOES) {
       return { tipo: 'pagamento_cartao', label: 'Pagar fatura', emoji: '💳', cor: '#6366f1' }
     }
-    if (activeTab === TABS.ANALYTICS || activeTab === TABS.INTELLIGENCE || activeTab === TABS.METAS) {
+    if (activeTab === TABS.ANALYTICS || activeTab === TABS.METAS) {
       return { tipo: 'renda', label: 'Registrar renda', emoji: '💰', cor: '#10b981' }
     }
 
@@ -74,7 +74,7 @@ const NAV_TABS = [
   { id: TABS.DASHBOARD,    label: 'Início',  Icon: LayoutDashboard },
   { id: TABS.BILLS,        label: 'Contas',  Icon: ReceiptText      },
   { id: TABS.ANALYTICS,    label: 'Análise', Icon: BarChart3        },
-  { id: TABS.INTELLIGENCE, label: 'IA',      Icon: Brain            },
+  { id: TABS.DIARIAS,      label: 'Desempenho',  Icon: CarFront       },
   { id: TABS.METAS,        label: 'Metas',   Icon: Target           },
 ]
 
@@ -137,9 +137,6 @@ export function BottomNav({ activeTab, onChangeTab, onAddNew, transactions = [] 
 
         {/* Botão Análise */}
         <NavButton label="Análise" Icon={BarChart3} active={activeTab === TABS.ANALYTICS} onClick={() => onChangeTab(TABS.ANALYTICS)} />
-
-        {/* Botão IA */}
-        <NavButton label="IA" Icon={Brain} active={activeTab === TABS.INTELLIGENCE} onClick={() => onChangeTab(TABS.INTELLIGENCE)} />
       </div>
 
       {/* ✅ Barra adicional para Metas (quando não couber na mesma linha, pode manter assim) */}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   getPeriodLabel, navigatePeriod, getPeriodRange
-} from '../lib/periodHelpers'
+} from '@lib/periodHelpers'
 
 const PERIOD_OPTIONS = [
   { value: 'today', label: 'Hoje' },
@@ -67,26 +67,26 @@ export default function PeriodFilter({ period, onPeriodChange }) {
         </>
       ) : (
         <>
-          <div className="flex items-center gap-1 px-2 flex-1" style={{ minHeight: 40 }}>
+          <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2 flex-1 min-w-0" style={{ minHeight: 40 }}>
             <input
               type="date"
               value={period.customStart || ''}
               onChange={(e) => onPeriodChange({ ...period, customStart: e.target.value })}
-              className="w-[115px] bg-transparent text-white text-[9px] font-bold border border-white/20 rounded-lg px-2 py-1.5
+              className="min-w-0 w-0 flex-1 bg-transparent text-white text-[9px] font-bold border border-white/20 rounded-lg px-1.5 py-1.5
                          [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert"
             />
-            <span className="text-white/40 text-[9px] font-bold">até</span>
+            <span className="text-white/40 text-[9px] font-bold flex-shrink-0">até</span>
             <input
               type="date"
               value={period.customEnd || ''}
               onChange={(e) => onPeriodChange({ ...period, customEnd: e.target.value })}
-              className="w-[115px] bg-transparent text-white text-[9px] font-bold border border-white/20 rounded-lg px-2 py-1.5
+              className="min-w-0 w-0 flex-1 bg-transparent text-white text-[9px] font-bold border border-white/20 rounded-lg px-1.5 py-1.5
                          [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert"
             />
           </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="px-2 text-white/40 hover:text-white transition-colors"
+            className="px-1.5 sm:px-2 text-white/40 hover:text-white transition-colors flex-shrink-0"
             style={{ minHeight: 40 }}
           >
             <ChevronRight size={12} className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} />
@@ -95,7 +95,7 @@ export default function PeriodFilter({ period, onPeriodChange }) {
       )}
 
       {isOpen && (
-        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 min-w-[190px] animate-in slide-in-from-top-2 fade-in duration-200">
+        <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 min-w-[190px] animate-in slide-in-from-top-2 fade-in duration-200">
           {PERIOD_OPTIONS.map(({ value, label: lbl }) => (
             <button
               key={value}

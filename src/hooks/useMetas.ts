@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import type { Meta, User } from '../types'
+import { supabase } from '@lib/supabase'
+import type { Meta, User } from '@types'
+import { logger } from '@lib/logger'
 
 interface UseMetasReturn {
   metas: Meta[]
@@ -42,7 +43,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       if (supabaseError) throw supabaseError
       setMetas(data || [])
     } catch (err) {
-      console.error('Erro ao buscar metas:', err)
+      logger.error('Erro ao buscar metas:', err)
       setError((err as Error).message)
     } finally {
       setLoading(false)
@@ -63,7 +64,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       if (error) throw error
       return data
     } catch (err) {
-      console.error('Erro ao buscar meta por conta:', err)
+      logger.error('Erro ao buscar meta por conta:', err)
       return null
     }
   }, [user?.id])
@@ -103,7 +104,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => [data, ...prev])
       return { success: true, data }
     } catch (err) {
-      console.error('Erro ao criar meta para conta:', err)
+      logger.error('Erro ao criar meta para conta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id, getMetaPorConta])
@@ -131,7 +132,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => prev.map(m => m.id === metaId ? data : m))
       return { success: true, data }
     } catch (err) {
-      console.error('Erro ao editar meta:', err)
+      logger.error('Erro ao editar meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id, metas])
@@ -169,7 +170,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => prev.map(m => m.id === metaId ? data : m))
       return { success: true, data }
     } catch (err) {
-      console.error('Erro ao ajustar valor da meta:', err)
+      logger.error('Erro ao ajustar valor da meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id, metas])
@@ -211,7 +212,7 @@ export function useMetas(user: User | null): UseMetasReturn {
 
       return { success: true, data, progresso: novoProgresso }
     } catch (err) {
-      console.error('Erro ao depositar na meta:', err)
+      logger.error('Erro ao depositar na meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id, metas])
@@ -240,7 +241,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => [data, ...prev])
       return { success: true, data }
     } catch (err) {
-      console.error('Erro ao criar meta:', err)
+      logger.error('Erro ao criar meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id])
@@ -260,7 +261,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => prev.filter(m => m.id !== metaId))
       return { success: true }
     } catch (err) {
-      console.error('Erro ao excluir meta:', err)
+      logger.error('Erro ao excluir meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id])
@@ -280,7 +281,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => prev.map(m => m.id === metaId ? { ...m, arquivada: true } : m))
       return { success: true }
     } catch (err) {
-      console.error('Erro ao arquivar meta:', err)
+      logger.error('Erro ao arquivar meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id])
@@ -305,7 +306,7 @@ export function useMetas(user: User | null): UseMetasReturn {
       setMetas(prev => prev.map(m => m.id === metaId ? data : m))
       return { success: true, data }
     } catch (err) {
-      console.error('Erro ao alterar prazo da meta:', err)
+      logger.error('Erro ao alterar prazo da meta:', err)
       return { error: (err as Error).message }
     }
   }, [user?.id])
@@ -348,7 +349,7 @@ export function useMetas(user: User | null): UseMetasReturn {
 
       await fetchMetas()
     } catch (err) {
-      console.error('Erro ao sincronizar metas com caixinhas:', err)
+      logger.error('Erro ao sincronizar metas com caixinhas:', err)
     }
   }, [user?.id, fetchMetas])
 

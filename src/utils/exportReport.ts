@@ -1,5 +1,6 @@
 import { saveAs } from 'file-saver'
-import type { Transaction } from '../types'
+import type { Transaction } from '@types'
+import { logger } from '@lib/logger'
 
 export function exportToCSV(transactions: Transaction[], currentDate: Date): void {
   const mes = currentDate.getMonth() + 1
@@ -24,6 +25,6 @@ export function exportToCSV(transactions: Transaction[], currentDate: Date): voi
 }
 
 export async function exportToPDF(_transactions: Transaction[], _currentDate: Date): Promise<void> {
-  console.log('PDF export ainda não implementado')
+  logger.log('PDF export ainda não implementado')
   alert('Exportação PDF em desenvolvimento')
 }

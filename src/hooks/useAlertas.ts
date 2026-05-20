@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Transaction, SaldoProjetado, Alert as AlertType } from '../types'
+import type { Transaction, SaldoProjetado, Alert as AlertType } from '@types'
 
 const getTodayStr = (): string => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 

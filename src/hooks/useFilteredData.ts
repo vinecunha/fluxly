@@ -1,6 +1,6 @@
-import type { Transaction } from '../types'
-import { isInPeriod } from '../lib/periodHelpers'
-import type { PeriodState } from '../lib/periodHelpers'
+import type { Transaction } from '@types'
+import { isInPeriod } from '@lib/periodHelpers'
+import type { PeriodState } from '@lib/periodHelpers'
 import { useMemo } from 'react'
 
 export function useFilteredData(data: Transaction[], period: PeriodState): Transaction[] {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { X, ChevronRight, ChevronLeft, Check, Repeat, CreditCard } from 'lucide-react'
 import { ActionConfirmationModal } from './BillsList'
-import { formatCurrencyInput, parseCurrencyValue, getToday, fmt } from '../lib/formatters'
+import { formatCurrencyInput, parseCurrencyValue, getToday, fmt } from '@lib/formatters'
 
 // ✅ Componente de input de valor com formatação automática
 function CurrencyInput({ value, onChange, onClear, placeholder = "0,00" }) {

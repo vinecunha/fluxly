@@ -1,4 +1,4 @@
-import type { Transaction, Cartao } from '../types'
+import type { Transaction, Cartao } from '@types'
 
 interface FaturaResult {
   totalGasto: number

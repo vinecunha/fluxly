@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import type { Transaction, SaldoProjetado } from '../types'
-import { getTodayString } from '../lib/dateHelpers'
+import type { Transaction, SaldoProjetado } from '@types'
+import { getTodayString } from '@lib/dateHelpers'
 
 interface FaturaInfo {
   saldo?: number
